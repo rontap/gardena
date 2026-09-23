@@ -210,6 +210,8 @@ Guest may wire a valve. Guest still cannot place or click one.
 
 `sensors.light` — Traffic light: unwired `inn` 0 holds; `out` 1 iff a vehicle’s current wait stop is this cell with `inn === 0`; path-cross is not a wait.
 
+`sensors.dispatch` — Vehicle dispatcher: `in` and `out`. `route` is a `RouteId` or `'none'`, `n` starts at 1. A rising `inn` deploys one vehicle on that route, the same spawn as **Deploy**. `out` is 1 while the number of field vehicles on that route is at least `n`. The input is sequential, so its own `out` may feed back through a Not.
+
 `sensors.chest` — Chest with no empty slot (`CHEST_SLOTS`) → `out` 1 after `SENSOR_HOLD`.
 
 `sensors.silo` — Seed silo `used >= SILO_SEED_CAP` or additive `used >= ADDITIVE_CAP_LITERS` → `out` 1 after hold.

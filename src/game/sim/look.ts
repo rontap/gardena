@@ -1,6 +1,7 @@
 import { m } from '../../paraglide/messages.js'
 import '../defs/math.ts'
 import { Store, inFade, inWorld, occupiedCells, type Barrel, type Necronomicon } from './building.ts'
+import { vehiclesOnRoute } from './feature-vehicles/vehicle.ts'
 import {
   NOT_OWNED,
   compostLine,
@@ -63,7 +64,8 @@ export function lookText(world: World, hit: PromptHit | undefined, plantStats: b
       hit.kind === 'logic-hud' ||
       hit.kind === 'variety-hud' ||
       hit.kind === 'weather-hud' ||
-      hit.kind === 'pressure-hud')
+      hit.kind === 'pressure-hud' ||
+      hit.kind === 'dispatch-hud')
   ) {
     return world.promptHit(hit).text
   }
@@ -122,7 +124,7 @@ export function lookText(world: World, hit: PromptHit | undefined, plantStats: b
   else if (cell.kind === 'still') lines.push(stillLook(cell, hand))
   else if (cell.kind === 'furnace') lines.push(furnaceLook(cell, hand))
   else if (cell.kind === 'refuel') lines.push(refuelLook(cell))
-  else if (cell.kind === 'weather-station') lines.push(skuLabel('buy-weather-station'))
+  else if (cell.kind === 'weather-station') lines.push(m.names_building_weather_station())
   else if (cell.kind === 'infuser') lines.push(infuserLook(cell, hand))
   else if (cell.kind === 'station') lines.push(stationLook(cell, hand, crop => world.familiarity[crop]))
   else if (cell.kind === 'necronomicon') lines.push(necronomiconLook(world, cell))
@@ -172,6 +174,9 @@ export function lookText(world: World, hit: PromptHit | undefined, plantStats: b
       )
       if (!around) lines.push(labeled(m.names_sensor_water_system(), m.prompt_no_pipes()))
       else lines.push(labeled(m.names_sensor_water_system(), cell.out === 1 ? m.prompt_on() : m.prompt_off()))
+    } else if (cell.kind === 'dispatch') {
+      const n = cell.route === 'none' ? 0 : vehiclesOnRoute(world, cell.route)
+      lines.push(labeled(m.names_sensor_dispatch(), m.sensors_out_count({ n })))
     } else if (cell.fenceable && world.hasFence(at) && world.fenceEnclosures.get(`${at.col},${at.row}`) === undefined) {
       lines.push(labeled(sensorName(cell.kind), m.prompt_not_enclosed()))
     } else {

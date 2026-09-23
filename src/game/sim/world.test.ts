@@ -1213,10 +1213,11 @@ describe('beta-5 invariants', () => {
         expect(RESEARCH['unlock-smart-irrigation']).toMatchObject({
             parent: 'unlock-advanced-sensors',
         })
+        expect(RESEARCH['unlock-silos'].parent).toBe('unlock-vehicles')
         expect(RESEARCH['unlock-dispatch']).toMatchObject({
             name: 'Automated dispatch',
             path: 'unlock-irrigation',
-            parent: 'unlock-vehicles',
+            parent: 'unlock-silos',
             grants: [m.research_grant_automate()],
             effect: {kind: 'feature'},
         })
@@ -1230,9 +1231,10 @@ describe('beta-5 invariants', () => {
         expect(w.skuOpen('buy-sprinkler')).toBe(true)
     })
 
-    test('`unlock-dispatch` parent `unlock-vehicles`, `effect` `feature`, grants Automate chrome. Card **Automated dispatch**. Cost 160, seconds 80 preference. Automate chrome iff that row is in `done`. `buy-traffic-light` unlock `unlock-dispatch`. `Act.route` no-op unless `unlock-dispatch` in `done`.', () => {
+    test('`unlock-dispatch` parent `unlock-silos`, `unlock-silos` parent `unlock-vehicles`, `effect` `feature`, grants Automate chrome. Card **Automated dispatch**. Cost 160, seconds 80 preference. Automate chrome iff that row is in `done`. `buy-traffic-light` unlock `unlock-dispatch`. `Act.route` no-op unless `unlock-dispatch` in `done`.', () => {
+        expect(RESEARCH['unlock-silos'].parent).toBe('unlock-vehicles')
         expect(RESEARCH['unlock-dispatch']).toMatchObject({
-            parent: 'unlock-vehicles',
+            parent: 'unlock-silos',
             effect: {kind: 'feature'},
             grants: [m.research_grant_automate()],
             name: 'Automated dispatch',
@@ -1548,6 +1550,10 @@ describe('beta-6 invariants', () => {
     test('pack-grass is not on Build; seed packs sit at the Seed silo', () => {
         expect(SHELF_SKUS.filter((id: SkuId) => SKUS[id].tab === 'seeds')).toEqual([])
         expect(SHELVES.find(s => s.id === 'land')?.groups.some(g => g.skus.includes('pack-grass'))).toBe(false)
+        expect(SHELVES.find(s => s.groups.some(g => g.skus.includes('buy-sorter')))?.id).toBe('storage')
+        expect(SHELVES.find(s => s.groups.some(g => g.skus.includes('buy-fence')))?.id).toBe('logic')
+        expect(SHELVES.find(s => s.id === 'land')?.label()).toBe('Decorative')
+        expect(SHELVES.find(s => s.id === 'land')?.groups.some(g => g.skus.includes('buy-fence'))).toBe(false)
         expect(SHELF_SKUS.includes('pack-grass')).toBe(false)
     })
 

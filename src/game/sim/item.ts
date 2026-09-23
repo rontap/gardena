@@ -166,6 +166,7 @@ export type Face =
   | { kind: 'water-system' }
   | { kind: 'vehicle-detector' }
   | { kind: 'traffic-light' }
+  | { kind: 'dispatch' }
   | { kind: 'delete' }
   | { kind: 'tile'; tile: TileId }
   | { kind: 'fence' }
@@ -369,6 +370,7 @@ const PLACE_NAME = {
   'water-system': () => m.names_sensor_water_system(),
   'vehicle-detector': () => m.names_sensor_vehicle_detector(),
   'traffic-light': () => m.names_sensor_traffic_light(),
+  dispatch: () => m.names_sensor_dispatch(),
   delete: () => m.names_face_demolish(),
   fence: () => m.names_building_fence(),
   'weather-station': () => m.names_building_weather_station(),
@@ -435,6 +437,7 @@ export function faceName(face: Face): string {
     case 'water-system':
     case 'vehicle-detector':
     case 'traffic-light':
+    case 'dispatch':
     case 'delete':
     case 'fence':
     case 'weather-station':
@@ -675,6 +678,7 @@ const SKU_LABEL: { readonly [K in SkuId]: () => string } = {
   'buy-water-system': () => m.names_sku_buy_water_system(),
   'buy-vehicle-detector': () => m.names_sku_buy_vehicle_detector(),
   'buy-traffic-light': () => m.names_sku_buy_traffic_light(),
+  'buy-dispatch': () => m.names_sku_buy_dispatch(),
   'buy-furnace': () => m.names_sku_buy_furnace(),
   'buy-axe': () => m.names_sku_buy_axe(),
   'buy-chainsaw': () => m.names_sku_buy_chainsaw(),
@@ -682,7 +686,6 @@ const SKU_LABEL: { readonly [K in SkuId]: () => string } = {
   'buy-infuser': () => m.names_sku_buy_infuser(),
   'buy-necronomicon': () => m.names_sku_buy_necronomicon(),
   'buy-sorter': () => m.names_sku_buy_sorter(),
-  'buy-weather-station': () => m.names_sku_buy_weather_station(),
 }
 
 export function skuLabel(id: SkuId): string {
@@ -758,6 +761,7 @@ const SKU_DESC: { readonly [K in SkuId]: () => string } = {
   'buy-water-system': () => m.catalog_water_system(),
   'buy-vehicle-detector': () => m.catalog_vehicle_detector(),
   'buy-traffic-light': () => m.catalog_traffic_light(),
+  'buy-dispatch': () => m.catalog_dispatch(),
   'buy-furnace': () =>
     m.catalog_sku_buy_furnace({ need: FURNACE_NEED, seconds: FURNACE_SECONDS, ash: FURNACE_ASH, cap: FURNACE_CAP }),
   'buy-axe': () => m.catalog_axe(AXES.axe),
@@ -766,7 +770,6 @@ const SKU_DESC: { readonly [K in SkuId]: () => string } = {
   'buy-infuser': () => m.catalog_sku_buy_infuser({ seconds: INFUSE_SECONDS }),
   'buy-necronomicon': () => m.catalog_sku_buy_necronomicon(),
   'buy-sorter': () => m.catalog_sku_buy_sorter(),
-  'buy-weather-station': () => m.catalog_sku_buy_weather_station(),
 }
 
 export function skuDesc(id: SkuId): string {
@@ -899,8 +902,6 @@ export function skuItem(id: SkuId): Face {
       return { kind: 'infuser' }
     case 'buy-necronomicon':
       return { kind: 'necronomicon' }
-    case 'buy-weather-station':
-      return { kind: 'weather-station' }
     case 'buy-sorter':
       return { kind: 'sorter' }
     case 'buy-barrel':
@@ -957,6 +958,8 @@ export function skuItem(id: SkuId): Face {
       return { kind: 'vehicle-detector' }
     case 'buy-traffic-light':
       return { kind: 'traffic-light' }
+    case 'buy-dispatch':
+      return { kind: 'dispatch' }
   }
 }
 

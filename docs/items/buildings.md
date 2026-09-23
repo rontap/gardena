@@ -16,7 +16,7 @@ Reading the row band, north to south: the Seed silo and the Additive store stand
 
 `station` — `buy-research-station`. 2×1, origin NW, no rotate, hover origin extends east. `Sku.tab` `automation`. Almanac **Automation**. Named for what it becomes. Pads, west pull, east push, `inn`. Panel [[ui/station]]. Rules: [[mechanics/machines]] `station.io`.
 
-`sorter` — `buy-sorter`. 1 × `SORT_LEN` upright, `SORT_LEN` × 1 flat. Four `facing` values. `Sku.tab` `automation`. Almanac **Automation**. Rules: [[mechanics/machines]] `machines.sorter`.
+`sorter` — `buy-sorter`. 1 × `SORT_LEN` upright, `SORT_LEN` × 1 flat. Four `facing` values. `Sku.tab` `automation`. Build shelf **Storage**. Almanac **Automation**. Rules: [[mechanics/machines]] `machines.sorter`.
 
 `hangar` — `buy-hangar`. 3×2, door south, no rotate. `Sku.tab` `automation`. Almanac **Automation**. Walk-up cue. Quad / tractor / trailer hangar-buys, not place SKUs. Cannot delete while it stores a vehicle or a trailer. Rules: [[mechanics/vehicles]].
 
@@ -30,6 +30,6 @@ Reading the row band, north to south: the Seed silo and the Additive store stand
 
 `necronomicon` — `buy-necronomicon`. 2×2, origin NW, no rotate, `squareSiteOk`. `Sku.tab` `automation`. One per farm. Cannot be demolished. Rules: [[mechanics/necronomicon]] `necro.one`.
 
-`weather-station` — `buy-weather-station`. 1×2, origin NW, no rotate, hover origin extends south. `Sku.tab` `building`. Almanac **Building**. Land shelf. Price preference. Many allowed; extras no-op. Demolishable. Not a `Machine`. skuLabel **Weather Forecast Station**. Rules: [[mechanics/weather]] `weather.forecast`.
+`weather-station` — not a SKU. A cell already in a file still parses: 1×2, origin NW, hover **Weather Forecast Station**. It does not change `forecastCount`. Rules: [[mechanics/weather]] `weather.forecast`.
 
 Sensor cells are not this note — [[items/sensors]].

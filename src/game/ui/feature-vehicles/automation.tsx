@@ -284,6 +284,19 @@ export function Automation({
                 </p>
               )}
               <Stops world={world} route={route} />
+              <Label>{m.vehicles_route_end()}</Label>
+              <select
+                aria-label={m.vehicles_route_end()}
+                className="cursor-pointer border border-ink/30 bg-parch px-1.5 py-1 text-sm text-ink"
+                value={route.end}
+                onChange={e => {
+                  const end = e.target.value
+                  if (end === 'loop' || end === 'hangar') world.setRouteEnd(route.id, end)
+                }}
+              >
+                <option value="loop">{m.vehicles_route_loop()}</option>
+                <option value="hangar">{m.vehicles_recall()}</option>
+              </select>
               <Label>{m.vehicles_on_route()}</Label>
               {out.length === 0 && <p className="text-sm text-ink/60">{m.vehicles_on_route_none()}</p>}
               <div className="flex flex-col gap-1.5">

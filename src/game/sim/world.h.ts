@@ -184,6 +184,7 @@ export type HudTarget =
   | { kind: 'weather'; at: Coord }
   | { kind: 'pressure'; at: Coord }
   | { kind: 'refuel'; at: Coord }
+  | { kind: 'dispatch'; at: Coord }
 
 export type DayTally = { died: number; harvests: number; research: ResearchId[]; contracts: HistoryEntry[] }
 

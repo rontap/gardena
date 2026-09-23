@@ -11,7 +11,6 @@ import {
   Hangar,
   Infuser,
   Necronomicon,
-  WeatherStation,
   inWorld,
   JamMachine,
   Mill,
@@ -227,6 +226,8 @@ export function deleteBuildingBody(w: World, at: Coord): void {
     return
   }
   if (c.kind === 'grinder') {
+    stripPadStops(w, c)
+    w.dropWires(wire => hitsCell(wire.from, at) || hitsCell(wire.to, at))
     w.setCell(at, bare('soft', 0))
     w.ping()
     return
@@ -285,16 +286,6 @@ export function confirmPlace(w: World, at: Coord): void {
     const furnace = new Furnace({ shape: 'rect', col: at.col, row: at.row, w: 1, h: 2 })
     w.setCell(at, furnace)
     w.setCell({ col: at.col, row: at.row + 1 }, furnace)
-    w.act.place = { kind: 'none' }
-    w.ping()
-    return
-  }
-  if (w.act.place.id === 'buy-weather-station') {
-    if (!tallSiteOk(w, at)) return
-    w.money -= price
-    const station = new WeatherStation({ shape: 'rect', col: at.col, row: at.row, w: 1, h: 2 })
-    w.setCell(at, station)
-    w.setCell({ col: at.col, row: at.row + 1 }, station)
     w.act.place = { kind: 'none' }
     w.ping()
     return
@@ -516,6 +507,7 @@ export function confirmPlace(w: World, at: Coord): void {
     made.kind === 'water-system' ||
     made.kind === 'vehicle-detector' ||
     made.kind === 'traffic-light' ||
+    made.kind === 'dispatch' ||
     made.kind === 'water'
   ) {
     return

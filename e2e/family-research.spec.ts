@@ -4,7 +4,7 @@ import { RESEARCH_IDS } from '../src/game/defs/research.ts'
 import { TREES } from '../src/game/defs/trees.ts'
 import { SILO_BASE } from '../src/game/sim/building.ts'
 import { DT_MAX } from '../src/game/sim/world.ts'
-import { gotoPlay, openBuild, pickTreeNode, tapWorld, unlockWorld } from './helpers.ts'
+import { gotoPlay, openBuild, pickTreeNode, tapWorld } from './helpers.ts'
 
 type At = { col: number; row: number }
 
@@ -250,43 +250,18 @@ test('chop without Tree Grafting drops wood and no grafts', async ({ page }) => 
   expect(chopped.grafts).toBe(0)
 })
 
-test('place Weather Forecast Station shows tomorrow on the HUD, demolish the last one hides it', async ({ page }) => {
+test('Weather Forecast research shows tomorrow on the HUD', async ({ page }) => {
   await gotoPlay(page)
-  await unlockWorld(page)
   await expect.poll(() => weatherCount(page)).toBe(1)
-  await openBuild(page)
-  await page.getByRole('tab', { name: 'Land' }).click()
-  const card = page.getByRole('button', { name: /24$/ })
-  await expect(card).toBeVisible()
-  await card.click()
-  const at = await readWorld<At>(
-    page,
-    null,
-    `(() => {
-      const b = w.bounds()
-      for (let row = b.row0; row < b.row1 - 1; row++) {
-        for (let col = b.col0; col < b.col1; col++) {
-          const a = { col, row }
-          const c = { col, row: row + 1 }
-          if (w.cell(a).kind === 'untilled' && w.cell(c).kind === 'untilled') return a
-        }
-      }
-      throw new Error('site')
-    })()`,
-  )
-  await page.evaluate(at => {
-    const w = (window as unknown as { __world?: { confirmPlace: (at: { col: number; row: number }) => void } }).__world
+  await page.evaluate(() => {
+    const w = (window as unknown as { __world?: { done: { add: (id: string) => void }; ping: () => void } }).__world
     if (w === undefined) throw new Error('no __world')
-    w.confirmPlace(at)
-  }, at)
+    w.done.add('unlock-weather-station')
+    w.ping()
+  })
   await expect.poll(() => readWorld<number>(page, null, 'w.forecastCount')).toBe(1)
   await expect.poll(() => weatherCount(page)).toBe(2)
-  await page.getByRole('button', { name: 'Demolish' }).click()
-  await page.evaluate(at => {
-    const w = (window as unknown as { __world?: { click: (at: { col: number; row: number }) => void } }).__world
-    if (w === undefined) throw new Error('no __world')
-    w.click(at)
-  }, at)
-  await expect.poll(() => readWorld<number>(page, null, 'w.forecastCount')).toBe(0)
-  await expect.poll(() => weatherCount(page)).toBe(1)
+  await openBuild(page)
+  await page.getByRole('tab', { name: 'Decorative' }).click()
+  await expect(page.getByRole('button', { name: /Weather Forecast/ })).toHaveCount(0)
 })

@@ -29,7 +29,7 @@ See [[canon]].
 - [[ui/place]] — `place.demolish-land` `place.demolish-filter` `place.ghost-io` `place.drop`
 - [[ui/inspect]] — `inspect.blocks` `inspect.action` `inspect.open` `inspect.gauge` `inspect.need-tool`
 - [[mechanics/infusion]] — `infusion.chilli` `infusion.extract` `infusion.item` `infusion.machine` `infusion.overlay` `infusion.stall` `infusion.rep` `infusion.furnace`
-- [[mechanics/sensors]] — `sensors.cycle` `sensors.button` `sensors.hold` `sensors.unwired-sprinkler` `sensors.valve` `sensors.port` `sensors.fan` `sensors.mask` `sensors.signal` `sensors.chest` `sensors.silo` `sensors.vfx` `sensors.counter` `sensors.day` `sensors.lever` `sensors.light` `sensors.fence-range` `sensors.fence-place` `sensors.fence-delete` `sensors.logic` `sensors.pressure` `sensors.variety` `sensors.weather` `sensors.pump`
+- [[mechanics/sensors]] — `sensors.cycle` `sensors.button` `sensors.hold` `sensors.unwired-sprinkler` `sensors.valve` `sensors.port` `sensors.fan` `sensors.mask` `sensors.signal` `sensors.chest` `sensors.silo` `sensors.vfx` `sensors.counter` `sensors.day` `sensors.lever` `sensors.light` `sensors.dispatch` `sensors.fence-range` `sensors.fence-place` `sensors.fence-delete` `sensors.logic` `sensors.pressure` `sensors.variety` `sensors.weather` `sensors.pump`
 - [[mechanics/enclosure]] — `enclosure.close` `enclosure.leak` `enclosure.grid` `enclosure.nest` `enclosure.static`
 - [[mechanics/log]] — `log.now` `log.dispatch` `log.cmds` `log.json` `log.letters`
 - [[mechanics/rng]] — `rng.spatial` `rng.fail` `rng.burrow`

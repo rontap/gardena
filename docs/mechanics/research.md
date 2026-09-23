@@ -6,7 +6,7 @@ One job. `startResearch` no-op if a job is running, already done, not `researchO
 
 `unlockAllSkills` is a different cheat. `cheatFastResearch`: toggle. Job drain `× 3`. `Act.cheat` `{ k: 'research' }`. `World.cheatSpeed` is world time, not this arm. `cheatMoney` `+ 200`. `cheatPoints` `+ 10` to the shared bank.
 
-`RESEARCH[id].name` is the visible label. Descriptions as `RESEARCH[id].blurb`. `unlock-better-tools` name **Gardening tools**. `unlock-hardened-tools` name **Hardened tools**. `unlock-multi-crop` name **Multi-Crop Farming**. `unlock-advanced-plants` name **Advanced Plants**. `unlock-smart-irrigation` name **Smart Irrigation Sensors**. `unlock-grinder` name **Machinery & Expansion**. `unlock-weather-station` name **Weather Forecast Station**. Gardening tools: **A Pickaxe mines Rock into untilled ground you can till, and mines Very hard soil into Infertile soil. An Axe chops a mature tree into Wood. Weed spray clears a Weed on a tilled plot. A Large bucket holds more water than a Bucket, so you Fill less often at a Pump.** Hardened tools description names Better shovel, Hardened pickaxe, and Chainsaw: **A Better shovel tills faster than a Shovel and lasts for more uses. A Hardened pickaxe lasts for more uses and mines faster than a Pickaxe. A Chainsaw chops a mature tree in fewer seconds than an Axe and lasts for more uses.** Multi-Crop Farming: **Sow Wheat on tilled soil. Wheat takes longer to ripen than Carrot or Potato and wants more water and fertilizer. You cut it dry.** Advanced Plants: **Sow Tomato or Grape on tilled soil. Both ripen later than Wheat and want a tighter water and fertilizer range. Ripe fruit loses freshness faster than Wheat, so Harvest the day it ripens.** Weather Forecast Station: **Place a Weather Forecast Station. Tomorrow's weather appears next to today, so you can plan watering, the stall, and the Water bill before Sunrise.**
+`RESEARCH[id].name` is the visible label. Descriptions as `RESEARCH[id].blurb`. `unlock-better-tools` name **Gardening tools**. `unlock-hardened-tools` name **Hardened tools**. `unlock-multi-crop` name **Multi-Crop Farming**. `unlock-advanced-plants` name **Advanced fruits**. `unlock-smart-irrigation` name **Smart Irrigation Sensors**. `unlock-grinder` name **Machinery & Expansion**. `unlock-weather-station` name **Weather Forecast**. Gardening tools: **A Pickaxe mines Rock into untilled ground you can till, and mines Very hard soil into Infertile soil. An Axe chops a mature tree into Wood. Weed spray clears a Weed on a tilled plot. A Large bucket holds more water than a Bucket, so you Fill less often at a Pump.** Hardened tools description names Better shovel, Hardened pickaxe, and Chainsaw: **A Better shovel tills faster than a Shovel and lasts for more uses. A Hardened pickaxe lasts for more uses and mines faster than a Pickaxe. A Chainsaw chops a mature tree in fewer seconds than an Axe and lasts for more uses.** Multi-Crop Farming: **Sow Wheat on tilled soil. Wheat takes longer to ripen than Carrot or Potato and wants more water and fertilizer. You cut it dry.** Advanced fruits: **Sow Tomato or Grape on tilled soil. Both ripen later than Wheat and want a tighter water and fertilizer range. Ripe fruit loses freshness faster than Wheat, so Harvest the day it ripens.** Weather Forecast: **Tomorrow's weather appears next to today, so you can plan watering, the stall, and the Water bill before Sunrise.** Grant **Tomorrow's weather next to today**.
 
 No `unlock-tomato`. No `unlock-grape`. No tabs. No four shelves. — [[ui/docks]]
 
@@ -50,8 +50,8 @@ A known row that is not open is a disabled face; `why` names the parent: *Needs 
 | unlock-adv-irrigation | unlock-irrigation | unlock-auto-irrigation | — |
 | unlock-water-storage | unlock-irrigation | unlock-auto-irrigation | — |
 | unlock-vehicles | unlock-irrigation | unlock-irrigation | Quad, tractor and trailer at the hangar |
-| unlock-dispatch | unlock-irrigation | unlock-vehicles | Automate chrome |
-| unlock-silos | unlock-irrigation | unlock-dispatch | — |
+| unlock-silos | unlock-irrigation | unlock-vehicles | — |
+| unlock-dispatch | unlock-irrigation | unlock-silos | Automate chrome |
 | unlock-sensors | unlock-irrigation | unlock-irrigation | Sensors lens row |
 | unlock-advanced-sensors | unlock-irrigation | unlock-sensors | — |
 | unlock-smart-irrigation | unlock-irrigation | unlock-advanced-sensors | Sprinkler crop dial; Sprinkler signal input; Signal wire endpoints on sprinklers |
@@ -65,7 +65,7 @@ A known row that is not open is a disabled face; `why` names the parent: *Needs 
 | unlock-expand | unlock-grinder | unlock-landscaping | Land expansion on the map edge; +1 expansion permit; Land quality lens |
 | expand-land | unlock-grinder | unlock-expand | +1 expansion permit |
 | eminent-domain | unlock-grinder | unlock-expand | +1 expansion permit |
-| unlock-weather-station | unlock-grinder | unlock-landscaping | — |
+| unlock-weather-station | unlock-grinder | unlock-landscaping | Tomorrow's weather next to today |
 | unlock-necronomicon | unlock-grinder | unlock-grinder | The Necronomicon on the Build Automation shelf |
 
 Start rows are three: `unlock-multi-crop`, `unlock-irrigation`, `unlock-grinder`. `unlock-landscaping` and `unlock-expand` are not start.
@@ -78,7 +78,7 @@ Compost box is a start SKU. Chest is a start SKU. Carrot / potato start unlocked
 
 `unlock-sensors` / `unlock-advanced-sensors` / `unlock-smart-irrigation` / `unlock-contracts` / `unlock-heirloom` / `unlock-dispatch` / `unlock-crop-variants` `effect` `feature`. `unlock-smart-irrigation` is the merged capstone: sprinkler HUD and sprinkler wire endpoints both read this row. Almanac Ingredients gates: jam `unlock-preservatives`; spirit / wine / cider `unlock-fermentation`; mill goods `unlock-grinder`; infuser `unlock-infusion`; furnace `unlock-furnace`. Station and sorter have no research row. — [[ui/almanac]]
 
-Ordinary bag is always at the Additive store. Compost feeds like fertilizer. `buy-weed-spray` gates on `unlock-better-tools`. `unlock-better-tools` `effect` `unlock-sku` `buy-pickaxe`. `unlock-multi-crop` `effect` `unlock-sku` `pack-wheat`. `unlock-advanced-plants` `effect` `unlock-sku` `pack-tomato`. `unlock-weather-station` `effect` `unlock-sku` `buy-weather-station`.
+Ordinary bag is always at the Additive store. Compost feeds like fertilizer. `buy-weed-spray` gates on `unlock-better-tools`. `unlock-better-tools` `effect` `unlock-sku` `buy-pickaxe`. `unlock-multi-crop` `effect` `unlock-sku` `pack-wheat`. `unlock-advanced-plants` `effect` `unlock-sku` `pack-tomato`. `unlock-weather-station` `effect` `feature`. Grant **Tomorrow's weather next to today**. No `buy-weather-station`. `forecastCount` reads this row — [[mechanics/weather]] `weather.forecast`.
 
 ## Sku gates
 
@@ -86,7 +86,7 @@ Ordinary bag is always at the Additive store. Compost feeds like fertilizer. `bu
 
 `pack-wheat` show `start`, buy `unlock-multi-crop`. `pack-tomato` show `start`, buy `unlock-advanced-plants`. `pack-grape` show `start`, buy `unlock-advanced-plants`. `pack-raspberry` show `unlock-advanced-plants`, buy `unlock-raspberry`. `pack-sugar-cane` show + buy `unlock-fermentation`. `pack-chilli` show + buy `unlock-infusion`. `pack-grass` show `start`, buy `unlock-landscaping`. No `pack-olive`. No `pack-vanilla`. No `pack-watermelon`. No `unlock-chilli`. Packs are `'base'` quality 0. `buy-freezer-large` `need: 'prize'`.
 
-`buy-mill` show `start`, buy `unlock-grinder`. `buy-jam` / `buy-freezer` / `buy-sugar` show `unlock-grinder`, buy `unlock-preservatives`. `buy-still` show `unlock-grinder`, buy `unlock-fermentation`. `buy-barrel` show `start`, buy `unlock-fermentation`. `buy-furnace` show `unlock-preservatives`, buy `unlock-furnace`. `buy-infuser` show `unlock-fermentation`, buy `unlock-infusion`. `buy-sorter` show + buy `unlock-crop-variants`. `buy-weather-station` show + buy `unlock-weather-station`, price preference, Land shelf, occupancy 1×2. — [[mechanics/machines]] [[mechanics/infusion]] [[items/buildings]] [[mechanics/weather]]
+`buy-mill` show `start`, buy `unlock-grinder`. `buy-jam` / `buy-freezer` / `buy-sugar` show `unlock-grinder`, buy `unlock-preservatives`. `buy-still` show `unlock-grinder`, buy `unlock-fermentation`. `buy-barrel` show `start`, buy `unlock-fermentation`. `buy-furnace` show `unlock-preservatives`, buy `unlock-furnace`. `buy-infuser` show `unlock-fermentation`, buy `unlock-infusion`. `buy-sorter` show + buy `unlock-crop-variants`. — [[mechanics/machines]] [[mechanics/infusion]] [[items/buildings]] [[mechanics/weather]]
 
 `buy-freezer` price preference.
 
@@ -109,15 +109,15 @@ Three rows, three jobs. Irrigation routes the pump the farm already owns; Water 
 
 ### Vehicles
 
-`buy-hangar` automation, show `unlock-irrigation`, buy `unlock-vehicles`. `buy-silo-seed` / `buy-silo-spray` / `buy-silo-produce` automation, show `unlock-dispatch`, buy `unlock-silos`. Quad / tractor / trailer hangar-buys not shop place SKUs, not `skuPrice`. Automate chrome after `unlock-dispatch`. — [[mechanics/vehicles]]
+`buy-hangar` automation, show `unlock-irrigation`, buy `unlock-vehicles`. `buy-silo-seed` / `buy-silo-spray` / `buy-silo-produce` automation, show `unlock-vehicles`, buy `unlock-silos`. Quad / tractor / trailer hangar-buys not shop place SKUs, not `skuPrice`. Automate chrome after `unlock-dispatch`. — [[mechanics/vehicles]]
 
 ### Sensors
 
-Sensors shelf (`logic`) after `unlock-sensors`. Buy gates live on `SKUS` (`unlock` / `show` / `need`). The Research tree is the map. `buy-water-system` `skuShown` false. `buy-or` `buy-and` unused. — [[mechanics/sensors]]
+Sensors shelf (`logic`) after `unlock-sensors`. Buy gates live on `SKUS` (`unlock` / `show` / `need`). The Research tree is the map. `buy-sensor-water` show `unlock-sensors`, buy `unlock-auto-irrigation`, `need` `[]`. `buy-water-system` `skuShown` false. `buy-or` `buy-and` unused. — [[mechanics/sensors]]
 
 ### Land
 
-`buy-fence` and all four paving SKUs show from `start`, buy after `unlock-landscaping`; they file on the Build **Land** shelf — [[items/tiles]] [[ui/build]]. `pack-grass` show from `start`, buy after `unlock-landscaping`; sold at the Seed silo — [[mechanics/inventory]] `inventory.grass-silo`. `buy-weather-station` Land shelf, show + buy `unlock-weather-station`. `buy-pickaxe` show `start`, buy `unlock-better-tools`. `buy-better-pickaxe` unlock and show `unlock-hardened-tools`. `buy-axe` utility, unlock and show `unlock-better-tools`. `buy-chainsaw` utility, unlock and show `unlock-hardened-tools`. `buy-better-shovel` unlock and show `unlock-hardened-tools`. `buy-bucket-large` unlock `unlock-better-tools`, show `start`. `unlock-better-tools` effect `buy-pickaxe`. `unlock-hardened-tools` effect `buy-better-shovel`. Axe `workSeconds` stays `AXES.axe.workSeconds`. Hardened tools research face matches Better shovel, Hardened pickaxe, and Chainsaw. — [[items/tools]] [[mechanics/expansion]]
+The four paving SKUs show from `start`, buy after `unlock-landscaping`; they file on the Build **Decorative** shelf (id `land`) — [[items/tiles]] [[ui/build]]. `buy-fence` show from `start`, buy after `unlock-landscaping`; it files on **Sensors**. `pack-grass` show from `start`, buy after `unlock-landscaping`; sold at the Seed silo — [[mechanics/inventory]] `inventory.grass-silo`. `buy-pickaxe` show `start`, buy `unlock-better-tools`. `buy-better-pickaxe` unlock and show `unlock-hardened-tools`. `buy-axe` utility, unlock and show `unlock-better-tools`. `buy-chainsaw` utility, unlock and show `unlock-hardened-tools`. `buy-better-shovel` unlock and show `unlock-hardened-tools`. `buy-bucket-large` unlock `unlock-better-tools`, show `start`. `unlock-better-tools` effect `buy-pickaxe`. `unlock-hardened-tools` effect `buy-better-shovel`. Axe `workSeconds` stays `AXES.axe.workSeconds`. Hardened tools research face matches Better shovel, Hardened pickaxe, and Chainsaw. — [[items/tools]] [[mechanics/expansion]]
 
 ## Invariants
 
@@ -139,7 +139,7 @@ Sensors shelf (`logic`) after `unlock-sensors`. Buy gates live on `SKUS` (`unloc
 
 `research.infusion` — `unlock-infusion` parent `unlock-fermentation`, `effect` `unlock-sku` `buy-infuser`; `buy-infuser` show `unlock-fermentation`, buy that row; `pack-chilli` show + buy that row; no chilli research row — [[mechanics/infusion]].
 
-`research.dispatch` — `unlock-dispatch` parent `unlock-vehicles`, `effect` `feature`, grants Automate chrome; card **Automated dispatch**; Automate chrome iff that row is in `done`; `Act.route` no-op unless `unlock-dispatch` in `done`.
+`research.dispatch` — `unlock-dispatch` parent `unlock-silos`, `unlock-silos` parent `unlock-vehicles`, `effect` `feature`, grants Automate chrome; card **Automated dispatch**; Automate chrome iff that row is in `done`; `Act.route` no-op unless `unlock-dispatch` in `done`.
 
 `research.furnace` — Own row, parent `unlock-preservatives`, gates `buy-furnace`, show `unlock-preservatives`; `buy-axe` on `unlock-better-tools`.
 

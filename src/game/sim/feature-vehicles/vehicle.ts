@@ -591,6 +591,7 @@ export const PAD_SKUS: readonly SkuId[] = [
   'buy-freezer',
   'buy-freezer-large',
   'buy-compost-box',
+  'buy-grinder',
   'buy-mill',
   'buy-infuser',
   'buy-jam',
@@ -1024,6 +1025,33 @@ export type Deployable =
       boom: 3 | 5
     }
 
+export function vehiclesOnRoute(w: World, id: RouteId): number {
+  return w.vehicles.filter(v => v.pose.kind === 'field' && v.route === id).length
+}
+
+export function deployRoute(w: World, id: RouteId): void {
+  if (!w.done.has('unlock-dispatch')) return
+  const route = w.routeById(id)
+  if (route === undefined) return
+  const pick = routeDeployable(w, route)
+  if (pick === undefined) return
+  const pad = padCenter(pick.hangar)
+  const v: Vehicle = pick.vehicle
+  if (pick.kind === 'tractor') {
+    pick.vehicle.hitch = pick.trailer === undefined ? 'none' : pick.trailer.id
+    pick.vehicle.boom = pick.boom
+    if (pick.trailer !== undefined) {
+      pick.trailer.pose = { kind: 'attached', vehicle: v.id, heading: HEADING_SOUTH }
+    }
+  }
+  v.pose = { kind: 'field', x: pad.x, y: pad.y, heading: HEADING_SOUTH, speed: 0, driver: 'none' }
+  v.route = route.id
+  v.cursor = 0
+  v.running = true
+  v.dwell = 0
+  w.ping()
+}
+
 export function routeDeployable(w: World, route: Route): Deployable | undefined {
   if (route.stops.length === 0) return undefined
   const deploy = route.deploy
@@ -1074,7 +1102,7 @@ export function routeBody(w: World, cmd: Extract<Cmd, { a: typeof Act.route }>):
   if (cmd.k === 'create') {
     const id = w.nextRouteId
     w.nextRouteId += 1
-    w.routes.push({ id, name: `Route ${id}`, stops: [], deploy: { kind: 'quad' } })
+    w.routes.push({ id, name: `Route ${id}`, stops: [], deploy: { kind: 'quad' }, end: 'loop' })
     w.ping()
     return
   }
@@ -1089,6 +1117,13 @@ export function routeBody(w: World, cmd: Extract<Cmd, { a: typeof Act.route }>):
       v.running = false
     })
     w.routes.splice(i, 1)
+    w.ping()
+    return
+  }
+  if (cmd.k === 'setEnd') {
+    const route = w.routeById(cmd.r)
+    if (route === undefined) return
+    route.end = cmd.end
     w.ping()
     return
   }
@@ -1167,39 +1202,13 @@ export function routeBody(w: World, cmd: Extract<Cmd, { a: typeof Act.route }>):
     return
   }
   if (cmd.k === 'deploy') {
-    const route = w.routeById(cmd.r)
-    if (route === undefined) return
-    const pick = routeDeployable(w, route)
-    if (pick === undefined) return
-    const pad = padCenter(pick.hangar)
-    const v: Vehicle = pick.vehicle
-    if (pick.kind === 'tractor') {
-      pick.vehicle.hitch = pick.trailer === undefined ? 'none' : pick.trailer.id
-      pick.vehicle.boom = pick.boom
-      if (pick.trailer !== undefined) {
-        pick.trailer.pose = { kind: 'attached', vehicle: v.id, heading: HEADING_SOUTH }
-      }
-    }
-    v.pose = { kind: 'field', x: pad.x, y: pad.y, heading: HEADING_SOUTH, speed: 0, driver: 'none' }
-    v.route = route.id
-    v.cursor = 0
-    v.running = true
-    v.dwell = 0
-    w.ping()
+    deployRoute(w, cmd.r)
     return
   }
   if (cmd.k === 'recall') {
     const v = w.vehicles.find(x => x.id === cmd.v)
-    if (v?.pose.kind !== 'field' || v.pose.driver !== 'none') return
-    const origin = nearestHangar(w, v.pose)
-    if (origin === undefined) return
-    if (v.kind === 'tractor' && v.hitch !== 'none') {
-      trailerOf(w.trailers, v.hitch).pose = { kind: 'stored', hangar: origin }
-      v.hitch = 'none'
-    }
-    v.pose = { kind: 'stored', hangar: origin }
-    v.running = false
-    w.ping()
+    if (v === undefined) return
+    storeHome(w, v)
     return
   }
   if (cmd.k === 'automate') {
@@ -1235,7 +1244,23 @@ export function stopArrived(pose: Extract<VehiclePose, { kind: 'field' }>, stop:
   return pose.speed === 0
 }
 
-export function advanceRoute(v: Vehicle, route: Route): void {
+function storeHome(w: World, v: Vehicle): boolean {
+  if (v.pose.kind !== 'field' || v.pose.driver !== 'none') return false
+  const origin = nearestHangar(w, v.pose)
+  if (origin === undefined) return false
+  if (v.kind === 'tractor' && v.hitch !== 'none') {
+    trailerOf(w.trailers, v.hitch).pose = { kind: 'stored', hangar: origin }
+    v.hitch = 'none'
+  }
+  v.pose = { kind: 'stored', hangar: origin }
+  v.running = false
+  w.ping()
+  return true
+}
+
+export function advanceRoute(w: World, v: Vehicle, route: Route): void {
+  const done = v.cursor + 1 >= route.stops.length
+  if (done && route.end === 'hangar' && storeHome(w, v)) return
   v.cursor = (v.cursor + 1) % route.stops.length
   v.dwell = 0
 }
@@ -1248,7 +1273,7 @@ function arriveGoto(w: World, v: Vehicle, pose: Extract<VehiclePose, { kind: 'fi
   if (stop.kind !== 'goto') return
   const p = stopXY(stop)
   if (Math.hypot(pose.x - p.x, pose.y - p.y) > ROUTE_ARRIVE) return
-  advanceRoute(v, route)
+  advanceRoute(w, v, route)
 }
 
 function autoDrive(w: World, v: Vehicle, pose: Extract<VehiclePose, { kind: 'field' }>): Drive {
@@ -1560,7 +1585,7 @@ export function tickDispatch(w: World, dt: number): void {
       if (!w.inWorld(stop.at)) return
       const light = w.cell(stop.at)
       if (light.kind !== 'traffic-light') return
-      if (light.inn === 1) advanceRoute(v, route)
+      if (light.inn === 1) advanceRoute(w, v, route)
       return
     }
     if (v.fuel === 0 && stop.kind !== 'refuel') return
@@ -1573,7 +1598,7 @@ export function tickDispatch(w: World, dt: number): void {
         return
       }
       transferRefuel(w, v)
-      if (!stop.wait || v.fuel === 1) advanceRoute(v, route)
+      if (!stop.wait || v.fuel === 1) advanceRoute(w, v, route)
       else v.dwell = -1
       return
     }
@@ -1586,7 +1611,7 @@ export function tickDispatch(w: World, dt: number): void {
     v.dwell = 0
     if (stop.kind === 'load') transferLoad(w, v, stop.pick)
     else transferUnload(w, v, stop.pick)
-    advanceRoute(v, route)
+    advanceRoute(w, v, route)
   })
   for (const at of w.sensors.values()) {
     const c = w.cell(at)
@@ -1595,6 +1620,15 @@ export function tickDispatch(w: World, dt: number): void {
     const next = stepHold(c.out, c.hold, raw)
     c.out = next.out
     c.hold = next.hold
+  }
+  for (const at of w.sensors.values()) {
+    const c = w.cell(at)
+    if (c.kind !== 'dispatch') continue
+    const rise = c.prev === 0 && c.inn === 1
+    c.prev = c.inn
+    if (rise && c.route !== 'none') deployRoute(w, c.route)
+    const count = c.route === 'none' ? 0 : vehiclesOnRoute(w, c.route)
+    c.out = count >= c.n ? 1 : 0
   }
 }
 

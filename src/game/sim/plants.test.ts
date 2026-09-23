@@ -1112,10 +1112,10 @@ describe('1.8 permits and points', () => {
     expect(w.owned).toHaveLength(3)
   })
 
-  test('`inherit-land` is gated on `unlock-landscaping`, max 3.', () => {
+  test('`inherit-land` is gated on `unlock-expand`, max 3.', () => {
     expect(SKILL_IDS.includes('inherit-land')).toBe(true)
     expect(SKILLS['inherit-land'].maxTier).toBe(3)
-    expect(SKILLS['inherit-land'].gate).toEqual({ kind: 'research', id: 'unlock-landscaping' })
+    expect(SKILLS['inherit-land'].gate).toEqual({ kind: 'research', id: 'unlock-expand' })
   })
 
   test('Skill points are one shared bank of `POINTS_PER_DAY` a day.', () => {

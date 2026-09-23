@@ -1,11 +1,10 @@
 import { describe, expect, test } from 'vitest'
 import { AXES } from '../../defs/items.ts'
-import { SILO_BASE } from '../building.ts'
+import { SILO_BASE, WeatherStation } from '../building.ts'
 import { DAY_SECONDS } from '../clock.ts'
 import { makeChainsaw } from '../item.ts'
 import { POINTS_PER_DAY, World } from '../world.ts'
 import { dump, parse } from './save.ts'
-import { bare } from '../plot.ts'
 
 describe('save.nomigrate', () => {
   test("A dump whose `family` is not `{ owned: { id: SkillId; tier: number }[] }`, or whose `owned` holds a dropped or unknown skill id, or whose `done` holds an unknown research id, fails hydrate (`unusable`). No alias. No merge. No fold.", () => {
@@ -75,13 +74,13 @@ describe('save.nomigrate', () => {
 describe('save.weather-station', () => {
   test('`weather-station` `base`, and `originOf` lists it so the 1×2 dumps one record.', () => {
     const w = new World(1)
-    w.done.add('unlock-weather-station')
-    w.money = 999
     const at = { col: 10, row: 12 }
-    w.setCell(at, bare('soft', 0))
-    w.setCell({ col: 10, row: 13 }, bare('soft', 0))
-    w.buy('buy-weather-station')
-    w.confirmPlace(at)
+    const station = new WeatherStation({ shape: 'rect', col: at.col, row: at.row, w: 1, h: 2 })
+    w.setCell(at, station)
+    w.setCell({ col: 10, row: 13 }, station)
+    expect(w.forecastCount).toBe(0)
+    w.done.add('unlock-weather-station')
+    expect(w.forecastCount).toBe(1)
     const s = dump(w)
     const cells = s.chunks[0].cells.flat()
     const stations = cells.filter(c => c.kind === 'weather-station')

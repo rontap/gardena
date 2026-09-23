@@ -262,7 +262,7 @@ describe('research.infusion', () => {
 })
 
 describe('research.sku-tree', () => {
-  test('Pulser and Counter buy on Advanced sensors; Day and Weather sensors on Smart irrigation; Variety sensor on Crop variants; Traffic light on Automated dispatch. Sensors shelf shows them after `unlock-sensors`.', () => {
+  test('Pulser and Counter buy on Advanced sensors; Day and Weather sensors on Smart irrigation; Variety sensor on Crop variants; Traffic light on Automated dispatch. Water sensor buys on Automated irrigation and the Sensors shelf shows it after `unlock-sensors`.', () => {
     const rows: readonly [SkuId, ResearchId][] = [
       ['buy-pulser', 'unlock-advanced-sensors'],
       ['buy-counter', 'unlock-advanced-sensors'],
@@ -275,9 +275,18 @@ describe('research.sku-tree', () => {
       expect(SKUS[sku].unlock, sku).toBe(unlock)
       expect(SKUS[sku].show, sku).toBe('unlock-sensors')
     }
+    expect(SKUS['buy-sensor-water']).toMatchObject({
+      unlock: 'unlock-auto-irrigation',
+      show: 'unlock-sensors',
+      need: [],
+    })
     const w = new World(1)
     w.money = 999
     w.done.add('unlock-sensors')
+    expect(w.skuShown('buy-sensor-water')).toBe(true)
+    expect(w.skuOpen('buy-sensor-water')).toBe(false)
+    w.done.add('unlock-auto-irrigation')
+    expect(w.skuOpen('buy-sensor-water')).toBe(true)
     expect(w.skuShown('buy-pulser')).toBe(true)
     expect(w.skuOpen('buy-pulser')).toBe(false)
     w.done.add('unlock-advanced-sensors')
@@ -297,9 +306,12 @@ describe('research.sku-tree', () => {
 })
 
 describe('research.dispatch', () => {
-  test('`unlock-dispatch` parent `unlock-vehicles`, `effect` `feature`, grants Automate chrome; card **Automated dispatch**; Automate chrome iff that row is in `done`; `buy-traffic-light` unlock `unlock-dispatch`; `Act.route` no-op unless `unlock-dispatch` in `done`.', () => {
+  test('`unlock-dispatch` parent `unlock-silos`, `unlock-silos` parent `unlock-vehicles`, `effect` `feature`, grants Automate chrome; card **Automated dispatch**; Automate chrome iff that row is in `done`; `buy-traffic-light` unlock `unlock-dispatch`; `Act.route` no-op unless `unlock-dispatch` in `done`.', () => {
+    expect(RESEARCH['unlock-silos'].parent).toBe('unlock-vehicles')
+    expect(Object.keys(RESEARCH).indexOf('unlock-silos')).toBeLessThan(Object.keys(RESEARCH).indexOf('unlock-dispatch'))
+    expect(SKUS['buy-silo-seed'].show).toBe('unlock-vehicles')
     expect(RESEARCH['unlock-dispatch']).toMatchObject({
-      parent: 'unlock-vehicles',
+      parent: 'unlock-silos',
       effect: { kind: 'feature' },
       grants: [m.research_grant_automate()],
       name: 'Automated dispatch',

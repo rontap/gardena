@@ -239,6 +239,7 @@ export const WATER_SYSTEM_PRICE = 12
 export const SMART_VALVE_PRICE = 6
 export const VEHICLE_DETECTOR_PRICE = 10
 export const TRAFFIC_LIGHT_PRICE = 10
+export const DISPATCH_PRICE = 10
 export const ROUTE_ARRIVE = 0.35
 export const ROUTE_ALIGN = 0.1
 export const DISPATCH_DWELL = 3

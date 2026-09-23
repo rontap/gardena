@@ -207,6 +207,8 @@
   "names_sensor_water_system": "Water-system sensor",
   "names_sensor_vehicle_detector": "Pressure plate",
   "names_sensor_traffic_light": "Traffic light",
+  "names_sensor_dispatch": "Vehicle dispatcher",
+  "names_sku_buy_dispatch": "Vehicle dispatcher",
   "names_variety_carrot_common": "Carrot",
   "names_variety_carrot_uncommon": "Carrot",
   "names_variety_carrot_rare": "Atomic Red",
@@ -295,6 +297,5 @@
   "names_sku_buy_tile_asphalt": "Asphalt",
   "names_building_necronomicon": "Necronomicon",
   "names_sku_buy_necronomicon": "Necronomicon",
-  "names_sku_buy_weather_station": "Weather Forecast Station",
   "names_building_weather_station": "Weather Forecast Station"
 }

@@ -1,8 +1,8 @@
 import { BUTTON_PULSE, SENSOR_HOLD } from '../defs/items.ts'
 import { tierOf, type VarietyId } from '../defs/varieties.ts'
-import { originCell, type AdditiveStore, type Chest, type Coord, type Freezer, type Furnace, type Infuser, type JamMachine, type Mill, type PotStill, type Pump, type RectBase, type ResearchStation, type SeedSilo } from './building.ts'
+import { originCell, type AdditiveStore, type Chest, type Coord, type Freezer, type Furnace, type Grinder, type Infuser, type JamMachine, type Mill, type PotStill, type Pump, type RectBase, type ResearchStation, type SeedSilo } from './building.ts'
 import type { DayPhase } from './clock.ts'
-import type { SensorKind, Signal, SkuId } from './ids.ts'
+import type { RouteId, SensorKind, Signal, SkuId } from './ids.ts'
 import { statsOf, type Modifier } from './modifiers.ts'
 import { edgeKey, vertexKey, type Edge, type Sprinkler, type Vertex } from './pipe.ts'
 import type { Cell } from './plot.ts'
@@ -196,6 +196,19 @@ export class TrafficLight extends HeldSensor {
   }
 }
 
+export class DispatchSensor extends SensorBase {
+  readonly kind = 'dispatch' as const
+  override readonly ports: readonly PortId[] = ['in', 'out']
+  inn: Signal = 0
+  prev: Signal = 0
+  out: Signal = 0
+  route: RouteId | 'none' = 'none'
+  n = 1
+  sample(inn: Signal): void {
+    this.inn = inn
+  }
+}
+
 export type Sensor =
   | Lever
   | Button
@@ -213,6 +226,7 @@ export type Sensor =
   | WaterSystem
   | VehicleSensor
   | TrafficLight
+  | DispatchSensor
 
 const MAKE: { [K in SensorKind]: { sku: SkuId; make: (base: RectBase) => Sensor } } = {
   lever: { sku: 'buy-lever', make: base => new Lever(base) },
@@ -231,6 +245,7 @@ const MAKE: { [K in SensorKind]: { sku: SkuId; make: (base: RectBase) => Sensor 
   'water-system': { sku: 'buy-water-system', make: base => new WaterSystem(base) },
   'vehicle-detector': { sku: 'buy-vehicle-detector', make: base => new VehicleSensor(base) },
   'traffic-light': { sku: 'buy-traffic-light', make: base => new TrafficLight(base) },
+  dispatch: { sku: 'buy-dispatch', make: base => new DispatchSensor(base) },
 }
 
 export type ValveHold = { e: Edge; level: Signal; hold: number }
@@ -277,6 +292,7 @@ export type PortDevice =
   | 'furnace'
   | 'station'
   | 'infuser'
+  | 'grinder'
   | 'chest'
   | 'freezer'
   | 'seed-silo'
@@ -501,7 +517,7 @@ export function pourEligible(wired: boolean, inn: Signal): boolean {
 export function isSeqIn(end: WireEnd, cell: Cell | undefined): boolean {
   if (end.kind !== 'cell' || end.port !== 'in') return false
   if (cell === undefined) return false
-  return cell.kind === 'lever' || cell.kind === 'pulser' || cell.kind === 'counter' || cell.kind === 'traffic-light'
+  return cell.kind === 'lever' || cell.kind === 'pulser' || cell.kind === 'counter' || cell.kind === 'traffic-light' || cell.kind === 'dispatch'
 }
 
 export function wouldCycle(
@@ -545,7 +561,7 @@ export type EvalIn = {
   valves: Map<string, ValveHold>
   sprinklers: ReadonlyMap<string, Sprinkler>
   raw: Raw
-  machines: ReadonlyMap<string, Mill | JamMachine | PotStill | Furnace | ResearchStation | Infuser>
+  machines: ReadonlyMap<string, Mill | JamMachine | PotStill | Furnace | ResearchStation | Infuser | Grinder>
   stores: ReadonlyMap<string, Chest | Freezer | SeedSilo | AdditiveStore | Furnace>
   pumps: ReadonlyMap<string, Pump>
 }
@@ -654,7 +670,7 @@ export function evalDag(input: EvalIn): void {
     p.inn = innOf(originCell(p.base), 'in')
   })
   sensors.forEach(s => {
-    if (s.kind === 'traffic-light') s.sample(innOf({ col: s.base.col, row: s.base.row }, 'in'))
+    if (s.kind === 'traffic-light' || s.kind === 'dispatch') s.sample(innOf({ col: s.base.col, row: s.base.row }, 'in'))
   })
   sensors.forEach(s => {
     if (s.kind === 'pulser' || s.kind === 'counter' || s.kind === 'lever') {

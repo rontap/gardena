@@ -217,7 +217,7 @@ export const SKILLS: { readonly [K in SkillId]: SkillDef } = {
         3,
         'bulk-up',
         {kind: 'inherit-land'},
-        {kind: 'research', id: 'unlock-landscaping'},
+        {kind: 'research', id: 'unlock-expand'},
     ),
     saleswoman: row(
         'saleswoman',

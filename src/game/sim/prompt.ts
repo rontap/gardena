@@ -85,6 +85,7 @@ export type PromptHit =
   | { kind: 'variety-hud'; at: Coord }
   | { kind: 'weather-hud'; at: Coord }
   | { kind: 'pressure-hud'; at: Coord }
+  | { kind: 'dispatch-hud'; at: Coord }
 
 const CROP_LABEL: { readonly [K in CropId]: () => string } = {
   carrot: m.names_crop_carrot,
@@ -120,6 +121,7 @@ const SENSOR_LABEL: { readonly [K in SensorKind]: () => string } = {
   'water-system': m.names_sensor_water_system,
   'vehicle-detector': m.names_sensor_vehicle_detector,
   'traffic-light': m.names_sensor_traffic_light,
+  dispatch: m.names_sensor_dispatch,
 }
 
 export function cropLabel(id: CropId): string {
@@ -366,11 +368,12 @@ const DELETE_NAME: { readonly [K in string]?: () => string } = {
   still: m.names_building_still,
   furnace: m.names_building_furnace,
   refuel: () => skuLabel('buy-refuel'),
-  'weather-station': () => m.names_sku_buy_weather_station(),
+  'weather-station': () => m.names_building_weather_station(),
   barrel: m.names_building_barrel,
   jam: m.names_building_jam,
   freezer: m.names_building_freezer,
   hangar: m.names_building_hangar,
+  dispatch: m.names_sensor_dispatch,
   'silo-seed': m.names_building_silo_seed,
   'silo-spray': m.names_building_silo_spray,
   'silo-produce': m.names_building_silo_produce,
@@ -483,6 +486,9 @@ export function readPromptHit(w: World, hit: PromptHit | undefined): Prompt {
   if (w.act.place.kind === 'none' && hit !== undefined && hit.kind === 'pressure-hud') {
     return { kind: 'place', text: m.prompt_tune({ name: skuLabel('buy-vehicle-detector') }) }
   }
+  if (w.act.place.kind === 'none' && hit !== undefined && hit.kind === 'dispatch-hud') {
+    return { kind: 'place', text: m.prompt_tune({ name: m.names_sensor_dispatch() }) }
+  }
   if (w.act.place.kind === 'none' && hit !== undefined && hit.kind === 'port') {
     return { kind: 'place', text: m.prompt_place_bare() }
   }
@@ -553,7 +559,7 @@ export function readPrompt(w: World, at: Coord): Prompt {
       if (!wideSiteOk(w, at)) return { kind: 'blocked', text: m.prompt_cannot_place() }
       return { kind: 'place', text: m.prompt_place({ name: placeLabel(w.act.place.id) }) }
     }
-    if (w.act.place.id === 'buy-furnace' || w.act.place.id === 'buy-weather-station') {
+    if (w.act.place.id === 'buy-furnace') {
       if (!tallSiteOk(w, at)) return { kind: 'blocked', text: m.prompt_cannot_place() }
       return { kind: 'place', text: m.prompt_place({ name: placeLabel(w.act.place.id) }) }
     }
@@ -697,7 +703,7 @@ export function readPrompt(w: World, at: Coord): Prompt {
     return intent(m.prompt_necronomicon_read(), { act: 'necronomicon', at })
   }
   if (cell.kind === 'weather-station') {
-    return { kind: 'blocked', text: skuLabel('buy-weather-station') }
+    return { kind: 'blocked', text: m.names_building_weather_station() }
   }
   if (cell.kind === 'barrel') {
     const look = barrelLook(cell, w.act.hand)
@@ -758,6 +764,9 @@ export function readPrompt(w: World, at: Coord): Prompt {
     }
     if (cell.kind === 'vehicle-detector') {
       return { kind: 'place', text: m.prompt_tune({ name: skuLabel('buy-vehicle-detector') }) }
+    }
+    if (cell.kind === 'dispatch') {
+      return { kind: 'place', text: m.prompt_tune({ name: m.names_sensor_dispatch() }) }
     }
     return { kind: 'blocked', text: sensorName(cell.kind) }
   }

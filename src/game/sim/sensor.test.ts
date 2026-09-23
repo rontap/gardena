@@ -49,7 +49,8 @@ function put(
     | 'buy-sensor-weather'
     | 'buy-water-system'
     | 'buy-vehicle-detector'
-    | 'buy-traffic-light',
+    | 'buy-traffic-light'
+    | 'buy-dispatch',
   at: { col: number; row: number },
 ): void {
   w.buy(id)
@@ -1554,6 +1555,44 @@ describe('sensors.weather', () => {
     s.hold = 0
     w.tick(DT_MAX)
     expect(s.out).toBe(0)
+  })
+
+  test('Vehicle dispatcher: rising input deploys one vehicle on its route; out is 1 while at least n vehicles are out on that route', () => {
+    const w = new World(1)
+    ready(w)
+    w.done.add('unlock-vehicles')
+    w.done.add('unlock-dispatch')
+    w.buy('buy-hangar')
+    w.confirmPlace(A)
+    w.buyVehicle(A, 'quad')
+    w.buyVehicle(A, 'quad')
+    w.addStop(1, { kind: 'goto', at: { col: 14, row: 16 } })
+    put(w, 'buy-lever', B)
+    put(w, 'buy-dispatch', C)
+    w.placeWire({ kind: 'cell', at: B, port: 'out' }, { kind: 'cell', at: C, port: 'in' })
+    w.tuneDispatch(C, 1, 1)
+    const sensor = w.cell(C)
+    if (sensor.kind !== 'dispatch') return
+    const lever = w.cell(B)
+    if (lever.kind !== 'lever') return
+    w.tick(DT_MAX)
+    expect(sensor.out).toBe(0)
+    expect(w.vehicles.filter(v => v.pose.kind === 'field')).toHaveLength(0)
+    lever.on = true
+    w.tick(DT_MAX)
+    expect(w.vehicles.filter(v => v.pose.kind === 'field' && v.route === 1)).toHaveLength(1)
+    expect(sensor.out).toBe(1)
+    w.tick(DT_MAX)
+    expect(w.vehicles.filter(v => v.pose.kind === 'field' && v.route === 1)).toHaveLength(1)
+    lever.on = false
+    w.tick(DT_MAX)
+    w.recallVehicle(w.vehicles.find(v => v.pose.kind === 'field')!.id)
+    w.tick(DT_MAX)
+    expect(sensor.out).toBe(0)
+    lever.on = true
+    w.tick(DT_MAX)
+    expect(w.vehicles.filter(v => v.pose.kind === 'field' && v.route === 1)).toHaveLength(1)
+    expect(sensor.out).toBe(1)
   })
 })
 

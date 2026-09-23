@@ -9,15 +9,15 @@ Eight underline tabs. Wrap the tab list so a label never splits. Do not shrink t
 | `seeds` | Seeds | **Overview**, then carrot potato wheat tomato raspberry grape vanilla chilli sugar-cane soil weed grass-seeds grass rotten dead |
 | `trees` | Trees | apple apricot olive cherry |
 | `utility` | Utility | shovel better-shovel pickaxe better-pickaxe axe chainsaw bucket large-bucket fertilizer weed-spray compost sugar wood ash rotary-shovel diamond-pickaxe |
-| `sensors` | Sensors | **Overview**, then lever button lamp logic not pulser counter sensor-water sensor-fert sensor-harvest sensor-variety sensor-weather water-system vehicle-detector traffic-light sensor-day |
+| `sensors` | Sensors | **Overview**, then lever button lamp logic not pulser counter sensor-water sensor-fert sensor-harvest sensor-variety sensor-weather water-system vehicle-detector traffic-light dispatch sensor-day |
 | `automation` | Automation | **Overview**, then chest grinder compost-box mill furnace still barrel jam freezer station infuser hangar refuel silo-seed silo-produce silo-spray |
 | `water` | Water systems | pumpjack well tap pipe valve sprinkler sprinkler-vert sprinkler-large |
-| `building` | Building | fence tile-cobble tile-brick tile-paved weather-station |
+| `building` | Building | fence tile-cobble tile-brick tile-paved |
 | `concepts` | Game concepts | Variety, Quality, Freshness, Happiness, Day & Night, Market, Skills, Family, Research, Automation, Luck, Burrow, Infusion |
 
 Overview on **Seeds**, **Sensors**, **Automation** only. First left-list row, label **Overview**, no icon. Tab-scoped id `'overview'`. Tab click on those three lands Overview. Trees, Utility, Water systems, Building, Game concepts: no Overview row. Hangar + silos stay on Automation. Station stays on Automation. Game concepts: no SKU rows.
 
-Building is fence + tiles + weather-station. Apple is not on Seeds. Olive is not on Seeds. No watermelon row. Weather-station pane is generic Building chrome; plate dirt; skuLabel **Weather Forecast Station**; description **Tomorrow's weather appears next to today, so you can plan watering, the stall, and the Water bill before Sunrise. A second station does nothing extra.** Catalog pane `grass-seeds` is the Seed silo pack after landscaping, face `{ kind: 'seeds'; crop: 'grass' }`, not a Build Land card. Cut grass pane `grass` is `{ kind: 'grass' }`. Illegal `{ kind: 'grass-seeds' }`. — [[ui/store]] [[mechanics/inventory]] `inventory.grass-silo`
+Building is fence + tiles. Apple is not on Seeds. Olive is not on Seeds. No watermelon row. No weather-station pane. Catalog pane `grass-seeds` is the Seed silo pack after landscaping, face `{ kind: 'seeds'; crop: 'grass' }`, not a Build Decorative card. Cut grass pane `grass` is `{ kind: 'grass' }`. Illegal `{ kind: 'grass-seeds' }`. — [[ui/store]] [[mechanics/inventory]] `inventory.grass-silo`
 
 Crop and Tree panes carry `CROPS.desc` under the name.
 
@@ -37,7 +37,7 @@ Olive is `TreeId`: TreePane only. Utility `sugar`: liters bag face. Hangar and f
 
 ## Plate fills
 
-Reuse existing faces. No new SVG. Plate is square, no caption. Crop fruit / plant and tree fruit: dirt. Tree 24×48 prop: grass. Sensors / Automation / Water systems SKU — buildings, pipe: grass. Utility / Building / Seeds non-crop SKU: dirt. Machine goods — sugar, spirit, cask, jam, oil, flour, extract, flakes, vanilla-extract, bread, ash: water. Compost, wood, and tools stay dirt. Fence, tiles, and weather-station stay Building, dirt. Titles **Axe** **Chainsaw** **Wood** **Ash** **Furnace**. Station plate grass. Infuser plate grass.
+Reuse existing faces. No new SVG. Plate is square, no caption. Crop fruit / plant and tree fruit: dirt. Tree 24×48 prop: grass. Sensors / Automation / Water systems SKU — buildings, pipe: grass. Utility / Building / Seeds non-crop SKU: dirt. Machine goods — sugar, spirit, cask, jam, oil, flour, extract, flakes, vanilla-extract, bread, ash: water. Compost, wood, and tools stay dirt. Fence and tiles stay Building, dirt. Titles **Axe** **Chainsaw** **Wood** **Ash** **Furnace**. Station plate grass. Infuser plate grass.
 
 `Pane` / `CropPane` / `TreePane` take `done`: `fermentation` `grinder` `preservatives` `furnace` `infusion` from `world.done.has(...)`. Not a `jam` boolean. Generic `Pane` takes the current tab so Sensors / Automation / Water systems fill grass.
 

@@ -97,7 +97,7 @@ describe('vehicles I', () => {
     expect(s.nextVehicleId).toBe(2)
     expect(s.trailers).toHaveLength(0)
     expect(s.nextTrailerId).toBe(1)
-    expect(s.routes).toEqual([{ id: 1, name: 'Route 1', stops: [], deploy: { kind: 'quad' } }])
+    expect(s.routes).toEqual([{ id: 1, name: 'Route 1', stops: [], deploy: { kind: 'quad' }, end: 'loop' }])
     expect(s.nextRouteId).toBe(2)
     expect(s.vehicles[0].route).toBe('none')
     expect(s.vehicles[0].cursor).toBe(0)
@@ -1381,6 +1381,37 @@ describe('vehicles.liters', () => {
     transferRefuel(w, tank)
     expect(tank.fuel).toBe(1)
     expect(w.money).toBeCloseTo(0)
+  })
+})
+
+describe('vehicles.route end', () => {
+  test('`end` loop wraps after the last stop; `end` hangar stores at the nearest hangar and does not wrap', () => {
+    const w = farm()
+    w.buyVehicle(AT, 'quad')
+    w.addStop(1, { kind: 'goto', at: { col: 12, row: 14 } })
+    w.addStop(1, { kind: 'goto', at: { col: 14, row: 14 } })
+    w.deployRoute(1)
+    const v = w.vehicles[0]
+    if (v.pose.kind !== 'field') return
+    v.cursor = 1
+    v.pose.x = 14.5
+    v.pose.y = 14.5
+    v.pose.speed = 0
+    w.tick(DT_MAX)
+    expect(v.pose.kind).toBe('field')
+    expect(v.cursor).toBe(0)
+    expect(v.running).toBe(true)
+    w.setRouteEnd(1, 'hangar')
+    v.cursor = 1
+    if (v.pose.kind !== 'field') return
+    v.pose.x = 14.5
+    v.pose.y = 14.5
+    v.pose.speed = 0
+    w.tick(DT_MAX)
+    expect(v.pose.kind).toBe('stored')
+    expect(v.running).toBe(false)
+    expect(v.route).toBe(1)
+    expect(v.cursor).toBe(1)
   })
 })
 

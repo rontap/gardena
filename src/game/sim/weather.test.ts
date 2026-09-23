@@ -16,6 +16,7 @@ import {
   WEATHER_THROUGH_DAY,
 } from '../defs/weather.ts'
 import { HAPPY_START } from '../defs/crops.ts'
+import { RESEARCH, SKUS } from '../defs/research.ts'
 import { Tree } from './building.ts'
 import { DAY_SECONDS } from './clock.ts'
 import { statsOf } from './modifiers.ts'
@@ -24,7 +25,6 @@ import { BIG_TICK, makeTreeSoil, Soil, SOIL_WATER_MID, TREE_FERT_MAX, TREE_WATER
 import { SOURCE } from './water.ts'
 import { forecastWeather, pumpCostMul, soakDelta, sourceRateMul, type WeatherKind } from './weather.ts'
 import { DT_MAX, stipendOf, World } from './world.ts'
-import { bare } from './plot.ts'
 
 const AT = { col: 10, row: 12 }
 
@@ -227,31 +227,17 @@ describe('weather.shop', () => {
   })
 })
 
-  test('HUD tomorrow iff `forecastCount ≥ 1`; `forecastCount` is placed weather-station buildings; extras no-op; demolishable; not a `Machine`.', () => {
+  test('HUD tomorrow iff `forecastCount ≥ 1`; `forecastCount` is 1 when `unlock-weather-station` is in `done`, else 0. No `buy-weather-station`.', () => {
     const w = new World(1)
     expect(w.forecastCount).toBe(0)
     w.done.add('unlock-weather-station')
-    w.money = 999
-    const at = { col: 10, row: 12 }
-    w.setCell(at, bare('soft', 0))
-    w.setCell({ col: 10, row: 13 }, bare('soft', 0))
-    w.buy('buy-weather-station')
-    w.confirmPlace(at)
-    expect(w.cell(at).kind).toBe('weather-station')
-    expect(w.cell({ col: 10, row: 13 })).toBe(w.cell(at))
     expect(w.forecastCount).toBe(1)
-    expect('inn' in w.cell(at)).toBe(false)
-    const station = w.cell(at)
-    expect(station.kind === 'weather-station' && station.ticks).toBe(false)
-    const at2 = { col: 12, row: 12 }
-    w.setCell(at2, bare('soft', 0))
-    w.setCell({ col: 12, row: 13 }, bare('soft', 0))
-    w.buy('buy-weather-station')
-    w.confirmPlace(at2)
-    expect(w.forecastCount).toBe(2)
-    w.armDelete()
-    w.click(at2)
-    expect(w.forecastCount).toBe(1)
+    w.done.delete('unlock-weather-station')
+    expect(w.forecastCount).toBe(0)
+    expect(RESEARCH['unlock-weather-station'].name).toBe('Weather Forecast')
+    expect(RESEARCH['unlock-weather-station'].effect).toEqual({ kind: 'feature' })
+    expect(RESEARCH['unlock-weather-station'].grants).toEqual(['Tomorrow\'s weather next to today'])
+    expect((Object.keys(SKUS) as string[]).includes('buy-weather-station')).toBe(false)
     expect(w.weather(w.clock.day + 1)).toBe(forecastWeather(1, WEATHER_THROUGH_DAY)[w.clock.day])
   })
 

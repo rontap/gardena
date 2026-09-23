@@ -199,7 +199,6 @@ export const SKU_FOOT: { readonly [K in string]?: { w: number; h: number } } = {
   'buy-still': { w: 2, h: 1 },
   'buy-research-station': { w: 2, h: 1 },
   'buy-furnace': { w: 1, h: 2 },
-  'buy-weather-station': { w: 1, h: 2 },
   'buy-mill': { w: MILL_W, h: MILL_H },
   'buy-infuser': { w: MILL_W, h: MILL_H },
   'buy-necronomicon': { w: NECRO_W, h: NECRO_H },
@@ -541,9 +540,9 @@ export class Chest extends BaseBuilding {
   }
 }
 
-export class Grinder extends BaseBuilding {
+export class Grinder extends Machine {
   readonly kind = 'grinder' as const
-  override readonly ticks = true
+  override readonly ports = ['in'] as const
   override readonly hasted = true
   crop: GrownCrop | 'none' = 'none'
   variety: VarietyId = 'base'
@@ -553,6 +552,9 @@ export class Grinder extends BaseBuilding {
   n = 0
   constructor(base: RectBase) {
     super(base)
+  }
+  override padGoods(role: 'in' | 'out'): PadGoods {
+    return role === 'in' ? allSlots('fruit') : allSlots('seed')
   }
   override accept(item: Item): number {
     const crop = fruitCrop(item)
@@ -581,6 +583,7 @@ export class Grinder extends BaseBuilding {
     this.units += n
   }
   override tick(w: World, at: Coord, dt: number): boolean {
+    if (this.inn === 1) return false
     if (this.crop === 'none' || this.units < 1) return false
     this.progress += (dt * w.machineMul() * furnaceMul(w.furnaceSnap, this.base)) / GRIND_WORK
     if (this.progress < 1) return false

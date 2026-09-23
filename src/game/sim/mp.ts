@@ -275,10 +275,11 @@ export function digestParts(world: World): Record<string, unknown> {
     if (c.kind === 'grinder') s += `:${c.crop}:${c.variety}`
     if (c.kind === 'station') s += `:${c.crop}:${c.variety}:${q(c.quality)}:u${c.units}:p${q(c.progress)}:inn${c.inn}`
     if (c.kind === 'necronomicon') s += `:${c.crop}:n${c.cropCount}:f${c.fruit.join('.')}:a${c.ash}:g${c.gold}:m${c.agaric}:t${c.tool ? 1 : 0}:s${c.supper.join('.')}:d${c.done.join('.')}`
-    if (c.kind === 'lamp' || c.kind === 'mill' || c.kind === 'jam' || c.kind === 'still' || c.kind === 'pump' || c.kind === 'infuser') s += `:inn${c.inn}`
+    if (c.kind === 'lamp' || c.kind === 'mill' || c.kind === 'jam' || c.kind === 'still' || c.kind === 'pump' || c.kind === 'infuser' || c.kind === 'grinder') s += `:inn${c.inn}`
     else if (c.kind === 'furnace') s += `:inn${c.inn}:out${c.out}:hold${c.hold}:u${q(c.units)}:p${q(c.progress)}`
     else if (c.kind === 'lever' || c.kind === 'pulser' || c.kind === 'counter') s += `:inn${c.inn}:out${c.out}`
     else if (c.kind === 'traffic-light') s += `:inn${c.inn}:out${c.out}:hold${c.hold}`
+    else if (c.kind === 'dispatch') s += `:inn${c.inn}:prev${c.prev}:out${c.out}:n${c.n}:r${c.route}`
     else if (drivesOut(c)) s += `:out${c.out}`
     cells.push(s)
   })
@@ -319,7 +320,7 @@ export function digestParts(world: World): Record<string, unknown> {
     seats,
     vehicles,
     trailers,
-    routes: world.routes.map(r => ({ id: r.id, name: r.name, stops: r.stops })),
+    routes: world.routes.map(r => ({ id: r.id, name: r.name, stops: r.stops, deploy: r.deploy, end: r.end })),
     nextRouteId: world.nextRouteId,
     cells,
     wires: world.wires,

@@ -30,6 +30,8 @@
   "vehicles_no_wait": "No wait",
   "vehicles_hint_refuel": "Add refuel here",
   "vehicles_stops_title": "Stops",
+  "vehicles_route_end": "After the last stop",
+  "vehicles_route_loop": "Loop again",
   "vehicles_stop_go": "Go",
   "vehicles_stop_load": "Load from {at}",
   "vehicles_stop_unload": "Unload into {at}",

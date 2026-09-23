@@ -91,7 +91,7 @@ Letter map: [[mechanics/log]] `log.letters`. Latest `Act.drive` same `t` wins. L
 
 `Act.cheat` inner `k` is a closed union: `all` `money` `points` `research` `speed` `day` `skills`. `n` required on `speed` (`1 | 3`).
 
-`Act.route` inner `k` closed union: `create` | `delete` | `add` | `remove` | `move` | `pick` | `reorder` | `rename` | `setDeploy` | `deploy` | `recall` | `automate` | `setWait`. `setWait` carries `r`, `i`, `on`. Guest may. All no-op unless `unlock-dispatch` in `done`.
+`Act.route` inner `k` closed union: `create` | `delete` | `add` | `remove` | `move` | `pick` | `reorder` | `rename` | `setDeploy` | `deploy` | `recall` | `automate` | `setWait` | `setEnd`. `setWait` carries `r`, `i`, `on`. `setEnd` carries `r` and `end`: `loop` | `hangar`. Guest may. All no-op unless `unlock-dispatch` in `done`.
 
 Map calls `rightClick`. Log `Act.rightClick`, not a split cancel/drop. `apply` that arm uses `seats[cmd.p]`: if that `place` is not `none`, cancel-place body; else enqueue `{ act: 'drop', at }` when in-world plot and that hand holds. HUD/App `cancelPlace` logs `Act.cancelPlace`.
 

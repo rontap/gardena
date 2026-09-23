@@ -1,5 +1,6 @@
 import { m } from '../../paraglide/messages.js'
 import { useState, type ReactNode } from 'react'
+import { useRefresh } from './cycle.ts'
 import { CROPS, CROP_NAME } from '../defs/crops.ts'
 import { SPRINKLER_STEP, SPRINKLER_TILE_DAY, snapFlow } from '../defs/items.ts'
 import { WEATHER_NAME } from '../defs/weather.ts'
@@ -488,6 +489,62 @@ function RowList({ spec }: { spec: Extract<HudSpec, { chrome: 'rows' }> }) {
   )
 }
 
+function DispatchHud({
+  world,
+  at,
+  cam,
+  onClose,
+}: {
+  world: World
+  at: Coord
+  cam: Camera
+  onClose: () => void
+}) {
+  useRefresh()
+  const c = world.cell(at)
+  if (c.kind !== 'dispatch') return undefined
+  const count = c.route === 'none' ? 0 : world.vehicles.filter(v => v.pose.kind === 'field' && v.route === c.route).length
+  const known = c.route !== 'none' && world.routeById(c.route) !== undefined
+  return (
+    <HudShell col={at.col} row={at.row} cam={cam} title={m.names_sensor_dispatch()} onClose={onClose} pin="above" width="w-56">
+      <div className="tabular-nums text-lg">{m.sensors_out_count({ n: count })}</div>
+      <label className="mt-2 flex flex-col gap-1 text-sm">
+        <span>{m.vehicles_automation()}</span>
+        <select
+          aria-label={m.vehicles_automation()}
+          className="cursor-pointer border border-ink/30 bg-parch px-1.5 py-1 text-sm text-ink"
+          value={known ? String(c.route) : 'none'}
+          onChange={e => {
+            const raw = e.target.value
+            const route = raw === 'none' ? 'none' : (Number(raw) as typeof c.route)
+            world.tuneDispatch(at, route, c.n)
+          }}
+        >
+          <option value="none">{m.sensors_no_route()}</option>
+          {world.routes.map(r => (
+            <option key={r.id} value={String(r.id)}>
+              {r.name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="mt-2 flex flex-col gap-1 text-sm">
+        <span>{m.sensors_at_least()}</span>
+        <Field
+          name="n"
+          aria-label={m.sensors_at_least()}
+          value={String(c.n)}
+          onChange={v => {
+            const n = Number.parseInt(v, 10)
+            if (Number.isNaN(n)) return
+            world.tuneDispatch(at, c.route, n)
+          }}
+        />
+      </label>
+    </HudShell>
+  )
+}
+
 function RefuelHud({
   world,
   at,
@@ -528,6 +585,7 @@ export function ObjectHud({ world, cam, onClose }: { world: World; cam: Camera; 
   if (target === undefined) return undefined
   if (target.kind === 'counter') return <CounterHud world={world} at={target.at} cam={cam} onClose={onClose} />
   if (target.kind === 'refuel') return <RefuelHud world={world} at={target.at} cam={cam} onClose={onClose} />
+  if (target.kind === 'dispatch') return <DispatchHud world={world} at={target.at} cam={cam} onClose={onClose} />
   const spec = hudSpec(world, target)
   if (spec === undefined) return undefined
   if (spec.chrome === 'slider') return <SprinklerHud spec={spec} cam={cam} onClose={onClose} />

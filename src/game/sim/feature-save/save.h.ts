@@ -140,6 +140,7 @@ export type SaveCell =
   | { kind: 'water-system'; base: RectBase; out: 0 | 1; hold: number }
   | { kind: 'vehicle-detector'; base: RectBase; vehicle: boolean; player: boolean; item: boolean; out: 0 | 1; hold: number }
   | { kind: 'traffic-light'; base: RectBase; inn: 0 | 1; out: 0 | 1; hold: number }
+  | { kind: 'dispatch'; base: RectBase; inn: 0 | 1; prev: 0 | 1; out: 0 | 1; route: RouteId | 'none'; n: number }
   | { kind: 'occ'; of: Coord }
 
 export type SaveSeat = {

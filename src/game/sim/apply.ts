@@ -164,6 +164,9 @@ export function applyCmd(w: World, cmd: Cmd): 'queued' | 'placed' | 'blocked' | 
     case Act.tuneCounter:
       w.tuneCounterBody({ col: cmd.c[0], row: cmd.c[1] }, cmd.n)
       return
+    case Act.tuneDispatch:
+      w.tuneDispatchBody({ col: cmd.c[0], row: cmd.c[1] }, cmd.r, cmd.n)
+      return
     case Act.resetCounter:
       w.resetCounterBody({ col: cmd.c[0], row: cmd.c[1] })
       return

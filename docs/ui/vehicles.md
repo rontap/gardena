@@ -95,7 +95,7 @@ Routes are a vertical `Tabs.List`, one trigger per `World.routes` row, the same 
 
 Double-click the active tab to rename it: the trigger becomes an input, selected. Enter or blur writes `Act.route` `{ k: 'rename' }`; empty is a no-op; Esc restores the name and does not close the dock. Double-click on a tab that is not active only picks it. WASD ignored while that input is focused.
 
-Body order is **Vehicle**, **Boom**, **Stops**, **Out on this route**.
+Body order is **Vehicle**, **Boom**, **Stops**, **After the last stop**, **Out on this route**. **After the last stop** is one dropdown, **Loop again** or **Send back to the hangar**. `Act.route` `setEnd`. A new route is **Loop again**.
 
 Each stop is a bordered mini-card, so where one stop ends and the next begins is visible without counting rows. Its title names the building: **Load from {name}** / **Unload into {name}** from the pad's own cell, **Go** and **Wait** as they are. A refuel stop is **Refuel at {name}**, then one dropdown **Wait for fuel** / **No wait**. `Act.route` `setWait`. No item chips. A new refuel stop starts on **No wait**.
 

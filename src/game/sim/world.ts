@@ -157,6 +157,7 @@ import {
   type PadCell,
   type Route,
   type RouteDeploy,
+  type RouteEnd,
   type RouteStop,
   type Trailer,
   type Vehicle
@@ -275,7 +276,7 @@ export class World {
   nextVehicleId: VehicleId = 1
   readonly trailers: Trailer[] = []
   nextTrailerId: TrailerId = 1
-  readonly routes: Route[] = [{ id: 1, name: 'Route 1', stops: [], deploy: { kind: 'quad' } }]
+  readonly routes: Route[] = [{ id: 1, name: 'Route 1', stops: [], deploy: { kind: 'quad' }, end: 'loop' }]
   nextRouteId: RouteId = 2
   readonly segments = new Map<string, Segment>()
   readonly wells: Well[] = []
@@ -842,11 +843,7 @@ export class World {
   }
 
   get forecastCount(): number {
-    const seen = new Set<object>()
-    this.forEachCell((_at, c) => {
-      if (c.kind === 'weather-station') seen.add(c)
-    })
-    return seen.size
+    return this.done.has('unlock-weather-station') ? 1 : 0
   }
 
   walkSpeed(): number {
@@ -1165,6 +1162,20 @@ export class World {
 
   tuneCounter(at: Coord, n: number): void {
     this.commit({ a: Act.tuneCounter, t: this.now, p: this.local, c: [at.col, at.row], n })
+  }
+
+  tuneDispatch(at: Coord, r: RouteId | 'none', n: number): void {
+    this.commit({ a: Act.tuneDispatch, t: this.now, p: this.local, c: [at.col, at.row], r, n })
+  }
+
+  tuneDispatchBody(at: Coord, r: RouteId | 'none', n: number): void {
+    if (!Number.isInteger(n) || n < 1 || n > COUNTER_MAX) return
+    if (r !== 'none' && this.routeById(r) === undefined) return
+    const c = this.cell(at)
+    if (c.kind !== 'dispatch') return
+    c.route = r
+    c.n = n
+    this.ping()
   }
 
   tuneCounterBody(at: Coord, n: number): void {
@@ -1580,6 +1591,10 @@ export class World {
 
   setRouteDeploy(r: RouteId, d: RouteDeploy): void {
     this.commit({ a: Act.route, t: this.now, p: this.local, k: 'setDeploy', r, d })
+  }
+
+  setRouteEnd(r: RouteId, end: RouteEnd): void {
+    this.commit({ a: Act.route, t: this.now, p: this.local, k: 'setEnd', r, end })
   }
 
   deployRoute(r: RouteId): void {

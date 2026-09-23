@@ -10,6 +10,7 @@ const SKIP = new Set([
   'buy-sprinkler',
   'buy-sprinkler-vert',
   'buy-sprinkler-large',
+  'buy-fence',
 ])
 
 const LARGE = [

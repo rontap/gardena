@@ -1,6 +1,6 @@
 # Paving and fencing
 
-Cosmetic building. Both keep `ground` and both stay armed while placing — click as many cells as money allows, Esc or **Cancel** to stop. `Sku.tab` **Building**; Build shelf **Land** — [[ui/build]]. Demolish lifts them.
+Cosmetic building. Both keep `ground` and both stay armed while placing — click as many cells as money allows, Esc or **Cancel** to stop. `Sku.tab` **Building**. Paving files on Build **Decorative** (id `land`). `buy-fence` files on **Sensors** — [[ui/build]]. Demolish lifts them.
 
 ## Paving
 

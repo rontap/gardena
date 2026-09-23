@@ -20,7 +20,9 @@ export type RouteDeploy =
   | { kind: 'quad' }
   | { kind: 'tractor'; trailer: TrailerKind | 'none'; boom: 3 | 5 }
 
-export type Route = { id: RouteId; name: string; stops: RouteStop[]; deploy: RouteDeploy }
+export type RouteEnd = 'loop' | 'hangar'
+
+export type Route = { id: RouteId; name: string; stops: RouteStop[]; deploy: RouteDeploy; end: RouteEnd }
 
 export type VehiclePose =
   | { kind: 'stored'; hangar: Coord }

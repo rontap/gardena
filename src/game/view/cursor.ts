@@ -17,6 +17,7 @@ const TUNE_HITS: ReadonlySet<PromptHit['kind']> = new Set([
   'variety-hud',
   'weather-hud',
   'pressure-hud',
+  'dispatch-hud',
 ])
 
 const made = new Map<CursorKind, string>()

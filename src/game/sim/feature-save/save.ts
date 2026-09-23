@@ -75,6 +75,7 @@ export function dump(world: World): Save {
       name: r.name,
       stops: r.stops.map(dumpStop),
       deploy: { ...r.deploy },
+      end: r.end,
     })),
     nextRouteId: world.nextRouteId,
     done: [...world.done],
@@ -453,6 +454,8 @@ function dumpCell(c: Cell, at: Coord, owned: readonly ChunkId[]): SaveCell {
       }
     case 'traffic-light':
       return { kind: 'traffic-light', base: c.base, inn: c.inn, out: c.out, hold: c.hold }
+    case 'dispatch':
+      return { kind: 'dispatch', base: c.base, inn: c.inn, prev: c.prev, out: c.out, route: c.route, n: c.n }
   }
 }
 

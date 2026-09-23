@@ -118,7 +118,7 @@ describe('family.skills', () => {
     expect(SKILLS.machinery.gate).toEqual({ kind: 'research', id: 'unlock-grinder' })
     expect(SKILLS.industrial.gate).toEqual({ kind: 'research', id: 'unlock-contracts' })
     expect(SKILLS['inherit-land'].maxTier).toBe(3)
-    expect(SKILLS['inherit-land'].gate).toEqual({ kind: 'research', id: 'unlock-landscaping' })
+    expect(SKILLS['inherit-land'].gate).toEqual({ kind: 'research', id: 'unlock-expand' })
     expect(SKILLS.broker.maxTier).toBe(3)
     expect(SKILLS.broker.gate).toEqual({ kind: 'research', id: 'unlock-contracts' })
     expect(SKILLS.heirloom.gate).toEqual({ kind: 'research', id: 'unlock-heirloom' })

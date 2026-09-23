@@ -252,6 +252,7 @@ export type SkuId =
   | 'buy-water-system'
   | 'buy-vehicle-detector'
   | 'buy-traffic-light'
+  | 'buy-dispatch'
   | 'buy-furnace'
   | 'buy-axe'
   | 'buy-chainsaw'
@@ -259,7 +260,6 @@ export type SkuId =
   | 'buy-infuser'
   | 'buy-sorter'
   | 'buy-necronomicon'
-  | 'buy-weather-station'
 
 export type PageId = 'crop' | 'early-fruit' | 'ash' | 'gold' | 'agaric' | 'tool' | 'supper'
 
@@ -286,6 +286,7 @@ export type SensorKind =
   | 'water-system'
   | 'vehicle-detector'
   | 'traffic-light'
+  | 'dispatch'
 
 export type Signal = 0 | 1
 
@@ -306,6 +307,7 @@ export const SENSOR_KINDS: readonly SensorKind[] = [
   'water-system',
   'vehicle-detector',
   'traffic-light',
+  'dispatch',
 ]
 
 export const SENSOR_CELL_SKUS: readonly SkuId[] = [
@@ -325,6 +327,7 @@ export const SENSOR_CELL_SKUS: readonly SkuId[] = [
   'buy-water-system',
   'buy-vehicle-detector',
   'buy-traffic-light',
+  'buy-dispatch',
 ]
 
 export const SENSOR_LENS_SKUS: readonly SkuId[] = SENSOR_CELL_SKUS

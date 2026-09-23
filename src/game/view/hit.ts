@@ -363,6 +363,7 @@ export function clickHit(world: World, wx: number, wy: number, lens: Lens): MapC
       if (c.kind === 'sensor-variety') return { kind: 'variety-hud', at: cellAt }
       if (c.kind === 'sensor-weather') return { kind: 'weather-hud', at: cellAt }
       if (c.kind === 'vehicle-detector') return { kind: 'pressure-hud', at: cellAt }
+      if (c.kind === 'dispatch') return { kind: 'dispatch-hud', at: cellAt }
     }
   }
   const drop = dropHit(world, wx, wy)

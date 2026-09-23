@@ -48,6 +48,7 @@ import {
   Button,
   Counter,
   DaySensor,
+  DispatchSensor,
   FertSensor,
   HarvestSensor,
   Lamp,
@@ -160,6 +161,7 @@ function worldFromSave(save: Save, sink: LogSink): World {
       name: r.name,
       stops: r.stops.map(liveStop),
       deploy: { ...r.deploy },
+      end: r.end === 'hangar' ? 'hangar' : 'loop',
     })),
     nextRouteId: save.nextRouteId,
     owned,
@@ -706,6 +708,15 @@ function makeLive(cell: Exclude<SaveCell, { kind: 'occ' }>): Cell {
       made.inn = cell.inn
       made.out = cell.out
       made.hold = cell.hold
+      return made
+    }
+    case 'dispatch': {
+      const made = new DispatchSensor(cell.base)
+      made.inn = cell.inn
+      made.prev = cell.prev
+      made.out = cell.out
+      made.route = cell.route
+      made.n = cell.n
       return made
     }
   }

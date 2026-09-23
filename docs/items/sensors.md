@@ -2,7 +2,7 @@
 
 1×1. Build shelf **Sensors**, id `logic`. `Sku.tab` `automation`. [[ui/build]]
 
-SKUs: `buy-lever` `buy-button` `buy-lamp` `buy-logic` `buy-not` `buy-pulser` `buy-counter` `buy-sensor-water` `buy-sensor-fert` `buy-sensor-harvest` `buy-sensor-variety` `buy-sensor-weather` `buy-sensor-day` `buy-vehicle-detector` `buy-traffic-light`.
+SKUs: `buy-lever` `buy-button` `buy-lamp` `buy-logic` `buy-not` `buy-pulser` `buy-counter` `buy-sensor-water` `buy-sensor-fert` `buy-sensor-harvest` `buy-sensor-variety` `buy-sensor-weather` `buy-sensor-day` `buy-vehicle-detector` `buy-traffic-light` `buy-dispatch` `buy-fence`. `buy-traffic-light` and `buy-dispatch` sit on the Vehicles shelf. `buy-fence` sits on this shelf and is not a sensor. `buy-sensor-water` show `unlock-sensors`, buy `unlock-auto-irrigation`.
 
 `buy-or` `buy-and` unused, not shown. `buy-water-system` `skuShown` false, not buyable; placed ones remain.
 

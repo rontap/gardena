@@ -1,7 +1,7 @@
 import { m } from '../../paraglide/messages.js'
 import type { SkuId } from '../sim/ids.ts'
 
-export type ShelfId = 'tools' | 'water' | 'automation' | 'storage' | 'logic' | 'land'
+export type ShelfId = 'tools' | 'water' | 'automation' | 'vehicles' | 'storage' | 'logic' | 'land'
 
 export type Group = { label: string; skus: SkuId[] }
 
@@ -48,10 +48,15 @@ export const SHELVES: readonly Shelf[] = [
       { label: 'Infusing', skus: ['buy-infuser'] },
       { label: 'Compost', skus: ['buy-compost-box', 'buy-furnace'] },
       { label: 'Grafting', skus: ['buy-research-station'] },
-      { label: 'Sorting', skus: ['buy-sorter'] },
       { label: 'Necronomicon', skus: ['buy-necronomicon'] },
-      { label: 'Hangar', skus: ['buy-hangar', 'buy-refuel'] },
     ],
+  },
+  {
+    id: 'vehicles',
+    label: () => m.hud_shelf_vehicles(),
+    line: () => m.hud_shelf_vehicles_line(),
+    cluster: 'build',
+    groups: [{ label: 'Vehicles', skus: ['buy-hangar', 'buy-traffic-light', 'buy-refuel', 'buy-dispatch'] }],
   },
   {
     id: 'storage',
@@ -61,6 +66,7 @@ export const SHELVES: readonly Shelf[] = [
     groups: [
       { label: 'Boxes', skus: ['buy-chest', 'buy-freezer', 'buy-freezer-large'] },
       { label: 'Silos', skus: ['buy-silo-seed', 'buy-silo-spray', 'buy-silo-produce'] },
+      { label: 'Sorting', skus: ['buy-sorter'] },
     ],
   },
   {
@@ -79,7 +85,6 @@ export const SHELVES: readonly Shelf[] = [
           'buy-not',
           'buy-pulser',
           'buy-counter',
-          'buy-traffic-light',
         ],
       },
       {
@@ -94,6 +99,7 @@ export const SHELVES: readonly Shelf[] = [
           'buy-sensor-day',
         ],
       },
+      { label: 'Fencing', skus: ['buy-fence'] },
     ],
   },
   {
@@ -103,8 +109,6 @@ export const SHELVES: readonly Shelf[] = [
     cluster: 'none',
     groups: [
       { label: 'Paving', skus: ['buy-tile-asphalt', 'buy-tile-cobble', 'buy-tile-brick', 'buy-tile-paved'] },
-      { label: 'Fencing', skus: ['buy-fence'] },
-      { label: 'Weather', skus: ['buy-weather-station'] },
     ],
   },
 ]

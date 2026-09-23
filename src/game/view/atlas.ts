@@ -158,6 +158,7 @@ import propSensorDay from '../../assets/props/prop-sensor-day.svg?raw'
 import propWaterSystem from '../../assets/props/prop-water-system.svg?raw'
 import propVehicleDetector from '../../assets/props/prop-vehicle-detector.svg?raw'
 import propTrafficLight from '../../assets/props/prop-traffic-light.svg?raw'
+import propDispatch from '../../assets/props/prop-dispatch.svg?raw'
 import uiHangarReturn from '../../assets/ui/ui-hangar-return.svg?raw'
 import uiPadDrop from '../../assets/ui/ui-pad-drop.svg?raw'
 import uiPadTake from '../../assets/ui/ui-pad-take.svg?raw'
@@ -349,6 +350,8 @@ export type AtlasKey =
   | 'vehicle-detector-off'
   | 'traffic-on'
   | 'traffic-off'
+  | 'dispatch-on'
+  | 'dispatch-off'
   | 'turf-sprout'
   | 'turf-grow'
   | `weed-${0 | 1}-${'sprout' | 'grow'}`
@@ -689,6 +692,8 @@ async function load(): Promise<void> {
   put('vehicle-detector-off', propVehicleDetector, 'off')
   put('traffic-on', propTrafficLight, 'on')
   put('traffic-off', propTrafficLight, 'off')
+  put('dispatch-on', propDispatch, 'on')
+  put('dispatch-off', propDispatch, 'off')
   put('turf-sprout', cropGrass, 'sprout')
   put('turf-grow', cropGrass, 'grow')
   put('weed-0-sprout', weed0, 'sprout')
@@ -898,6 +903,7 @@ export function sensorKey(cell: Sensor): AtlasKey {
   if (cell.kind === 'sensor-weather') return cell.out === 1 ? 'weather-on' : 'weather-off'
   if (cell.kind === 'water-system') return cell.out === 1 ? 'water-system-on' : 'water-system-off'
   if (cell.kind === 'traffic-light') return cell.inn === 1 ? 'traffic-on' : 'traffic-off'
+  if (cell.kind === 'dispatch') return cell.out === 1 ? 'dispatch-on' : 'dispatch-off'
   if (cell.kind === 'vehicle-detector') return cell.out === 1 ? 'vehicle-detector-on' : 'vehicle-detector-off'
   const _: never = cell
   throw new Error(String(_))

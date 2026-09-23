@@ -40,14 +40,14 @@ Extra research lock: known and the research gate unmet shows the real name, disa
 | `driving-classes` | `machinery` | `unlock-vehicles` |
 | `machinery` | `bulk-up` | `unlock-grinder` |
 | `industrial` | `broker` | `unlock-contracts` |
-| `inherit-land` | `bulk-up` | `unlock-landscaping` |
+| `inherit-land` | `bulk-up` | `unlock-expand` |
 | `saleswoman` | — | — |
 | `jam` | `saleswoman` | — |
 | `heirloom` | `saleswoman` | `unlock-heirloom` |
 | `specialty` | `heirloom` | `unlock-preservatives` |
 | `broker` | `saleswoman` | `unlock-contracts` |
 
-Potato / wheat Experienced growers: gated on Crop variants. Tomato / grape: Advanced Plants. Raspberry: Raspberry seeds.
+Potato / wheat Experienced growers: gated on Crop variants. Tomato / grape: Advanced fruits. Raspberry: Raspberry seeds.
 
 ## Points
 
@@ -80,12 +80,12 @@ At `marketGain`, not crop `Modifier`: saleswoman every `StallGoodId`; heirloom v
 - drought `skuPrice`: [[mechanics/weather]] `weather.shop`
 - Vehicle interactions lens (`vehicles`) is `unlock-vehicles` in `done` — [[mechanics/vehicles]]
 - Water need lens is `unlock-auto-irrigation` in `done`. Land quality lens is `unlock-expand` in `done`. — [[ui/lens]]
-- inherit-land: `+1` expansion permit per tier, max 3. Gated on `unlock-landscaping`. Land still costs money — [[mechanics/expansion]]
+- inherit-land: `+1` expansion permit per tier, max 3. Gated on `unlock-expand`. Land still costs money — [[mechanics/expansion]]
 - grafting: max 1. Chop drops 2 grafts iff owned; chop always wood and trunk — [[mechanics/trees]] `trees.chop`
 - `buyPacks(id)` always legal: five seed packs at `5 × skuPrice(id) × 0.95`, each `'base'` quality 0. Ctrl is the seed-silo Buy gesture. `buy(id)` stays one. Failed afford / fit / closed: no-op
 - broker / industrial: [[mechanics/contracts]]
 - lucky: `{ kind: 'lucky' }`. Luck `min(LUCK_CAP, skillTier('lucky'))`. Not a World field. No HUD chip. Loot roll: [[mechanics/burrow]]
-- HUD tomorrow iff `forecastCount ≥ 1` (weather-station buildings). Not a skill — [[mechanics/weather]] `weather.forecast`
+- HUD tomorrow iff `forecastCount ≥ 1` (`unlock-weather-station` in `done`). Not a skill — [[mechanics/weather]] `weather.forecast`
 
 ## Invariants
 

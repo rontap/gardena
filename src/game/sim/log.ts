@@ -66,6 +66,7 @@ export const Act = {
   tuneWater: 'C',
   tuneHarvest: 'G',
   tuneCounter: 'M',
+  tuneDispatch: 'td',
   resetCounter: 'X',
   tuneDay: 'O',
   tuneSensor: 'e',
@@ -113,7 +114,7 @@ export type Cmd =
       a: typeof Act.openHud
       t: number
       p: SeatId
-      k: 'sprinkler' | 'water' | 'harvest' | 'counter' | 'day' | 'logic' | 'variety' | 'weather' | 'pressure' | 'refuel'
+      k: 'sprinkler' | 'water' | 'harvest' | 'counter' | 'day' | 'logic' | 'variety' | 'weather' | 'pressure' | 'refuel' | 'dispatch'
       c: XY
     }
   | { a: typeof Act.closeHud; t: number; p: SeatId }
@@ -148,6 +149,7 @@ export type Cmd =
   | { a: typeof Act.tuneWater; t: number; p: SeatId; c: XY; wilt: boolean; over: boolean }
   | { a: typeof Act.tuneHarvest; t: number; p: SeatId; c: XY; mode: 'any' | 'all' }
   | { a: typeof Act.tuneCounter; t: number; p: SeatId; c: XY; n: number }
+  | { a: typeof Act.tuneDispatch; t: number; p: SeatId; c: XY; r: RouteId | 'none'; n: number }
   | { a: typeof Act.resetCounter; t: number; p: SeatId; c: XY }
   | { a: typeof Act.tuneDay; t: number; p: SeatId; c: XY; sunrise: boolean; day: boolean; sunset: boolean; twilight: boolean }
   | { a: typeof Act.tuneSensor; t: number; p: SeatId; k: 'logic'; c: XY; mode: 'or' | 'and' }
@@ -180,6 +182,7 @@ export type Cmd =
   | { a: typeof Act.route; t: number; p: SeatId; k: 'rename'; r: RouteId; n: string }
   | { a: typeof Act.necronomicon; t: number; p: SeatId; k: 'gold' | 'ritual' }
   | { a: typeof Act.route; t: number; p: SeatId; k: 'setDeploy'; r: RouteId; d: RouteDeploy }
+  | { a: typeof Act.route; t: number; p: SeatId; k: 'setEnd'; r: RouteId; end: 'loop' | 'hangar' }
   | { a: typeof Act.route; t: number; p: SeatId; k: 'deploy'; r: RouteId }
   | { a: typeof Act.route; t: number; p: SeatId; k: 'recall'; v: VehicleId }
   | { a: typeof Act.route; t: number; p: SeatId; k: 'automate'; v: VehicleId; c: XY }

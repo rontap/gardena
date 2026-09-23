@@ -155,6 +155,7 @@ import itemSensorDay from '../../assets/items/item-sensor-day.svg?raw'
 import itemWaterSystem from '../../assets/items/item-water-system.svg?raw'
 import itemVehicleDetector from '../../assets/items/item-vehicle-detector.svg?raw'
 import itemTrafficLight from '../../assets/items/item-traffic-light.svg?raw'
+import itemDispatch from '../../assets/items/item-dispatch.svg?raw'
 import propLever from '../../assets/props/prop-lever.svg?raw'
 import propButton from '../../assets/props/prop-button.svg?raw'
 import propLamp from '../../assets/props/prop-lamp.svg?raw'
@@ -173,6 +174,7 @@ import propSensorDay from '../../assets/props/prop-sensor-day.svg?raw'
 import propWaterSystem from '../../assets/props/prop-water-system.svg?raw'
 import propVehicleDetector from '../../assets/props/prop-vehicle-detector.svg?raw'
 import propTrafficLight from '../../assets/props/prop-traffic-light.svg?raw'
+import propDispatch from '../../assets/props/prop-dispatch.svg?raw'
 
 import itemChest from '../../assets/items/item-chest.svg?raw'
 import itemGrinder from '../../assets/items/item-grinder.svg?raw'
@@ -469,6 +471,7 @@ export function itemInner(item: Face): string {
   if (item.kind === 'water-system') return stageOnly(itemWaterSystem, 'off')
   if (item.kind === 'vehicle-detector') return stageOnly(itemVehicleDetector, 'off')
   if (item.kind === 'traffic-light') return stageOnly(itemTrafficLight, 'off')
+  if (item.kind === 'dispatch') return stageOnly(itemDispatch, 'off')
   if (item.kind === 'delete') return svgInner(itemDelete)
   if (item.kind === 'weed') return weedInner(0, 'grow')
   if (item.kind === 'grass') return svgInner(itemGrass)
@@ -548,7 +551,6 @@ export function skuInner(id: SkuId): string {
   if (id === 'buy-still') return itemInner({ kind: 'still' })
   if (id === 'buy-furnace') return itemInner({ kind: 'furnace' })
   if (id === 'buy-refuel') return itemInner({ kind: 'refuel' })
-  if (id === 'buy-weather-station') return itemInner({ kind: 'weather-station' })
   if (id === 'buy-research-station') return itemInner({ kind: 'station' })
   if (id === 'buy-barrel') return itemInner({ kind: 'barrel' })
   if (id === 'buy-freezer' || id === 'buy-freezer-large') return itemInner({ kind: 'freezer', slots: 0 })
@@ -625,7 +627,7 @@ export function researchInner(id: ResearchId): string {
     case 'unlock-multi-crop':
       return stageOnly(FRUIT.wheat, 'base')
     case 'unlock-advanced-plants':
-      return stageOnly(FRUIT.tomato, 'base')
+      return `<g transform="translate(0 6) scale(0.5)">${stageOnly(FRUIT.tomato, 'base')}</g><g transform="translate(12 6) scale(0.5)">${stageOnly(FRUIT.grape, 'base')}</g>`
     case 'unlock-raspberry':
       return stageOnly(FRUIT.raspberry, 'base')
     case 'unlock-fermentation':
@@ -838,6 +840,9 @@ export function vehicleDetectorArt(on: boolean): string {
 }
 export function trafficLightArt(on: boolean): string {
   return stageOnly(propTrafficLight, on ? 'on' : 'off')
+}
+export function dispatchArt(on: boolean): string {
+  return stageOnly(propDispatch, on ? 'on' : 'off')
 }
 export const OVERLAY_WATER = svgInner(overlayWater)
 export const OVERLAY_INFUSED = svgInner(overlayInfused)

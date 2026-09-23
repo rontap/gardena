@@ -74,7 +74,7 @@ test('Build Water / Sensors peek the matching lens; Automation and Storage peek 
   await expect(lensBtn(page, /^Lens sensors$/i)).toBeVisible()
   await expect(page.getByRole('button', { name: 'Clear lens' })).toHaveCount(0)
 
-  await page.getByRole('tab', { name: 'Land' }).click()
+  await page.getByRole('tab', { name: 'Decorative' }).click()
   await expect(lensBtn(page, /^Lens pipes$/i)).toHaveCount(0)
   await expect(lensBtn(page, /^Lens sensors$/i)).toHaveCount(0)
   await expect(lensBtn(page, /^Lens vehicle interactions$/i)).toHaveCount(0)

@@ -1034,7 +1034,8 @@ export default function App({ sink }: { sink: WorkerSink }) {
                 hit.kind !== 'logic-hud' &&
                 hit.kind !== 'variety-hud' &&
                 hit.kind !== 'weather-hud' &&
-                hit.kind !== 'pressure-hud'
+                hit.kind !== 'pressure-hud' &&
+                hit.kind !== 'dispatch-hud'
               ) {
                 world.closeHud()
               }
@@ -1440,6 +1441,7 @@ function Dash({ world }: { world: World }) {
 const BUILD_LENS: Partial<Record<ShelfId, Lens>> = {
   water: 'pipes',
   logic: 'sensors',
+  vehicles: 'vehicles',
 }
 
 function sensorArmed(world: World): boolean {
@@ -1503,6 +1505,10 @@ function dispatchClick(world: World, hit: MapClick, shift: boolean): void {
   }
   if (hit.kind === 'pressure-hud') {
     world.openHud({ kind: 'pressure', at: hit.at })
+    return
+  }
+  if (hit.kind === 'dispatch-hud') {
+    world.openHud({ kind: 'dispatch', at: hit.at })
     return
   }
   if (hit.kind === 'sprinkler') {

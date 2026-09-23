@@ -571,5 +571,11 @@ export function catalogEntries(): CatalogEntry[] {
       icon: { kind: 'traffic-light' },
       blurb: m.catalog_traffic_light(),
     },
+    {
+      id: 'dispatch',
+      title: m.names_sensor_dispatch(),
+      icon: { kind: 'dispatch' },
+      blurb: m.catalog_dispatch(),
+    },
   ]
 }

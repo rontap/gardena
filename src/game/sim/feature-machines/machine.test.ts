@@ -68,7 +68,7 @@ import {
 import { CASK_NAME, caskMulOf, caskName, compostValue, furnaceValue, makeShovel, mergeInto, type Item } from '../item.ts'
 import { MACHINE_IDS } from './recipe.ts'
 import { emptyVehicleSlots, makeQuad, transferUnload } from '../feature-vehicles/vehicle.ts'
-import { ANY } from '../feature-vehicles/pick.ts'
+import { allSlots, ANY } from '../feature-vehicles/pick.ts'
 import { CASK_IDS, CROP_OF_CASK, GROWN_IDS } from '../ids.ts'
 import { BARREL_AGE, CASK_AGE_MAX, CASK_AGE_MIN, FLOUR, JAM_SALE, MILL_H, MILL_W, SENSOR_HOLD } from '../../defs/items.ts'
 import { Plant } from '../plant.ts'
@@ -1067,6 +1067,28 @@ describe('building.ports-single', () => {
     expect([...new Chest(base).ports]).toEqual(['out'])
     expect([...new Lamp(base).ports]).toEqual(['in'])
     expect([...new Lever(base).ports]).toEqual(['in', 'out'])
+  })
+})
+
+describe('machines.grinder-io', () => {
+  test('The Grinder has a signal input that pauses it, and vehicle loading spots: fruit in, seeds out.', () => {
+    const w = new World(1)
+    const at = { col: 18, row: 16 }
+    const grinder = new Grinder({ shape: 'rect', col: at.col, row: at.row, w: 1, h: 1 })
+    w.setCell(at, grinder)
+    expect([...grinder.ports]).toEqual(['in'])
+    expect(grinder.pads).toBe('both')
+    expect(grinder.padGoods('in')).toEqual(allSlots('fruit'))
+    expect(grinder.padGoods('out')).toEqual(allSlots('seed'))
+    grinder.crop = 'wheat'
+    grinder.variety = 'base'
+    grinder.units = 1
+    grinder.inn = 1
+    grinder.tick(w, at, 1)
+    expect(grinder.progress).toBe(0)
+    grinder.inn = 0
+    grinder.tick(w, at, 1)
+    expect(grinder.progress).toBeGreaterThan(0)
   })
 })
 

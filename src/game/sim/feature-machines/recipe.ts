@@ -724,6 +724,7 @@ function grinderCraft(c: Grinder, mul: number, haste: number): Craft {
       max: GRIND_MAX,
     },
   }
+  if (c.inn === 1) return { kind: 'paused', recipe }
   if (c.units < 1) return { kind: 'filling', recipe, at: 0, have: c.units, need: 1 }
   return stage(recipe, c.progress, mul, haste)
 }

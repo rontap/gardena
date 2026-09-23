@@ -105,6 +105,7 @@ const SENSOR_IDS = [
   'water-system',
   'vehicle-detector',
   'traffic-light',
+  'dispatch',
   'sensor-day',
 ]
 const AUTO_IDS = [

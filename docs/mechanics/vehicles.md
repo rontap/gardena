@@ -135,6 +135,8 @@ Goto arrive Euclidean ≤ `ROUTE_ARRIVE`. Load/unload/wait/refuel arrive `floor`
 
 `Act.route` `'o'`. All no-op unless `unlock-dispatch` in `done`. Guest may. There is no assign and no start: a vehicle takes a route when Deploy sends it out, and keeps it until the route is deleted.
 
+`Route.end` is `'loop'` or `'hangar'`. A new route is `'loop'`. `Act.route` `setEnd` sets it. `'loop'` wraps `cursor` to 0 after the last stop. `'hangar'` stores that vehicle at the nearest hangar instead, `running` false, route kept, the same store as **Send back to the hangar**. It does not drive there. No hangar: the stop wraps, so a Load or Unload does not repeat.
+
 Deploy: `n ≥ 1` and some hangar stores what `Route.deploy` names. First hangar in `World.hangars` order that can supply it wins. Spawn that hangar's `padCenter`, `HEADING_SOUTH`, driver `'none'`, route assigned, `i = 0`, `running` true; does not seat. Tractor takes the route's `boom`. Hangar Automate: vehicle stored, that hangar, route assigned, `n ≥ 1`; spawn `padCenter`, driver `'none'`, `i = 0`, `running` true; does not seat.
 
 Recall: vehicle field && `driver === 'none'` → store at the nearest hangar by `padCenter` distance, hitch stores with it, `running` false, route kept. No hangar: no-op. It does not drive home.
@@ -225,7 +227,7 @@ Not logged: integrate, follow hitch, boom, burn, `working` countdown, stride int
 
 `vehicles.auto` — Auto running synthesizes Drive inside `tickVehicles`; always forward; yaw in place until `|Δ| ≤ ROUTE_ALIGN`, then throttle 1; no auto reverse; vMax `× AUTO_VMAX_MUL`; empty fuel: Drive `{0,0}`, seek 0, no crawl, no advance, `running` true; hitch follows; boom: seated or auto running, hitch, steer 0, speed > 0.
 
-`vehicles.route` — `World.routes` `World.nextRouteId`; a new `World` starts with one empty `Route 1` and `nextRouteId` 2; every stop is a cell `Coord` and `stopXY` is that cell's centre; add appends; move replaces stop `i` with the stop that cell yields; reorder lifts stop `i` and inserts it at `to`, a move not a swap; cursor follows the current stop on remove, move and reorder; `n === 0` → cursor 0, `running` false; Quad load/unload uses quad slots; tractor needs hitch; auto tick chest/freezer legal.
+`vehicles.route` — `World.routes` `World.nextRouteId`; a new `World` starts with one empty `Route 1` and `nextRouteId` 2; every stop is a cell `Coord` and `stopXY` is that cell's centre; add appends; move replaces stop `i` with the stop that cell yields; reorder lifts stop `i` and inserts it at `to`, a move not a swap; cursor follows the current stop on remove, move and reorder; `n === 0` → cursor 0, `running` false; `end` `'loop'` wraps after the last stop, `'hangar'` stores at the nearest hangar and does not wrap; Quad load/unload uses quad slots; tractor needs hitch; auto tick chest/freezer legal.
 
 `vehicles.silo-store` — The three field silos hold what their name says and open the walk-up panel their starter twin uses; Seeding silo `SILO_FIELD_SEED_CAP` seeds, grass `'base'` included; Additive silo `SILO_FIELD_ADDITIVE_CAP` liters; Produce silo `PRODUCE_SLOTS` of fruit, weed and grass only; `Act.takeStore` carries the store cell — [[ui/store]] [[mechanics/inventory]] `inventory.grass-silo`.
 

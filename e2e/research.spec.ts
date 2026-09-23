@@ -39,14 +39,16 @@ test('Hardened tools sells Hardened pickaxe and Chainsaw', async ({ page }) => {
   expect(place).toEqual({ kind: 'sku', id: 'buy-chainsaw' })
 })
 
-test('Land sells paving and Wooden fence at the new prices', async ({ page }) => {
+test('Decorative sells paving, Sensors sells Wooden fence', async ({ page }) => {
   await gotoPlay(page, { unlock: true })
   await openBuild(page)
-  await page.getByRole('tab', { name: 'Land' }).click()
+  await page.getByRole('tab', { name: 'Decorative' }).click()
   await expect(page.getByRole('button', { name: /^Cobblestone(?: placing)? 4$/ })).toBeVisible()
   await expect(page.getByRole('button', { name: /^Paving slab(?: placing)? 5$/ })).toBeVisible()
   await expect(page.getByRole('button', { name: /^Brickwork(?: placing)? 6$/ })).toBeVisible()
   await expect(page.getByRole('button', { name: /^Asphalt(?: placing)? 3$/ })).toBeVisible()
+  await expect(page.getByRole('button', { name: /^Wooden fence(?: placing)? 2$/ })).toHaveCount(0)
+  await page.getByRole('tab', { name: 'Sensors' }).click()
   await expect(page.getByRole('button', { name: /^Wooden fence(?: placing)? 2$/ })).toBeVisible()
 })
 

@@ -14,14 +14,15 @@ Categories are a **vertical** `Tabs.List` down the left of the pane, `tabRailLis
 |---|---|---|---|
 | Tools | Digging shovel, better-shovel · Mining pickaxe, hardened, axe, chainsaw · Carry bucket, large bucket | none | Dig, mine, chop, and carry water. |
 | Water | Source pumpjack, well · Flow tap, pipe, valve · Output sprinkler, vertical, large | build | Source, flow, output. |
-| Automation | Grinding grinder, mill · Brewing still, barrel · Preserving jam · Infusing infuser · Compost compost-box, furnace · Grafting station · Hangar `buy-hangar`, `buy-refuel` | build | Machines that make goods, and the hangar your vehicles come home to. |
-| Storage | Boxes chest, freezer, large freezer · Silos seed, spray, produce | build | Boxes for what you picked, and the field silos that load trailers. |
-| Sensors | lever, button, lamp, logic, NOT, pulser, counter, traffic-light, water, fert, harvest, variety, weather, vehicle-detector, day | build | Signal, gates, readers. |
-| Land | Paving cobble → brick → paved · Fencing fence · `buy-weather-station` | none | Paving and fencing. A Weather Forecast Station shows tomorrow's weather. |
+| Automation | Grinding grinder, mill · Brewing still, barrel · Preserving jam · Infusing infuser · Compost compost-box, furnace · Grafting station | build | Machines that make goods. |
+| Vehicles | `buy-hangar`, `buy-traffic-light`, `buy-refuel`, `buy-dispatch` | build | The hangar, the traffic light, the Refueling station, and the Vehicle dispatcher. |
+| Storage | Boxes chest, freezer, large freezer · Silos seed, spray, produce · Sorting `buy-sorter` | build | Boxes for what you picked, and the field silos that load trailers. |
+| Sensors | lever, button, lamp, logic, NOT, pulser, counter, water, fert, harvest, variety, weather, vehicle-detector, day · Fencing `buy-fence` | build | Signal, gates, readers. |
+| Decorative (`land`) | Paving cobble → brick → paved | none | Paving. |
 
 Tools opens the dock: a shovel is the first thing bought and the rail is where it is found. That is why opening Build no longer peeks the `pipes` lens — Water does, on click.
 
-Labels from `skuLabel` — [[items/buildings]] [[items/sensors]]. Quad, tractor, and trailers are hangar-buys, not shelf SKUs — [[ui/vehicles]]. Paving cheapest first — [[items/tiles]]. Pressure plate is Sensors (`buy-vehicle-detector`). Traffic light is Sensors, Signal group, not readers. `buy-water-system` not on the shelf. Parse aliases `and` / `or` are identifiers, not shelf SKUs. Shelf id `logic`. [[ui/sensors]]
+Labels from `skuLabel` — [[items/buildings]] [[items/sensors]]. Quad, tractor, and trailers are hangar-buys, not shelf SKUs — [[ui/vehicles]]. Paving cheapest first — [[items/tiles]]. Pressure plate is Sensors (`buy-vehicle-detector`). Traffic light, the hangar, the Refueling station, and the Vehicle dispatcher are the Vehicles tab. Traffic light is not a reader. The Vehicle dispatcher is a sensor: opening that card still shows the sensor lens. `buy-water-system` not on the shelf. Parse aliases `and` / `or` are identifiers, not shelf SKUs. Shelf id `logic`. [[ui/sensors]]
 
 A tab with no `skuShown` sku is not rendered at all — the shelf appears when research opens it, and never reorders. With no tab left, the pane reads *Nothing here yet. Research opens this shelf.*
 
@@ -31,7 +32,7 @@ A tab with no `skuShown` sku is not rendered at all — the shelf appears when r
 
 Every sku sits in exactly one shelf group, except the packs and bags the stores sell and `buy-and` `buy-or` `buy-water-system`, which sit in none — [[items/sensors]] [[ui/store]].
 
-**File by primary output.** A shelf splits by what a thing emits — signal → Sensors, water → Water, goods → Automation, ground → Land, held work → Tools. Every sku has exactly one home. The other axis is reached by search, never by a duplicate row. A water sensor is Sensors; a valve is Water (flow); a smart sprinkler is Water. `buy-weather-station` files on Land.
+**File by primary output.** A shelf splits by what a thing emits — signal → Sensors, water → Water, goods → Automation, paving → Decorative, held work → Tools. Every sku has exactly one home. The other axis is reached by search, never by a duplicate row. A water sensor is Sensors; a valve is Water (flow); a smart sprinkler is Water. `buy-sorter` files on Storage. `buy-fence` files on Sensors. No `buy-weather-station`.
 
 Order inside a group is the function chain — source, transport, control, output — then tier. Never unlock date. Groups **order** the grid; they do not draw. No headers, no dividers.
 
@@ -65,7 +66,7 @@ One `SearchField` at the top, autofocused on open. Results are **global**: every
 
 ## Cluster
 
-`GHOST_SKUS` is derived from the shelves: every category whose `cluster` is `'build'`. That is Water, Automation, Storage, and Sensors. Tools and Land are `'none'` — tools go to hand, and paving and fencing are paint tools. It no longer gates the left-ribbon buttons. Opening this dock is enough to show **Demolish**, and **Cancel** follows `place.kind !== 'none'` — [[ui/hud]] [[ui/place]].
+`GHOST_SKUS` is derived from the shelves: every category whose `cluster` is `'build'`. That is Water, Automation, Vehicles, Storage, and Sensors. Tools and Decorative are `'none'` — tools go to hand, and paving is a paint tool. `buy-fence` sits on Sensors, so it is in `GHOST_SKUS`, and place still uses the fence path, not a cell. It no longer gates the left-ribbon buttons. Opening this dock is enough to show **Demolish**, and **Cancel** follows `place.kind !== 'none'` — [[ui/hud]] [[ui/place]].
 
 ## Arming
 
@@ -79,7 +80,7 @@ Build peek, no lock — [[ui/lens]]:
 |---|---|
 | Water | `pipes` |
 | Sensors (`logic`) | `sensors` |
-| Automation, Storage, Tools, Land | restore the lens that was on before the peek |
+| Automation, Storage, Tools, Decorative (`land`) | restore the lens that was on before the peek |
 
 Automation peeks no lens. Storage peeks no lens. Water still peeks pipes. Sensors still peeks sensors. A locked lens is not touched. Twitching off a peek tab, closing Build, or leaving it restores that saved lens. `toolLens` still wins while a sku is armed. One helper in `App` owns leave, and every path calls it.
 

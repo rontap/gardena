@@ -97,7 +97,7 @@ Double-click the active tab to rename it: the trigger becomes an input, selected
 
 Body order is **Vehicle**, **Boom**, **Stops**, **Out on this route**.
 
-Each stop is a bordered mini-card, so where one stop ends and the next begins is visible without counting rows. Its title names the building: **Load from {name}** / **Unload into {name}** from the pad's own cell, **Go** and **Wait** as they are.
+Each stop is a bordered mini-card, so where one stop ends and the next begins is visible without counting rows. Its title names the building: **Load from {name}** / **Unload into {name}** from the pad's own cell, **Go** and **Wait** as they are. A refuel stop is **Refuel at {name}**, then one dropdown **Wait for fuel** / **No wait**. `Act.route` `setWait`. No item chips. A new refuel stop starts on **No wait**.
 
 A **Load** or **Unload** card carries a second line of up to three `DropdownMenu` chips that narrow what that stop moves — [[mechanics/vehicles]]. **Go** and **Wait** have none. Each chip shows the chosen row's icon and label; every row in the open menu carries the same icon, drawn by `faceGfx` from a representative item. The Any row's icon is **\***.
 
@@ -109,13 +109,13 @@ The third chip appears once a good is chosen and only when that good has more th
 
 Every chip writes `Act.route` `pick` immediately. Choosing the Any row at a step clears that step and the ones below it. The chips are not draggable, so a drag that starts on one does not start a row reorder.
 
-**Stops**: numbered rows, 1-based, each a drag handle plus kind label plus **×**. Kind labels **Go** / **Load** / **Unload** / **Wait**. Drag a row onto another to move it there — `Act.route` `{ k: 'reorder'; i; to }`, a move and not a swap, so the rows between shift by one. The held row fades and the row under the pointer takes a `bg-ink/10` band. Remove × same as contract cancel. No current-stop highlight in the list. Empty: **Click the map to add a stop. Click a pad to load or unload there, a traffic light to wait.**
+**Stops**: numbered rows, 1-based, each a drag handle plus kind label plus **×**. Kind labels **Go** / **Load** / **Unload** / **Wait**. Drag a row onto another to move it there — `Act.route` `{ k: 'reorder'; i; to }`, a move and not a swap, so the rows between shift by one. The held row fades and the row under the pointer takes a `bg-ink/10` band. Remove × same as contract cancel. No current-stop highlight in the list. Empty: **Click the map to add a stop. Click a pad to load or unload there, a traffic light to wait, the south side of a Refueling station to refuel.**
 
 **Vehicle**: first in the body, a 4-column grid of icon-over-text cells, one `Act.route` `{ k: 'setDeploy' }` each. Top row is **Quad** and **Tractor**, two cells each spanning two columns; bottom row is **No trailer** **Seeder** **Sprayer** **Harvester**, one column each. The top row picks the vehicle, the bottom the trailer. Picking **Quad** disables the whole bottom row — a quad has no hitch. No save button; every click writes.
 
 **Boom**: **Boom 3** / **Boom 5**, shown only for tractor with a trailer. Same `setDeploy`.
 
-**Out on this route**: every `World.vehicles` whose `route` is this one and whose pose is field. Icon, one status line, fuel `Bar`, **×**. Status: **Out of fuel** when `fuel === 0`, else **Stopped** when not running or speed 0, else **Heading to {n}** with the 1-based stop number the map marker shows. **×** is `Act.route` `{ k: 'recall' }` — it stores the vehicle at the nearest hangar, it does not drive home. Empty: **Nothing is out on this route.**
+**Out on this route**: every `World.vehicles` whose `route` is this one and whose pose is field. Icon, one status line, fuel `Bar`, **×**. Status: **Out of fuel** when `fuel === 0`, else **Stopped** when not running or speed 0, else **Heading to {n}** with the 1-based stop number the map marker shows. A refuel stop that is holding the vehicle with fuel above 0 stays **Stopped**. **×** is `Act.route` `{ k: 'recall' }` — it stores the vehicle at the nearest hangar, it does not drive home. Empty: **Nothing is out on this route.**
 
 Footer **Delete route** and **Deploy**. Delete disabled while one of its vehicles is on the field, hover **Send its vehicles back first.** Deploy enabled iff the route has a stop and some hangar holds what the **Vehicle** grid names; disabled hover says which of those is missing. Click `Act.route` `{ k: 'deploy' }`.
 
@@ -129,11 +129,13 @@ Dock open with a route picked. Left-click empty ground, `place.kind === 'none'` 
 |---|---|
 | dropoff pad tile | `{ kind: 'unload'; at }` |
 | takeup pad tile | `{ kind: 'load'; at }` |
+| refuel south cell | `{ kind: 'refuel'; at; wait: false }` |
+| `refuel` building cell | no stop; opens the panel |
 | traffic-light cell | `{ kind: 'wait'; at }` |
 | else in-world owned floor | `{ kind: 'goto'; at }` |
 | unowned | no-op, no toast |
 
-Pad / light win over floor. Every stop sits on the centre of its cell, never the click point. HUD / dock clicks do not add. With a route picked, inspect look prepends **Add stop here** / **Add load here** / **Add unload here** / **Add wait here** from `stopAt` of the hovered cell.
+Pad / light win over floor. Every stop sits on the centre of its cell, never the click point. HUD / dock clicks do not add. With a route picked, inspect look prepends **Add stop here** / **Add load here** / **Add unload here** / **Add wait here** / **Add refuel here** from `stopAt` of the hovered cell. The `refuel` building cell prepends nothing.
 
 ## Route paint
 
@@ -153,7 +155,7 @@ Esc still closes panels. Esc does not dismount. Enter, same text-field ignore: i
 
 ## Return arrows
 
-On each hangar’s three pad tiles and on every seed/spray/produce silo’s two south pad tiles. Paint iff `driverVehicle(local)` OR `lens === 'vehicles'`. Else hidden. Driving still paints with this lens off. Silo pads: no dialog, and a silo pad is still not Dock. The return arrow on a silo now sits on a takeup that really loads, so it marks the cell to drive onto rather than only a place to turn around. Dropoff / takeup arrows on mill, still, jam, compost-box, chest, freezer, seed-silo, additive-store, and the three field silos. Not barrel, grinder. Opacity 0.5; 1 iff that pad’s Load or Unload is legal. `leaveShop` restores an unlocked Build peek. [[ui/lens]] [[ui/hud]]
+On each hangar’s three pad tiles and on every seed/spray/produce silo’s two south pad tiles. Paint iff `driverVehicle(local)` OR `lens === 'vehicles'`. Else hidden. Driving still paints with this lens off. Silo pads: no dialog, and a silo pad is still not Dock. The return arrow on a silo now sits on a takeup that really loads, so it marks the cell to drive onto rather than only a place to turn around. Dropoff / takeup arrows on mill, still, jam, compost-box, chest, freezer, seed-silo, additive-store, and the three field silos. Refueling station: north `ui-pad-drop.svg`, south `ui-pad-refuel.svg`, not `ui-pad-take.svg`. Not barrel, grinder. Opacity 0.5; 1 iff that pad’s Load or Unload is legal. `leaveShop` restores an unlocked Build peek. [[ui/lens]] [[ui/hud]]
 
 ## View
 

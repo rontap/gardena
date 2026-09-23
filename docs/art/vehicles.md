@@ -95,6 +95,8 @@ Pad-mark opacity is view, not SVG.
 
 `ui-pad-take.svg`. Machine takeup (Load). Steel arrow, iron dock, oil bay. Points north out of the south face. Not hangar-return. No baked opacity.
 
+`ui-pad-refuel.svg`. South pad mark. Steel nozzle, iron band, ripe fuel in the tip. Hose stub on the north edge. Narrows to the tip. Not the Load arrow. No dock. No groups. No baked opacity.
+
 `ui-slot-down.svg`. Down arrow for consume hopper. Ripe fill, ink outline. Points south.
 
 ## Paint

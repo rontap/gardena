@@ -134,6 +134,10 @@ export class PropsLayer {
         put(furnaceWorking(cell) ? 'furnace-on' : 'furnace-off', at.col, at.row)
         continue
       }
+      if (cell.kind === 'refuel') {
+        put(cell.timerOn() ? 'refuel-on' : 'refuel-off', at.col, at.row)
+        continue
+      }
       if (cell.kind === 'infuser') {
         put(infuserWorking(cell) ? 'infuser-on' : 'infuser-off', at.col, at.row)
         continue

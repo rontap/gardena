@@ -14,6 +14,7 @@ import {
   QUAD_FUEL_SECONDS,
   QUAD_PRICE,
   QUAD_REFILL,
+  FUEL_LITERS,
   QUAD_R,
   QUAD_VMAX,
   QUAD_YAW,
@@ -44,8 +45,8 @@ import { lookText } from '../look.ts'
 import { dest } from '../queue.ts'
 import { DT_MAX, World } from '../world.ts'
 import { HAPPY_START } from '../../defs/crops.ts'
-import { ADDITIVE_BASE, PAD, SILO_BASE, Tree, WAREHOUSE_BASE, warehousePads } from '../building.ts'
-import { boomHits, dropoffPad, hangarPad, hitchP, kindVMax, padCenter, seekSpeed, siloPad, stopXY, surfaceMul, takeupPad, trailerUsed, transferUnload } from './vehicle.ts'
+import { ADDITIVE_BASE, PAD, Refuel, SILO_BASE, Tree, WAREHOUSE_BASE, warehousePads } from '../building.ts'
+import { boomHits, dropoffPad, emptyVehicleSlots, hangarPad, hitchP, kindVMax, makeQuad, padCenter, seekSpeed, siloPad, stopXY, surfaceMul, takeupPad, trailerUsed, transferRefuel, transferUnload } from './vehicle.ts'
 import { ANY, PICK_TYPES, goodsOf, narrowGood, narrowType, narrowVariety, padGoodsOf, padTypesOf, pickTakes, sampleItem, typeOf, goodOf, varietiesOf, type PadGoods } from './pick.ts'
 import { VARIETIES } from '../../defs/varieties.ts'
 import { SPIRIT_KINDS, STILL_CROPS } from '../ids.ts'
@@ -1258,6 +1259,128 @@ describe('vehicles II', () => {
     if (chest.kind !== 'chest') return
     expect(chest.slots.some(s => s.kind === 'hold')).toBe(true)
     expect(v.cursor).toBe(0)
+  })
+})
+
+describe('vehicles.refuel', () => {
+  test('vehicles.refuel', () => {
+    const w = new World(1)
+    w.unlockAll()
+    const at = { col: 20, row: 16 }
+    const south = { col: at.col, row: at.row + 1 }
+    const station = new Refuel({ shape: 'rect', col: at.col, row: at.row, w: 1, h: 1 })
+    w.setCell(at, station)
+    expect(w.stopAt(at)).toBeUndefined()
+    expect(w.stopAt(south)).toEqual({ kind: 'refuel', at: south, wait: false })
+    w.addStop(1, { kind: 'goto', at })
+    expect(w.routes[0].stops).toHaveLength(0)
+    const far = { col: 24, row: 16 }
+    w.addStop(1, { kind: 'goto', at: far })
+    w.moveStop(1, 0, w.stopAt(south)!)
+    expect(w.routes[0].stops[0]).toEqual({ kind: 'refuel', at: south, wait: false })
+    w.addStop(1, { kind: 'goto', at: far })
+    const pose = { kind: 'field' as const, x: south.col + 0.5, y: south.row + 0.5, heading: 0, speed: 0, driver: 'none' as const }
+    const first = makeQuad(1, 0, emptyVehicleSlots(), pose)
+    const second = makeQuad(2, 0, emptyVehicleSlots(), { ...pose })
+    w.vehicles.push(first, second)
+    first.route = 1
+    second.route = 1
+    first.cursor = 0
+    second.cursor = 0
+    first.running = true
+    second.running = true
+    station.store = 10
+    station.buy = false
+    w.money = 0
+    w.tick(DT_MAX)
+    expect(station.store).toBe(10)
+    expect(first.dwell).toBe(DISPATCH_DWELL)
+    for (let i = 0; i < DISPATCH_DWELL / DT_MAX; i++) w.tick(DT_MAX)
+    expect(station.store).toBe(0)
+    expect(first.fuel).toBeCloseTo(10 / FUEL_LITERS)
+    expect(second.fuel).toBe(0)
+    expect(first.cursor).toBe(1)
+    expect(second.cursor).toBe(1)
+    expect(w.money).toBe(0)
+    first.cursor = 0
+    first.running = true
+    first.dwell = 0
+    first.fuel = 0.2
+    first.pose = { kind: 'field', x: south.col + 0.5, y: south.row + 0.5, heading: 0, speed: 0, driver: 'none' }
+    second.running = false
+    station.store = 0
+    station.buy = false
+    w.routes[0].stops[0] = { kind: 'refuel', at: south, wait: true }
+    w.tick(DT_MAX)
+    for (let i = 0; i < DISPATCH_DWELL / DT_MAX; i++) w.tick(DT_MAX)
+    expect(first.fuel).toBeCloseTo(0.2)
+    expect(first.dwell).toBe(-1)
+    expect(first.cursor).toBe(0)
+    w.tick(DT_MAX)
+    expect(first.dwell).toBe(-1)
+    station.store = FUEL_LITERS
+    w.tick(DT_MAX)
+    expect(first.fuel).toBe(1)
+    expect(first.cursor).toBe(1)
+    expect(first.dwell).toBe(0)
+    const parked = makeQuad(3, 0, emptyVehicleSlots(), {
+      kind: 'field',
+      x: 30.5,
+      y: 16.5,
+      heading: 0,
+      speed: 0,
+      driver: 'none',
+    })
+    parked.route = 1
+    parked.cursor = 0
+    parked.running = true
+    w.routes[0].stops[0] = { kind: 'refuel', at: south, wait: false }
+    w.vehicles.push(parked)
+    const x = parked.pose.kind === 'field' ? parked.pose.x : 0
+    for (let i = 0; i < 20; i++) w.tick(DT_MAX)
+    expect(parked.pose.kind === 'field' && parked.pose.x).toBe(x)
+    expect(parked.cursor).toBe(0)
+  })
+})
+
+describe('vehicles.liters', () => {
+  test('vehicles.liters', () => {
+    expect(FUEL_LITERS).toBe(25)
+    const perLiter = QUAD_REFILL / FUEL_LITERS
+    const w = farm()
+    w.buyVehicle(AT, 'quad')
+    const tank = w.vehicles[0]
+    tank.fuel = 0
+    expect(w.refillCost()).toBe(QUAD_REFILL)
+    const purse = w.money
+    w.refill(AT)
+    expect(tank.fuel).toBe(1)
+    expect(w.money).toBe(purse - QUAD_REFILL)
+    const at = { col: 20, row: 16 }
+    const south = { col: at.col, row: at.row + 1 }
+    const station = new Refuel({ shape: 'rect', col: at.col, row: at.row, w: 1, h: 1 })
+    w.setCell(at, station)
+    station.buy = true
+    station.store = 10
+    tank.fuel = 0
+    tank.pose = { kind: 'field', x: south.col + 0.5, y: south.row + 0.5, heading: 0, speed: 0, driver: 'none' }
+    const before = w.money
+    transferRefuel(w, tank)
+    const bought = FUEL_LITERS - 10
+    expect(w.money).toBeCloseTo(before - bought * perLiter)
+    expect(tank.fuel).toBe(1)
+    expect(station.store).toBe(0)
+    tank.fuel = 1 - 10 / FUEL_LITERS
+    station.store = 0
+    station.buy = true
+    w.money = 10 * perLiter - 0.01
+    transferRefuel(w, tank)
+    expect(tank.fuel).toBeCloseTo(1 - 10 / FUEL_LITERS)
+    expect(w.money).toBeCloseTo(10 * perLiter - 0.01)
+    w.money = 10 * perLiter
+    transferRefuel(w, tank)
+    expect(tank.fuel).toBe(1)
+    expect(w.money).toBeCloseTo(0)
   })
 })
 

@@ -39,7 +39,7 @@
   "research_unlock_vehicles_name": "Vehicles",
   "research_unlock_vehicles_blurb": "Place a Vehicle hangar, then buy a Quad or a Tractor there. Drive a Quad to carry items across the farm without walking. Attach a Seeder, Sprayer, or Harvester to a Tractor to sow, spray, or harvest a strip while you drive.",
   "research_unlock_dispatch_name": "Automated dispatch",
-  "research_unlock_dispatch_blurb": "A Quad or Tractor can run automated on a route, so you garden while it sows, sprays, or unloads. Automate starts that run from the Vehicle hangar. A Traffic light holds a vehicle only while that light is a stop on the route.",
+  "research_unlock_dispatch_blurb": "A Quad or Tractor can run automated on a route, so you garden while it sows, sprays, or unloads. Automate starts that run from the Vehicle hangar. Place a Refueling station so a route can stop on its south side and the vehicle takes fuel there. A Traffic light holds a vehicle only while that light is a stop on the route.",
   "research_unlock_silos_name": "Field silos",
   "research_unlock_silos_blurb": "Place a Seeding silo, Additive silo, or Produce silo out on the field, then walk up to it to take what it holds without crossing back to the House.",
   "research_unlock_contracts_name": "Contracts",

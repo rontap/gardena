@@ -17,6 +17,7 @@ import {
   FURNACE_NEED,
   FURNACE_SECONDS,
   FURNACE_VALUE,
+  FUEL_BATCH,
   FREEZER_LARGE_SLOTS,
   FREEZER_SLOTS,
   FREEZER_ROT_MUL,
@@ -130,10 +131,12 @@ export type Face =
   | { kind: 'valve' }
   | { kind: 'tap' }
   | { kind: 'water' }
+  | { kind: 'fuel' }
   | { kind: 'mill' }
   | { kind: 'jam-machine' }
   | { kind: 'still' }
   | { kind: 'furnace' }
+  | { kind: 'refuel' }
   | { kind: 'station' }
   | { kind: 'infuser' }
   | { kind: 'necronomicon' }
@@ -344,6 +347,7 @@ const PLACE_NAME = {
   barrel: () => m.names_building_barrel(),
   freezer: () => m.names_building_freezer(),
   hangar: () => m.names_building_hangar(),
+  refuel: () => m.names_building_refuel(),
   'silo-seed': () => m.names_building_silo_seed(),
   'silo-spray': () => m.names_building_silo_spray(),
   'silo-produce': () => m.names_building_silo_produce(),
@@ -384,6 +388,8 @@ export function faceName(face: Face): string {
   switch (face.kind) {
     case 'tile':
       return TILE_NAME[face.tile]()
+    case 'fuel':
+      return m.names_item_fuel()
     case 'water':
     case 'pumpjack':
     case 'chest':
@@ -407,6 +413,7 @@ export function faceName(face: Face): string {
     case 'barrel':
     case 'freezer':
     case 'hangar':
+    case 'refuel':
     case 'silo-seed':
     case 'silo-spray':
     case 'silo-produce':
@@ -646,6 +653,7 @@ const SKU_LABEL: { readonly [K in SkuId]: () => string } = {
   'buy-freezer-large': () => m.names_sku_buy_freezer_large(),
   'buy-sugar': () => m.names_sku_buy_sugar(),
   'buy-hangar': () => m.names_sku_buy_hangar(),
+  'buy-refuel': () => m.names_sku_buy_refuel(),
   'buy-silo-seed': () => m.names_sku_buy_silo_seed(),
   'buy-silo-spray': () => m.names_sku_buy_silo_spray(),
   'buy-silo-produce': () => m.names_sku_buy_silo_produce(),
@@ -728,6 +736,7 @@ const SKU_DESC: { readonly [K in SkuId]: () => string } = {
   'buy-freezer-large': () => m.catalog_sku_buy_freezer_large({ n: FREEZER_LARGE_SLOTS, pct: FREEZER_PCT }),
   'buy-sugar': () => m.catalog_sku_buy_sugar({ bag: SUGAR_BAG, sale: SUGAR_SHOP }),
   'buy-hangar': () => m.catalog_hangar({ w: HANGAR_W, h: HANGAR_H }),
+  'buy-refuel': () => m.catalog_refuel({ batch: FUEL_BATCH }),
   'buy-silo-seed': () => m.catalog_silo({ w: SILO_W, h: SILO_H }),
   'buy-silo-spray': () => m.catalog_silo({ w: SILO_W, h: SILO_H }),
   'buy-silo-produce': () => m.catalog_silo({ w: SILO_W, h: SILO_H }),
@@ -904,6 +913,8 @@ export function skuItem(id: SkuId): Face {
       return makeSugar(SUGAR_BAG, SUGAR_BAG, SUGAR_SHOP)
     case 'buy-hangar':
       return { kind: 'hangar' }
+    case 'buy-refuel':
+      return { kind: 'refuel' }
     case 'buy-silo-seed':
       return { kind: 'silo-seed' }
     case 'buy-silo-spray':

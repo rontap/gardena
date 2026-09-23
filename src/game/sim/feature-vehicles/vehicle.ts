@@ -19,6 +19,7 @@ import {
   QUAD_FUEL_SECONDS,
   QUAD_PRICE,
   QUAD_REFILL,
+  FUEL_LITERS,
   QUAD_VMAX,
   QUAD_YAW,
   ROUTE_ALIGN,
@@ -596,6 +597,7 @@ export const PAD_SKUS: readonly SkuId[] = [
   'buy-still',
   'buy-furnace',
   'buy-research-station',
+  'buy-refuel',
   'buy-sorter',
   'buy-silo-seed',
   'buy-silo-spray',
@@ -621,10 +623,13 @@ export function padBuildings(w: World): PadCell[] {
   return out
 }
 
-export function padHit(w: World, at: Coord): { cell: PadCell; side: 'dropoff' | 'takeup' } | undefined {
+export function padHit(w: World, at: Coord): { cell: PadCell; side: 'dropoff' | 'takeup' | 'refuel' } | undefined {
   for (const cell of padBuildings(w)) {
     if (onPad(padDropCells(cell), at)) return { cell, side: 'dropoff' }
-    if (onPad(padTakeCells(cell), at)) return { cell, side: 'takeup' }
+    if (onPad(padTakeCells(cell), at)) {
+      if (cell.kind === 'refuel') return { cell, side: 'refuel' }
+      return { cell, side: 'takeup' }
+    }
   }
   return undefined
 }
@@ -632,6 +637,7 @@ export function padHit(w: World, at: Coord): { cell: PadCell; side: 'dropoff' | 
 export function padGoodsAt(w: World, at: Coord): PadGoods {
   const hit = padHit(w, at)
   if (hit === undefined) return 'all'
+  if (hit.side === 'refuel') return 'all'
   return hit.cell.padGoods(hit.side === 'dropoff' ? 'in' : 'out')
 }
 
@@ -640,7 +646,9 @@ export function stopAt(w: World, at: Coord): RouteStop | undefined {
   const hit = padHit(w, at)
   if (hit !== undefined && hit.side === 'dropoff') return { kind: 'unload', at: { col: at.col, row: at.row }, pick: ANY }
   if (hit !== undefined && hit.side === 'takeup') return { kind: 'load', at: { col: at.col, row: at.row }, pick: ANY }
+  if (hit !== undefined && hit.side === 'refuel') return { kind: 'refuel', at: { col: at.col, row: at.row }, wait: false }
   if (w.cell(at).kind === 'traffic-light') return { kind: 'wait', at: { col: at.col, row: at.row } }
+  if (w.cell(at).kind === 'refuel') return undefined
   return { kind: 'goto', at: { col: at.col, row: at.row } }
 }
 
@@ -701,7 +709,8 @@ function padSideOfLocal(w: World): 'dropoff' | 'takeup' | undefined {
   const v = driverVehicle(w, w.local)
   if (v?.pose.kind !== 'field') return undefined
   const hit = padHit(w, { col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) })
-  return hit === undefined ? undefined : hit.side
+  if (hit === undefined || hit.side === 'refuel') return undefined
+  return hit.side
 }
 
 export function onDropoffPad(w: World): boolean {
@@ -712,12 +721,12 @@ export function onTakeupPad(w: World): boolean {
   return padSideOfLocal(w) === 'takeup'
 }
 
-export function machinePads(w: World): { col: number; row: number; side: 'dropoff' | 'takeup'; legal: boolean }[] {
+export function machinePads(w: World): { col: number; row: number; side: 'dropoff' | 'takeup' | 'refuel'; legal: boolean }[] {
   w.act = w.seats[w.local]
   const v = driverVehicle(w, w.local)
   const floor =
     v !== undefined && v.pose.kind === 'field' ? { col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) } : undefined
-  const out: { col: number; row: number; side: 'dropoff' | 'takeup'; legal: boolean }[] = []
+  const out: { col: number; row: number; side: 'dropoff' | 'takeup' | 'refuel'; legal: boolean }[] = []
   padBuildings(w).forEach(b => {
     padDropCells(b).forEach(p => {
       const on = floor !== undefined && p.col === floor.col && p.row === floor.row
@@ -725,7 +734,8 @@ export function machinePads(w: World): { col: number; row: number; side: 'dropof
     })
     padTakeCells(b).forEach(p => {
       const on = floor !== undefined && p.col === floor.col && p.row === floor.row
-      out.push({ col: p.col, row: p.row, side: 'takeup', legal: on && loadWould(w) })
+      if (b.kind === 'refuel') out.push({ col: p.col, row: p.row, side: 'refuel', legal: false })
+      else out.push({ col: p.col, row: p.row, side: 'takeup', legal: on && loadWould(w) })
     })
   })
   return out
@@ -953,8 +963,9 @@ export function setBoomBody(w: World, width: 3 | 5): void {
 
 export function stopLegal(w: World, s: RouteStop): boolean {
   if (!w.inWorld(s.at)) return false
-  if (s.kind === 'goto') return true
+  if (s.kind === 'goto') return w.cell(s.at).kind !== 'refuel'
   if (s.kind === 'wait') return w.cell(s.at).kind === 'traffic-light'
+  if (s.kind === 'refuel') return padHit(w, s.at)?.side === 'refuel'
   const hit = padHit(w, s.at)
   if (hit === undefined) return false
   if (s.kind === 'unload') return hit.side === 'dropoff'
@@ -997,7 +1008,9 @@ export function stripPadStops(w: World, cell: PadCell): void {
   const pads = [...padDropCells(cell), ...padTakeCells(cell)]
   stripStops(
     w,
-    s => (s.kind === 'load' || s.kind === 'unload') && pads.some(p => p.col === s.at.col && p.row === s.at.row),
+    s =>
+      (s.kind === 'load' || s.kind === 'unload' || s.kind === 'refuel') &&
+      pads.some(p => p.col === s.at.col && p.row === s.at.row),
   )
 }
 
@@ -1121,6 +1134,16 @@ export function routeBody(w: World, cmd: Extract<Cmd, { a: typeof Act.route }>):
     w.ping()
     return
   }
+  if (cmd.k === 'setWait') {
+    const route = w.routeById(cmd.r)
+    if (route === undefined) return
+    if (cmd.i < 0 || cmd.i >= route.stops.length) return
+    const stop = route.stops[cmd.i]
+    if (stop.kind !== 'refuel') return
+    stop.wait = cmd.on
+    w.ping()
+    return
+  }
   if (cmd.k === 'reorder') {
     const route = w.routeById(cmd.r)
     if (route === undefined) return
@@ -1231,7 +1254,7 @@ function arriveGoto(w: World, v: Vehicle, pose: Extract<VehiclePose, { kind: 'fi
 function autoDrive(w: World, v: Vehicle, pose: Extract<VehiclePose, { kind: 'field' }>): Drive {
   const zero: Drive = { throttle: 0, steer: 0 }
   if (v.fuel === 0) return zero
-  if (v.dwell > 0) return zero
+  if (v.dwell !== 0) return zero
   if (v.route === 'none') return zero
   const route = w.routeById(v.route)
   if (!(route?.stops.length)) return zero
@@ -1503,6 +1526,27 @@ export function unloadWould(w: World): boolean {
   return canDumpCargo(load, hit.cell, ANY)
 }
 
+export function transferRefuel(w: World, v: Vehicle): void {
+  if (v.pose.kind !== 'field') return
+  const hit = padHit(w, { col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) })
+  if (hit?.side !== 'refuel' || hit.cell.kind !== 'refuel') return
+  const station = hit.cell
+  const room = (1 - v.fuel) * FUEL_LITERS
+  const take = station.store < room ? station.store : room
+  if (take > 0) {
+    station.store -= take
+    v.fuel = take === room ? 1 : v.fuel + take / FUEL_LITERS
+  }
+  const rest = room - take
+  const cost = (rest / FUEL_LITERS) * QUAD_REFILL
+  const bought = station.buy && rest > 0 && w.money >= cost
+  if (bought) {
+    w.money -= cost
+    v.fuel = 1
+  }
+  if (take > 0 || bought) w.ping()
+}
+
 export function tickDispatch(w: World, dt: number): void {
   w.vehicles.forEach(v => {
     if (v.pose.kind !== 'field' || !v.running || v.route === 'none') return
@@ -1511,12 +1555,26 @@ export function tickDispatch(w: World, dt: number): void {
     const stop = route.stops[v.cursor]
     if (stop.kind === 'goto') return
     if (!stopArrived(v.pose, stop)) return
-    if (v.fuel === 0) return
     if (stop.kind === 'wait') {
+      if (v.fuel === 0) return
       if (!w.inWorld(stop.at)) return
       const light = w.cell(stop.at)
       if (light.kind !== 'traffic-light') return
       if (light.inn === 1) advanceRoute(v, route)
+      return
+    }
+    if (v.fuel === 0 && stop.kind !== 'refuel') return
+    if (stop.kind === 'refuel') {
+      if (v.dwell > 0) {
+        v.dwell -= dt
+        if (v.dwell > 0) return
+      } else if (v.dwell === 0) {
+        v.dwell = DISPATCH_DWELL
+        return
+      }
+      transferRefuel(w, v)
+      if (!stop.wait || v.fuel === 1) advanceRoute(v, route)
+      else v.dwell = -1
       return
     }
     if (v.dwell <= 0) {

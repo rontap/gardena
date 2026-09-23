@@ -101,6 +101,7 @@ import propBarrel from '../../assets/props/prop-barrel.svg?raw'
 import propJam from '../../assets/props/prop-jam.svg?raw'
 import propFreezer from '../../assets/props/prop-freezer.svg?raw'
 import propFurnace from '../../assets/props/prop-furnace.svg?raw'
+import propRefuel from '../../assets/props/prop-refuel.svg?raw'
 import propWeatherStation from '../../assets/props/prop-weather-station.svg?raw'
 import propInfuser from '../../assets/props/prop-infuser.svg?raw'
 import propNecronomicon from '../../assets/props/prop-necronomicon.svg?raw'
@@ -160,6 +161,7 @@ import propTrafficLight from '../../assets/props/prop-traffic-light.svg?raw'
 import uiHangarReturn from '../../assets/ui/ui-hangar-return.svg?raw'
 import uiPadDrop from '../../assets/ui/ui-pad-drop.svg?raw'
 import uiPadTake from '../../assets/ui/ui-pad-take.svg?raw'
+import uiPadRefuel from '../../assets/ui/ui-pad-refuel.svg?raw'
 import shovel from '../../assets/items/item-shovel.svg?raw'
 import better from '../../assets/items/item-better-shovel.svg?raw'
 import rotaryShovel from '../../assets/items/item-rotary-shovel.svg?raw'
@@ -269,6 +271,8 @@ export type AtlasKey =
   | 'freezer'
   | 'furnace-off'
   | 'furnace-on'
+  | 'refuel-off'
+  | 'refuel-on'
   | 'weather-station'
   | 'station-off'
   | 'station-on'
@@ -295,6 +299,7 @@ export type AtlasKey =
   | 'hangar-return'
   | 'pad-drop'
   | 'pad-take'
+  | 'pad-refuel'
   | 'or'
   | 'and'
   | 'not'
@@ -602,6 +607,8 @@ async function load(): Promise<void> {
   put('freezer', propFreezer)
   put('furnace-off', propFurnace, 'off')
   put('furnace-on', propFurnace, 'on')
+  put('refuel-off', propRefuel, 'off')
+  put('refuel-on', propRefuel, 'on')
   put('weather-station', propWeatherStation)
   put('station-off', propStation, 'off')
   put('station-on', propStation, 'on')
@@ -631,6 +638,7 @@ async function load(): Promise<void> {
   put('hangar-return', uiHangarReturn)
   put('pad-drop', uiPadDrop)
   put('pad-take', uiPadTake)
+  put('pad-refuel', uiPadRefuel)
   put('or', propLogic, 'or')
   put('and', propLogic, 'and')
   put('not', propNot)

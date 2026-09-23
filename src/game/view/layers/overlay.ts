@@ -460,7 +460,8 @@ export class OverlayLayer {
         })
       })
       world.machinePads().forEach(p => {
-        const s = this.sprites.take(atlasTex(p.side === 'dropoff' ? 'pad-drop' : 'pad-take'))
+        const key = p.side === 'dropoff' ? 'pad-drop' : p.side === 'refuel' ? 'pad-refuel' : 'pad-take'
+        const s = this.sprites.take(atlasTex(key))
         s.position.set(p.col * TILE, p.row * TILE)
         s.alpha = p.legal ? 1 : 0.5
       })
@@ -502,7 +503,7 @@ export class OverlayLayer {
           if (world.inWorld(p)) put('pad-drop', p.col, p.row)
         })
         takeupPad(base).forEach(p => {
-          if (world.inWorld(p)) put('pad-take', p.col, p.row)
+          if (world.inWorld(p)) put(id === 'buy-refuel' ? 'pad-refuel' : 'pad-take', p.col, p.row)
         })
       }
     }
@@ -681,7 +682,7 @@ export class OverlayLayer {
       if (picked === undefined) return
       pts.forEach((p, i) => {
         const kind = route.stops[i].kind
-        const port = kind === 'load' || kind === 'unload'
+        const port = kind === 'load' || kind === 'unload' || kind === 'refuel'
         const r = port ? STOP_R_PORT : STOP_R
         this.gfx.circle(p.x * TILE, p.y * TILE, r)
         this.gfx.fill({ color: edit.drag === i ? RIPE : WASH })

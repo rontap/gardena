@@ -89,6 +89,7 @@
   "prompt_move_here": "Move here",
   "prompt_drop": "Drop",
   "prompt_labeled": "{name} - {detail}",
+  "prompt_refuel_held": "{units}/{cap} units, {store}/{storeCap} L",
   "prompt_only": "{product} only",
   "prompt_full": "full",
   "prompt_empty": "empty",

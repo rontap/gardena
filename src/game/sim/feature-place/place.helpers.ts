@@ -6,6 +6,7 @@ import {
   CompostBox,
   Freezer,
   Furnace,
+  Refuel,
   Grinder,
   Hangar,
   Infuser,
@@ -114,6 +115,12 @@ export function deleteBuildingBody(w: World, at: Coord): void {
     return
   }
   if (c.kind === 'compost-box') {
+    stripPadStops(w, c)
+    w.setCell(at, bare('soft', 0))
+    w.ping()
+    return
+  }
+  if (c.kind === 'refuel') {
     stripPadStops(w, c)
     w.setCell(at, bare('soft', 0))
     w.ping()
@@ -336,6 +343,7 @@ export function confirmPlace(w: World, at: Coord): void {
     w.act.place.id === 'buy-freezer' ||
     w.act.place.id === 'buy-freezer-large' ||
     w.act.place.id === 'buy-hangar' ||
+    w.act.place.id === 'buy-refuel' ||
     w.act.place.id === 'buy-silo-seed' ||
     w.act.place.id === 'buy-silo-spray' ||
     w.act.place.id === 'buy-silo-produce' ||
@@ -433,6 +441,7 @@ export function confirmPlace(w: World, at: Coord): void {
     if (w.act.place.id === 'buy-chest') w.setCell(at, new Chest(base))
     else if (w.act.place.id === 'buy-grinder') w.setCell(at, new Grinder(base))
     else if (w.act.place.id === 'buy-compost-box') w.setCell(at, new CompostBox(base))
+    else if (w.act.place.id === 'buy-refuel') w.setCell(at, new Refuel(base))
     else if (w.act.place.id === 'buy-jam') w.setCell(at, new JamMachine(base))
     else if (w.act.place.id === 'buy-barrel') w.setCell(at, new Barrel(base))
     else if (w.act.place.id === 'buy-freezer') w.setCell(at, new Freezer(base))
@@ -462,6 +471,7 @@ export function confirmPlace(w: World, at: Coord): void {
     made.kind === 'chest' ||
     made.kind === 'grinder' ||
     made.kind === 'compost-box' ||
+    made.kind === 'refuel' ||
     made.kind === 'well' ||
     made.kind === 'valve' ||
     made.kind === 'tap' ||

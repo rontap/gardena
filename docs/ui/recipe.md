@@ -4,7 +4,7 @@ Crafting shown as a picture. One component, four mounts. Rules [[mechanics/machi
 
 **Recipe** is a player-facing word. Defined here, used in the almanac heading.
 
-No pop-up GUI. No ObjectHud. Nothing attaches to the machine — [[ui/machines]]. Station is not a `MachineId` and has no mount here — [[ui/station]]. Infuser is a `MachineId`. Infused yield faces draw overlay-infused — [[mechanics/infusion]] `infusion.overlay`.
+No pop-up GUI. No ObjectHud. Nothing attaches to the machine — [[ui/machines]]. Station is not a `MachineId` and has no mount here — [[ui/station]]. Infuser is a `MachineId`. Refuel is a `MachineId`: four list rows, and the live row is the `FUEL_BATCH` batch. Yield face `fuel`, an `ink` droplet. Infused yield faces draw overlay-infused — [[mechanics/infusion]] `infusion.overlay`.
 
 ## Shape
 

@@ -30,6 +30,9 @@ Rects. One concept per file. [[art/svg]] [[art/palette]]
 | `item-infuser.svg` | same machine, card/hand, stays 24×24; groups `off` `on` |
 | `prop-necronomicon.svg` | 2×2 drawn 1.5×1.5 south-aligned (`y=10`–`44`), an open book lying flat: `grape` cover and spine block, `ink` gutter, one `cobble-dark` leaf west and one `slab` leaf east with `house` top edges, `ink` ruled lines, a `roof` ribbon standing up out of the gutter; groups `off` `on`. `on` turns the ruled lines `grape` and adds two `grape` glow bars above the covers. No rectangular roof bar, no brown walls |
 | `item-necronomicon.svg` | the same book, card/hand, 24×24, one group |
+| `prop-refuel.svg` | 1×1 fuel pump. The top half is a round glass globe, wider than the cabinet. `roof` band, then a `house` cabinet with a second round dial, hose and nozzle east, wider base. Groups `off` `on`. `off`: globe `water`, dial `slab`, needle down. `on`: globe `ink` with a `ripe` glint, needle `ripe`, `ink` droplet at the nozzle. Palette hex only |
+| `item-refuel.svg` | same stall, card/hand, stays 24×24; groups `off` `on` |
+| `item-fuel.svg` | `ink` droplet, one `house` glint. Not water. Not a building |
 
 ## Fruit
 

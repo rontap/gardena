@@ -465,6 +465,7 @@ export const SKUS: { readonly [K in SkuId]: Sku } = {
     'buy-freezer-large': {id: 'buy-freezer-large', price: 0, tab: 'automation', unlock: 'start', show: 'start', need: 'prize'},
     'buy-sugar': {id: 'buy-sugar', price: 16, tab: 'utility', unlock: 'unlock-preservatives', show: 'unlock-grinder', need: []},
     'buy-hangar': {id: 'buy-hangar', price: 80, tab: 'automation', unlock: 'unlock-vehicles', show: 'unlock-irrigation', need: []},
+    'buy-refuel': {id: 'buy-refuel', price: 25, tab: 'automation', unlock: 'unlock-dispatch', show: 'unlock-dispatch', need: []},
     'buy-silo-seed': {id: 'buy-silo-seed', price: 40, tab: 'automation', unlock: 'unlock-silos', show: 'unlock-dispatch', need: []},
     'buy-silo-spray': {id: 'buy-silo-spray', price: 40, tab: 'automation', unlock: 'unlock-silos', show: 'unlock-dispatch', need: []},
     'buy-silo-produce': {id: 'buy-silo-produce', price: 40, tab: 'automation', unlock: 'unlock-silos', show: 'unlock-dispatch', need: []},

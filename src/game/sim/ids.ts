@@ -230,6 +230,7 @@ export type SkuId =
   | 'buy-freezer-large'
   | 'buy-sugar'
   | 'buy-hangar'
+  | 'buy-refuel'
   | 'buy-silo-seed'
   | 'buy-silo-spray'
   | 'buy-silo-produce'

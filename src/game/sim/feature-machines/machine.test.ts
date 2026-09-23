@@ -18,6 +18,9 @@ import {
   FURNACE_REACH,
   FURNACE_SECONDS,
   FURNACE_VALUE,
+  FUEL_BATCH,
+  FUEL_SECONDS,
+  FUEL_STORE,
   MIXED_MUL,
   SPIRIT_SALE,
   STILL_CAP,
@@ -62,12 +65,15 @@ import {
   stationApply,
   stationWorking,
 } from './machine.ts'
-import { CASK_NAME, caskMulOf, caskName, compostValue, furnaceValue, mergeInto, type Item } from '../item.ts'
+import { CASK_NAME, caskMulOf, caskName, compostValue, furnaceValue, makeShovel, mergeInto, type Item } from '../item.ts'
+import { MACHINE_IDS } from './recipe.ts'
+import { emptyVehicleSlots, makeQuad, transferUnload } from '../feature-vehicles/vehicle.ts'
+import { ANY } from '../feature-vehicles/pick.ts'
 import { CASK_IDS, CROP_OF_CASK, GROWN_IDS } from '../ids.ts'
 import { BARREL_AGE, CASK_AGE_MAX, CASK_AGE_MIN, FLOUR, JAM_SALE, MILL_H, MILL_W, SENSOR_HOLD } from '../../defs/items.ts'
 import { Plant } from '../plant.ts'
 import { Soil, SOIL_WATER_MID, WEED_CHANCE } from '../soil.ts'
-import { Barrel, Chest, CompostBox, Freezer, Furnace, Grinder, Infuser, JamMachine, Mill, occupiedCells, PAD, PotStill, ResearchStation } from '../building.ts'
+import { Barrel, Chest, CompostBox, Freezer, Furnace, Grinder, Infuser, JamMachine, Machine, Mill, occupiedCells, PAD, PotStill, Refuel, ResearchStation } from '../building.ts'
 import { lookText } from '../look.ts'
 import { bare } from '../plot.ts'
 import { Lamp, Lever } from '../sensor.ts'
@@ -1061,6 +1067,153 @@ describe('building.ports-single', () => {
     expect([...new Chest(base).ports]).toEqual(['out'])
     expect([...new Lamp(base).ports]).toEqual(['in'])
     expect([...new Lever(base).ports]).toEqual(['in', 'out'])
+  })
+})
+
+describe('machines.refuel-feed', () => {
+  test('machines.refuel-feed', () => {
+    const w = new World(1)
+    const at = { col: 18, row: 16 }
+    const station = new Refuel({ shape: 'rect', col: at.col, row: at.row, w: 1, h: 1 })
+    w.setCell(at, station)
+    const wood = (count: number): Item => ({ kind: 'wood', count })
+    const oil = (count: number, infused: boolean): Item => ({ kind: 'oil', count, unitSale: 1, quality: 0.4, infused })
+    const cane = (count: number): Item => ({
+      kind: 'fruit',
+      crop: 'sugar-cane',
+      variety: 'base',
+      quality: 0.8,
+      count,
+      unitSale: 3,
+      freshness: 1,
+      cut: false,
+    })
+    const spirit = (infused: boolean): Item => ({
+      kind: 'spirit',
+      spirit: 'vodka',
+      variety: 'base',
+      quality: 0.2,
+      count: 1,
+      unitSale: 4,
+      infused,
+    })
+    const cask = (infused: boolean): Item => ({
+      kind: 'cask',
+      cask: 'wine',
+      variety: 'base',
+      quality: 0.9,
+      count: 1,
+      unitSale: 5,
+      infused,
+    })
+    expect(station.accept(wood(1))).toBe(1)
+    expect(station.accept(oil(1, true))).toBe(1)
+    expect(station.accept(cane(1))).toBe(1)
+    expect(station.accept(spirit(true))).toBe(1)
+    expect(station.accept(cask(false))).toBe(1)
+    station.apply(wood(1), 1)
+    station.apply(oil(1, true), 1)
+    station.apply(spirit(true), 1)
+    station.apply(cask(false), 1)
+    station.apply(cane(2), 2)
+    expect(station.units).toBe(10 + 20 + 15 + 15 + 6)
+    station.units = 0
+    expect(station.accept({ kind: 'sugar', liters: 4, capacityLiters: 4, unitSale: 1, quality: 0 })).toBe(0)
+    expect(station.accept({ kind: 'seeds', crop: 'carrot', variety: 'base', quality: 0, count: 3 })).toBe(0)
+    expect(station.accept({ kind: 'jam', crop: 'grape', variety: 'base', quality: 0, count: 1, unitSale: 1, infused: false })).toBe(0)
+    expect(station.accept(makeShovel('shovel'))).toBe(0)
+    station.units = FURNACE_CAP - 5
+    expect(station.accept(wood(2))).toBe(0)
+    expect(station.accept(cane(3))).toBe(1)
+    station.units = 0
+    w.seats[0].actor.x = at.col + 0.5
+    w.seats[0].actor.y = at.row + 0.5
+    w.seats[0].hand = { kind: 'hold', item: wood(11) }
+    w.enqueue({ act: 'refuel', at })
+    while (w.seats[0].queue.length > 0) w.tick(DT_MAX)
+    expect(station.units).toBe(100)
+    const held = w.seats[0].hand
+    expect(held.kind === 'hold' && held.item.kind === 'wood' && held.item.count).toBe(1)
+    station.units = 20
+    const west = { col: at.col - 1, row: at.row }
+    const east = { col: at.col + 1, row: at.row }
+    w.setCell(west, new Chest({ shape: 'rect', col: west.col, row: west.row, w: 1, h: 1 }))
+    w.setCell(east, new Chest({ shape: 'rect', col: east.col, row: east.row, w: 1, h: 1 }))
+    const wc = w.cell(west)
+    const ec = w.cell(east)
+    if (wc.kind !== 'chest' || ec.kind !== 'chest') throw new Error('chest')
+    wc.slots[0] = { kind: 'hold', item: cane(1) }
+    wc.slots[1] = { kind: 'hold', item: { kind: 'sugar', liters: 2, capacityLiters: 2, unitSale: 1, quality: 0 } }
+    ec.slots[0] = { kind: 'hold', item: wood(1) }
+    ticks(w, BIG_TICK)
+    expect(station.units).toBe(23)
+    expect(wc.slots.some(s => s.kind === 'hold' && s.item.kind === 'fruit')).toBe(false)
+    expect(wc.slots.some(s => s.kind === 'hold' && s.item.kind === 'sugar')).toBe(true)
+    expect(ec.slots[0].kind === 'hold' && ec.slots[0].item.kind).toBe('wood')
+    const north = { col: at.col, row: at.row - 1 }
+    const quad = makeQuad(1, 1, emptyVehicleSlots(), {
+      kind: 'field',
+      x: north.col + 0.5,
+      y: north.row + 0.5,
+      heading: 0,
+      speed: 0,
+      driver: 'none',
+    })
+    quad.slots[0] = { kind: 'hold', item: oil(2, false) }
+    transferUnload(w, quad, ANY)
+    expect(station.units).toBe(23 + 40)
+    station.units = 12
+    station.store = 4
+    const drops = w.drops.length
+    w.armDelete()
+    w.deleteBuilding(at)
+    expect(w.drops).toHaveLength(drops)
+    expect(w.cell(at).kind).not.toBe('refuel')
+  })
+})
+
+describe('machines.refuel-cycle', () => {
+  test('machines.refuel-cycle', () => {
+    const w = new World(1)
+    const at = { col: 18, row: 16 }
+    const station = new Refuel({ shape: 'rect', col: at.col, row: at.row, w: 1, h: 1 })
+    w.setCell(at, station)
+    expect(station instanceof Machine).toBe(false)
+    expect((MACHINE_IDS as readonly string[]).includes('refuel')).toBe(true)
+    expect(FUEL_STORE).toBe(10)
+    expect(FUEL_BATCH).toBe(10)
+    expect(FUEL_SECONDS).toBe(60)
+    station.units = 25
+    station.store = 0
+    w.family.owned.set('machinery', 4)
+    expect(w.machineMul()).toBe(1.2)
+    w.tick(DT_MAX)
+    expect(station.progress).toBeCloseTo(DT_MAX / FUEL_SECONDS)
+    const box = new CompostBox({ shape: 'rect', col: at.col + 1, row: at.row, w: 1, h: 1 })
+    box.units = COMPOST_NEED
+    w.setCell({ col: at.col + 1, row: at.row }, box)
+    const before = box.progress
+    w.tick(DT_MAX)
+    expect(box.progress - before).toBeCloseTo(DT_MAX / COMPOST_SECONDS)
+    const furnace = new Furnace({ shape: 'rect', col: at.col, row: at.row + 2, w: 1, h: 2 })
+    furnace.recipe = 'ash'
+    furnace.units = FURNACE_NEED
+    w.setCell({ col: at.col, row: at.row + 2 }, furnace)
+    w.setCell({ col: at.col, row: at.row + 3 }, furnace)
+    const p0 = station.progress
+    w.tick(DT_MAX)
+    expect(station.progress - p0).toBeCloseTo((DT_MAX * (1 + FURNACE_HASTE)) / FUEL_SECONDS)
+    station.progress = 0
+    station.tick(w, at, FUEL_SECONDS * 5)
+    expect(station.units).toBe(15)
+    expect(station.store).toBe(FUEL_BATCH)
+    expect(station.progress).toBe(0)
+    const held = station.units
+    const stored = station.store
+    w.tick(DT_MAX)
+    expect(station.units).toBe(held)
+    expect(station.store).toBe(stored)
+    expect(station.progress).toBe(0)
   })
 })
 

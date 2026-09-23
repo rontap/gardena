@@ -191,6 +191,9 @@ export function applyCmd(w: World, cmd: Cmd): 'queued' | 'placed' | 'blocked' | 
     case Act.route:
       vehicles.routeBody(w, cmd)
       return
+    case Act.setFuelBuy:
+      w.setFuelBuyBody({ col: cmd.c[0], row: cmd.c[1] }, cmd.on)
+      return
     case Act.necronomicon:
       if (cmd.k === 'gold') necro.sacrificeGoldBody(w)
       else necro.ritualBody(w)

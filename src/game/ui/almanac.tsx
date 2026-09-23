@@ -121,6 +121,7 @@ const AUTO_IDS = [
   'infuser',
   'sorter',
   'hangar',
+  'refuel',
   'silo-seed',
   'silo-produce',
   'silo-spray',

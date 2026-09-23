@@ -88,7 +88,7 @@ export function Menu(props: MenuProps) {
         setPage(page.kind === 'changelog' ? { kind: 'home' } : { kind: 'changelog' })
       }}
     >
-      2.9.1
+      2.9.4
     </button>
   )
   return (

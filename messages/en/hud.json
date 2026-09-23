@@ -293,5 +293,6 @@
   "hud_debug_secs": "{n}s",
   "hud_debug_min_secs": "{m}m {s}s",
   "hud_best_for": "Best for {purpose} - sells for {mul}x on that path",
-  "hud_queue_more": "and {n} more"
+  "hud_queue_more": "and {n} more",
+  "hud_refuel_buy": "Buy from market"
 }

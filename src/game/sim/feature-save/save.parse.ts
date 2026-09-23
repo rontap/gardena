@@ -17,6 +17,7 @@ import {
   JamMachine,
   Mill,
   Furnace,
+  Refuel,
   Infuser,
   Necronomicon,
   WeatherStation,
@@ -469,6 +470,14 @@ function makeLive(cell: Exclude<SaveCell, { kind: 'occ' }>): Cell {
       still.inn = cell.inn
       return still
     }
+    case 'refuel': {
+      const station = new Refuel(cell.base)
+      station.buy = cell.buy
+      station.store = cell.store
+      station.units = cell.units
+      station.progress = cell.progress
+      return station
+    }
     case 'furnace': {
       const furnace = new Furnace(cell.base)
       const recipe = cell.recipe
@@ -746,6 +755,7 @@ function liveVehicle(v: SaveVehicle): Vehicle {
 function liveStop(s: RouteStop): RouteStop {
   const at = { col: s.at.col, row: s.at.row }
   if (s.kind === 'load' || s.kind === 'unload') return { kind: s.kind, at, pick: { ...s.pick } }
+  if (s.kind === 'refuel') return { kind: 'refuel', at, wait: s.wait }
   return { kind: s.kind, at }
 }
 

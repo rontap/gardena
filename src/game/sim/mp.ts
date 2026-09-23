@@ -269,6 +269,7 @@ export function digestParts(world: World): Record<string, unknown> {
     if (c.kind === 'mill') s += `:${c.recipe}:${c.variety}`
     if (c.kind === 'infuser') s += `:${c.lock === 'none' ? 'none' : c.lock.kind}:u${c.units}`
     if (c.kind === 'furnace') s += `:${c.recipe}`
+    if (c.kind === 'refuel') s += `:b${c.buy ? 1 : 0}:s${q(c.store)}:u${q(c.units)}:p${q(c.progress)}`
     if (c.kind === 'sorter') s += `:${c.facing}:${c.held === 'none' ? 'none' : c.held.kind}:p${q(c.progress)}`
     if (c.kind === 'jam') s += `:${c.crop}:${c.variety}`
     if (c.kind === 'grinder') s += `:${c.crop}:${c.variety}`

@@ -20,6 +20,8 @@ Reading the row band, north to south: the Seed silo and the Additive store stand
 
 `hangar` — `buy-hangar`. 3×2, door south, no rotate. `Sku.tab` `automation`. Almanac **Automation**. Walk-up cue. Quad / tractor / trailer hangar-buys, not place SKUs. Cannot delete while it stores a vehicle or a trailer. Rules: [[mechanics/vehicles]].
 
+`refuel` — `buy-refuel`. 1×1, no rotate. `Sku.tab` `automation`. Hangar group, beside `buy-hangar`. Almanac **Automation**. `skuLabel` **Refueling station**. Show and buy `unlock-dispatch`. Price preference 25. No new research row. Delete always. Rules: [[mechanics/machines]] `machines.refuel-feed` [[mechanics/vehicles]] `vehicles.refuel`.
+
 `silo-seed` — `buy-silo-seed`. `silo-spray` — `buy-silo-spray`. `silo-produce` — `buy-silo-produce`. 2×3, door south, `siloPad`. `Sku.tab` `automation`. Almanac **Automation**. Walk-up stores: each opens the panel its starter twin uses. `isSolid`, delete always. Rules: [[mechanics/vehicles]] `vehicles.silo-store`.
 
 `seed-silo` — starter, not a SKU. `additive-store` — starter, not a SKU. 1×2, `SILO_BASE` / `ADDITIVE_BASE`. Not placeable, not researchable, not deletable, no almanac entry. Contents and caps: [[mechanics/inventory]]. Panels: [[ui/store]]. Starter **Seed silo** is not `silo-seed`.

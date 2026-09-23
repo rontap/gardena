@@ -71,17 +71,19 @@ Live tick is `DT_MAX` only. App host accumulator `frameDt * World.cheatSpeed`. N
 
 ## JSON
 
-`Cmd` is JSON. Classes forbidden in the log. Field names are one letter. Closed discriminated union on `a`. Each `a` has exactly one meaning. Arms: `sim/log.ts`. Every lowercase letter and all but one uppercase are taken; `setRestock` is `'I'`, the last free one. The next `Act` needs a second character, not a hunt.
+`Cmd` is JSON. Classes forbidden in the log. Field names are one letter. Closed discriminated union on `a`. Each `a` has exactly one meaning. Arms: `sim/log.ts`. No single letter is free. `Act.setFuelBuy` is `'fb'`. The next `Act` needs a second character, not a hunt.
 
 Letters for `a` live only in `Act`. Call sites use `Act.click`, never the letter. JSON still stores the letter.
 
-`XY = [col, row]`. Vertex uses `XY`. Edge in the log is `Edge`. Intent in the log is `Intent`. Chop is `Intent` `{ act: 'chop'; at }`. Furnace dump is `Intent` `{ act: 'furnace'; at }`. Enqueue, no new `Act` letter. No `Partial`. No optional that means unsure. `facing` only on vert sprinkler.
+`XY = [col, row]`. Vertex uses `XY`. Edge in the log is `Edge`. Intent in the log is `Intent`. Chop is `Intent` `{ act: 'chop'; at }`. Furnace dump is `Intent` `{ act: 'furnace'; at }`. Refuel dump is `Intent` `{ act: 'refuel'; at }`. Enqueue, no new `Act` letter. No `Partial`. No optional that means unsure. `facing` only on vert sprinkler.
 
 Every arm has required `t: number` and `p: SeatId`. Solo and tests: `p = 0`.
 
-Letter map: [[mechanics/log]] `log.letters`. Latest `Act.drive` same `t` wins. Latest `Act.stride` same `t` wins. Latest `Act.setBoom` same `t` wins. Latest `Act.route` `assign` / `start` same `t` wins. Seated `Act.click` field acts no-op. Store is `Act.dock`, not a tick. Boom is not a cmd. Auto load/unload/wait/motion are tick, not cmds. Load/unload no coord; floor of driven vehicle. Cycle `placeWire` no-op. Board generation is not a cmd.
+Letter map: [[mechanics/log]] `log.letters`. Latest `Act.drive` same `t` wins. Latest `Act.stride` same `t` wins. Latest `Act.setBoom` same `t` wins. Seated `Act.click` field acts no-op. Store is `Act.dock`, not a tick. Boom is not a cmd. Auto load/unload/wait/refuel/motion are tick, not cmds. Load/unload no coord; floor of driven vehicle. Cycle `placeWire` no-op. Board generation is not a cmd.
 
-`Act.openHud` `k` is a closed union: `sprinkler` | `water` | `harvest` | `counter` | `day` | `logic` | `variety` | `weather` | `pressure`.
+`Act.openHud` `k` is a closed union: `sprinkler` | `water` | `harvest` | `counter` | `day` | `logic` | `variety` | `weather` | `pressure` | `refuel`.
+
+`Act.setFuelBuy` `'fb'`. `c` XY. `on` boolean. No-op unless that cell is `refuel`. Guest may.
 
 `Act.tuneSensor` inner `k` is a closed union: logic mode, variety flags, weather flags, pressure flags. New cmds → orchestrator bumps `GAME_VERSION` with [[GLOBAL_VERSION]].
 
@@ -89,7 +91,7 @@ Letter map: [[mechanics/log]] `log.letters`. Latest `Act.drive` same `t` wins. L
 
 `Act.cheat` inner `k` is a closed union: `all` `money` `points` `research` `speed` `day` `skills`. `n` required on `speed` (`1 | 3`).
 
-`Act.route` inner `k` closed union: `create` | `delete` | `assign` | `add` | `remove` | `reorder` | `rename` | `start` | `automate`. Guest may. All no-op unless `unlock-dispatch` in `done`.
+`Act.route` inner `k` closed union: `create` | `delete` | `add` | `remove` | `move` | `pick` | `reorder` | `rename` | `setDeploy` | `deploy` | `recall` | `automate` | `setWait`. `setWait` carries `r`, `i`, `on`. Guest may. All no-op unless `unlock-dispatch` in `done`.
 
 Map calls `rightClick`. Log `Act.rightClick`, not a split cancel/drop. `apply` that arm uses `seats[cmd.p]`: if that `place` is not `none`, cancel-place body; else enqueue `{ act: 'drop', at }` when in-world plot and that hand holds. HUD/App `cancelPlace` logs `Act.cancelPlace`.
 

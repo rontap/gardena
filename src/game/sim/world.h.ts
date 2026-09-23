@@ -66,6 +66,7 @@ export type Intent =
   | { act: 'grind'; at: Coord }
   | { act: 'still'; at: Coord }
   | { act: 'furnace'; at: Coord }
+  | { act: 'refuel'; at: Coord }
   | { act: 'station'; at: Coord }
   | { act: 'infuse'; at: Coord }
   | { act: 'necronomicon'; at: Coord }
@@ -182,6 +183,7 @@ export type HudTarget =
   | { kind: 'variety'; at: Coord }
   | { kind: 'weather'; at: Coord }
   | { kind: 'pressure'; at: Coord }
+  | { kind: 'refuel'; at: Coord }
 
 export type DayTally = { died: number; harvests: number; research: ResearchId[]; contracts: HistoryEntry[] }
 

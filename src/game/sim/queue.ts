@@ -91,6 +91,8 @@ export function taskName(world: World, i: Intent): TaskName {
       return m.names_building_still()
     case 'furnace':
       return m.names_building_furnace()
+    case 'refuel':
+      return m.names_building_refuel()
     case 'station':
       return m.names_building_station()
     case 'barrel':
@@ -316,6 +318,13 @@ export function begin(world: World, i: Intent): void {
       }
       arm(world, 0.4)
       return
+    case 'refuel':
+      if (!machines.canRefuel(world, i.at)) {
+        shiftHead(world)
+        return
+      }
+      arm(world, 0.4)
+      return
     case 'station': {
       if (world.cell(i.at).kind !== 'station') {
         shiftHead(world)
@@ -478,6 +487,7 @@ export function finishWork(world: World): void {
   if (i.act === 'mill') machines.doMill(world, i.at)
   if (i.act === 'still') machines.doStill(world, i.at)
   if (i.act === 'furnace') machines.doFurnace(world, i.at)
+  if (i.act === 'refuel') machines.doRefuel(world, i.at)
   if (i.act === 'station') machines.doStation(world, i.at)
   if (i.act === 'barrel') machines.doBarrel(world, i.at)
   if (i.act === 'jam') machines.doJam(world, i.at)

@@ -14,6 +14,7 @@ export type RouteStop =
   | { kind: 'unload'; at: Coord; pick: Pick }
   | { kind: 'load'; at: Coord; pick: Pick }
   | { kind: 'wait'; at: Coord }
+  | { kind: 'refuel'; at: Coord; wait: boolean }
 
 export type RouteDeploy =
   | { kind: 'quad' }

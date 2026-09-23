@@ -72,6 +72,7 @@ describe('recipes.table', () => {
     expect(recipesOf('compost-box').length).toBe(4)
     expect(recipesOf('furnace').length).toBe(7)
     expect(recipesOf('infuser').length).toBe(4)
+    expect(recipesOf('refuel').length).toBe(4)
   })
 
   const millRow = (recipe: MillRecipe): Recipe => {
@@ -383,7 +384,10 @@ describe('machines.recipes-using', () => {
     ])
     expect(recipesUsing(fruit('vanilla')).map(r => [r.machine, outKind(r)])).toEqual([['mill', 'vanilla-extract']])
     expect(recipesUsing(fruit('chilli')).map(r => [r.machine, outKind(r)])).toEqual([['mill', 'flakes']])
-    expect(recipesUsing(fruit('sugar-cane')).map(r => [r.machine, outKind(r)])).toEqual([['mill', 'sugar']])
+    expect(recipesUsing(fruit('sugar-cane')).map(r => [r.machine, outKind(r)])).toEqual([
+      ['mill', 'sugar'],
+      ['refuel', 'fuel'],
+    ])
     expect(recipesUsing(fruit('apple')).map(r => [r.machine, outKind(r)])).toEqual([['barrel', 'cider']])
     expect(recipesUsing(fruit('olive')).map(r => [r.machine, outKind(r)])).toEqual([['mill', 'oil']])
     expect(recipesUsing(fruit('grape')).map(r => [r.machine, outKind(r)])).toEqual([
@@ -404,11 +408,12 @@ describe('machines.recipes-using', () => {
     expect(recipesUsing({ kind: 'oil', quality: 0, count: 1, unitSale: 0, infused: false }).map(r => r.machine)).toEqual([
       'furnace',
       'infuser',
+      'refuel',
     ])
     expect(recipesUsing({ kind: 'flour', quality: 0, count: 1, unitSale: 0 }).map(r => r.machine)).toEqual(['furnace'])
     expect(recipesUsing({ kind: 'flakes', quality: 0, count: 1 }).every(r => r.machine === 'infuser')).toBe(true)
     expect(recipesUsing({ kind: 'vanilla-extract', quality: 0, count: 1 }).every(r => r.machine === 'infuser')).toBe(true)
-    expect(recipesUsing({ kind: 'wood', count: 1 }).map(r => r.machine)).toEqual(['furnace'])
+    expect(recipesUsing({ kind: 'wood', count: 1 }).map(r => r.machine)).toEqual(['furnace', 'refuel'])
     expect(recipesUsing({ kind: 'ash', count: 1 }).map(r => r.machine)).toEqual(['compost-box'])
   })
 })

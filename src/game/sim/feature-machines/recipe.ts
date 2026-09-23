@@ -11,6 +11,9 @@ import {
   FURNACE_NEED,
   FURNACE_SECONDS,
   FURNACE_VALUE,
+  FUEL_BATCH,
+  FUEL_SECONDS,
+  FUEL_WORTH,
   INFUSE_EXTRACT,
   INFUSE_FLAKES,
   INFUSE_IN,
@@ -40,7 +43,7 @@ import {
   STILL_CROPS,
   TREE_IDS,
 } from '../ids.ts'
-import type { Barrel, CompostBox, Furnace, Grinder, Infuser, JamMachine, Mill, PotStill } from '../building.ts'
+import type { Barrel, CompostBox, Furnace, Grinder, Infuser, JamMachine, Mill, PotStill, Refuel } from '../building.ts'
 import { faceName, type Face, type InfusedItem, type Item } from '../item.ts'
 import {
   bakeBreadSale,
@@ -97,6 +100,7 @@ export const MACHINE_IDS: readonly MachineId[] = [
   'compost-box',
   'furnace',
   'infuser',
+  'refuel',
 ]
 
 export function isCraftCell(c: { kind: string }): c is CraftCell {
@@ -112,6 +116,7 @@ export function machineOfSku(id: SkuId): MachineId | undefined {
   if (id === 'buy-compost-box') return 'compost-box'
   if (id === 'buy-furnace') return 'furnace'
   if (id === 'buy-infuser') return 'infuser'
+  if (id === 'buy-refuel') return 'refuel'
   return undefined
 }
 
@@ -495,6 +500,64 @@ const JAM_ROWS: readonly Recipe[] = JAM_PINS.map(jamRecipe)
 const STILL_ROWS: readonly Recipe[] = [...STILL_PINS.map(stillRecipe), MIXED_STILL]
 const BARREL_ROWS: readonly Recipe[] = BARREL_PINS.map(barrelRecipe)
 const FURNACE_ROWS: readonly Recipe[] = [FURNACE_GREEN, FURNACE_FRUIT, FURNACE_SUGAR, FURNACE_OIL, FURNACE_SPIRIT, FURNACE_WOOD, FURNACE_BREAD]
+
+const FUEL_OUT: Yield = {
+  kind: 'exact',
+  face: { kind: 'fuel' },
+  amount: { kind: 'liters', l: FUEL_BATCH },
+}
+
+function refuelRow(face: Face, worth: number): Recipe {
+  return {
+    machine: 'refuel',
+    inputs: [{ kind: 'one', face, amount: units(1) }],
+    out: {
+      kind: 'exact',
+      face: { kind: 'fuel' },
+      amount: { kind: 'liters', l: worth },
+    },
+    duration: { kind: 'fixed', seconds: (FUEL_SECONDS * worth) / FUEL_BATCH },
+  }
+}
+
+function caskBase(crop: BarrelCrop): Face {
+  return {
+    kind: 'cask',
+    cask: CASK_OF[crop],
+    variety: 'base',
+    quality: 0,
+    count: 1,
+    unitSale: bakeCaskSale(CASK_OF[crop], 'base', 0, BARREL_MATURE),
+    infused: false,
+  }
+}
+
+const FUEL_FACES: readonly Face[] = [
+  { kind: 'wood', count: 1 },
+  { kind: 'oil', quality: 0, count: 1, unitSale: 0, infused: false },
+  fruitFace('sugar-cane', 'base'),
+  ...SPIRIT_KINDS.map(k => spiritFace(k, 'base')),
+  ...BARREL_CROPS.map(caskBase),
+]
+
+const REFUEL_ROWS: readonly Recipe[] = [
+  refuelRow(FUEL_FACES[0], FUEL_WORTH.wood),
+  refuelRow(FUEL_FACES[1], FUEL_WORTH.oil),
+  refuelRow(FUEL_FACES[2], FUEL_WORTH.cane),
+  {
+    machine: 'refuel',
+    inputs: [{ kind: 'any', faces: FUEL_FACES.slice(3), amount: units(1) }],
+    out: { kind: 'exact', face: { kind: 'fuel' }, amount: { kind: 'liters', l: FUEL_WORTH.alcohol } },
+    duration: { kind: 'fixed', seconds: (FUEL_SECONDS * FUEL_WORTH.alcohol) / FUEL_BATCH },
+  },
+]
+
+const REFUEL_LIVE: Recipe = {
+  machine: 'refuel',
+  inputs: [{ kind: 'any', faces: FUEL_FACES, amount: units(1) }],
+  out: FUEL_OUT,
+  duration: { kind: 'fixed', seconds: FUEL_SECONDS },
+}
 const INFUSER_ROWS: readonly Recipe[] = [infuserJam(), infuserSpirit(), infuserCask(), INFUSER_OIL]
 
 function yieldFace(y: Yield): Face {
@@ -555,6 +618,7 @@ export function recipesOf(m: MachineId): readonly Recipe[] {
   if (m === 'grinder') return [GRINDER, GRINDER_VARIANT]
   if (m === 'furnace') return FURNACE_ROWS
   if (m === 'infuser') return INFUSER_ROWS
+  if (m === 'refuel') return REFUEL_ROWS
   return [COMPOST_FRUIT, COMPOST_GREEN, COMPOST_ROTTEN, COMPOST_ASH]
 }
 
@@ -754,6 +818,12 @@ function infuserCraft(c: Infuser, haste: number): Craft {
   return { kind: 'filling', recipe, at: 1, have: c.extract, need: INFUSE_EXTRACT }
 }
 
+function refuelCraft(c: Refuel, haste: number): Craft {
+  if (c.timerOn()) return stage(REFUEL_LIVE, c.progress, 1, haste)
+  if (c.units === 0) return { kind: 'idle', machine: 'refuel' }
+  return { kind: 'filling', recipe: REFUEL_LIVE, at: 0, have: c.units, need: FUEL_BATCH }
+}
+
 export function craftState(cell: CraftCell, mul: number, haste = 1): Craft {
   if (cell.kind === 'mill') return millCraft(cell, mul, haste)
   if (cell.kind === 'jam') return jamCraft(cell, mul, haste)
@@ -762,6 +832,7 @@ export function craftState(cell: CraftCell, mul: number, haste = 1): Craft {
   if (cell.kind === 'grinder') return grinderCraft(cell, mul, haste)
   if (cell.kind === 'furnace') return furnaceCraft(cell, mul, haste)
   if (cell.kind === 'infuser') return infuserCraft(cell, haste)
+  if (cell.kind === 'refuel') return refuelCraft(cell, haste)
   return compostCraft(cell, mul, haste)
 }
 

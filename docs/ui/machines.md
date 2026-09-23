@@ -2,11 +2,11 @@
 
 Look and prompt for mill, jam, still, barrel, freezer, grinder, furnace, infuser, sorter. Station [[ui/station]]. Rules [[mechanics/machines]] [[mechanics/infusion]]. Place [[ui/place]]. Size [[items/buildings]]. Inspect [[ui/inspect]] points here. Recipe row [[ui/recipe]]. Chest chrome [[ui/docks]].
 
-No ObjectHud. No pop-up GUI. Nothing attaches to the machine. Progress is look text here; the bottom-right `Status` also draws one recipe row. Station has no recipe row; its walk-up is a panel.
+No ObjectHud, except the Refueling station checkbox — [[ui/docks]]. No pop-up GUI. Nothing else attaches to the machine. Progress is look text here; the bottom-right `Status` also draws one recipe row. Station has no recipe row; its walk-up is a panel. The Refueling station has the recipe row.
 
 Dump legal → prompt is the verb. Else prompt is the look line (compost / grinder / furnace / station / infuser). Compost: `Compost box - {n}/{need} units` / `Compost box - working {pct}%`. `pct` = `floor(progress * 100)`. Furnace ash dump **Burn**; flour dump **Bake**. `{ act: 'furnace'; at }`. Either cell, one look. Prop `off` / `on` from working. Two state VFX while working — [[mechanics/machines]] `machines.furnace-smoke`. Infuser dump **Infuse**. `{ act: 'infuse'; at }`. Any of four cells, one look.
 
-West chest/freezer paints a blue chute on the shared edge. East paints a green chute. Always on, under the machine and chest. Not lens. Not a cell hit. Chute row follows chest I/O — [[mechanics/machines]] `machines.io-side`. Pads mill / still / jam / compost-box / freezer / furnace / station / infuser: dropoff north Unload, takeup south Load. Barrel, grinder: not. Ports mill / jam / still / station / infuser `in` origin top; freezer `out` origin bottom; furnace `in` origin top and `out` origin bottom. Lens [[ui/sensors]]. Chrome [[ui/vehicles]].
+West chest/freezer paints a blue chute on the shared edge. East paints a green chute. Always on, under the machine and chest. Not lens. Not a cell hit. Chute row follows chest I/O — [[mechanics/machines]] `machines.io-side`. Pads mill / still / jam / compost-box / freezer / furnace / station / infuser: dropoff north Unload, takeup south Load. Refueling station: north Unload, south refuel (`ui-pad-refuel.svg`), no Load. West chute only. Barrel, grinder: not. Ports mill / jam / still / station / infuser `in` origin top; freezer `out` origin bottom; furnace `in` origin top and `out` origin bottom. Lens [[ui/sensors]]. Chrome [[ui/vehicles]].
 
 Mill, jam, barrel, grinder lock crop + Variety. Infuser locks the good. Still does not. Furnace locks ash vs bread. Compost ignore Variety and Quality — [[mechanics/machines]] `machines.variety-lock`.
 
@@ -123,9 +123,20 @@ No HUD, no walk-up panel, no dump prompt. Any of three cells, one look.
 
 `{name}` is `faceName(held)`. `{tier}` is `tierLabel` — [[standards/user-facing-text]].
 
+## Refueling station
+
+One cell, one look. Recipe row under that look, same mount as the Furnace — [[ui/recipe]]. The click panel is only **Buy from market** — [[ui/docks]].
+
+| when | text |
+|---|---|
+| idle (`units === 0` and `store === 0`) | **Refueling station** |
+| `units` or `store` above 0 | **Refueling station - {units}/{cap} units, {store}/{storeCap} L** |
+
+`cap` is `FURNACE_CAP`. `storeCap` is `FUEL_STORE`. The batch timer is the recipe row, not a second look line. Prompt dump legal: **Fill**. `{ act: 'refuel'; at }`. Prop `off` / `on` from the timer running.
+
 ## Covering haste
 
-Hover mill / jam / still / grinder / compost-box / furnace / infuser. Sits in `lookText` after the machine look, before the prompt. Bottom-right `Status`. Not the recipe row. Not ObjectHud. Still / furnace: either cell, one line. Infuser: any of four cells, one line. Live covering count `n` — [[mechanics/machines]] `machines.furnace-haste-look`. Neighbour wait on a plant uses this same insertion — [[ui/inspect]].
+Hover mill / jam / still / grinder / compost-box / furnace / infuser / refuel. Sits in `lookText` after the machine look, before the prompt. Bottom-right `Status`. Not the recipe row. Not ObjectHud. Still / furnace: either cell, one line. Infuser: any of four cells, one line. Live covering count `n` — [[mechanics/machines]] `machines.furnace-haste-look`. Neighbour wait on a plant uses this same insertion — [[ui/inspect]].
 
 | when | line |
 |---|---|

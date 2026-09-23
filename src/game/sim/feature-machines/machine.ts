@@ -9,6 +9,7 @@ import {
   FURNACE_REACH,
   FURNACE_HASTE,
   FURNACE_VALUE,
+  FUEL_WORTH,
   INFUSE_EXTRACT,
   INFUSE_FLAKES,
   INFUSE_IN,
@@ -42,6 +43,7 @@ import type {
   Coord,
   Furnace,
   Grinder,
+  Refuel,
   Infuser,
   Necronomicon,
   JamMachine,
@@ -52,7 +54,7 @@ import type {
 } from '../building.ts'
 import { furnaceValue, type Item } from '../item.ts'
 
-export type IoCell = Mill | JamMachine | PotStill | CompostBox | Grinder | Furnace | ResearchStation | Infuser | Necronomicon
+export type IoCell = Mill | JamMachine | PotStill | CompostBox | Grinder | Furnace | ResearchStation | Infuser | Necronomicon | Refuel
 
 export function isIoCell(c: { kind: string }): c is IoCell {
   return (
@@ -64,7 +66,8 @@ export function isIoCell(c: { kind: string }): c is IoCell {
     c.kind === 'furnace' ||
     c.kind === 'station' ||
     c.kind === 'infuser' ||
-    c.kind === 'necronomicon'
+    c.kind === 'necronomicon' ||
+    c.kind === 'refuel'
   )
 }
 
@@ -78,6 +81,7 @@ export const IO_SKUS: readonly SkuId[] = [
   'buy-grinder',
   'buy-furnace',
   'buy-research-station',
+  'buy-refuel',
 ]
 
 export const CHUTE_SKUS: readonly SkuId[] = [...IO_SKUS, 'buy-sorter']
@@ -349,6 +353,14 @@ export function mergeSugar(
     unitSale: (a.unitSale * a.liters + b.unitSale * b.liters) / liters,
     quality: mixQuality(a.quality, a.liters, b.quality, b.liters),
   }
+}
+
+export function fuelUnit(item: Item): number {
+  if (item.kind === 'wood') return FUEL_WORTH.wood
+  if (item.kind === 'oil') return FUEL_WORTH.oil
+  if (item.kind === 'fruit' && item.crop === 'sugar-cane') return FUEL_WORTH.cane
+  if (item.kind === 'spirit' || item.kind === 'cask') return FUEL_WORTH.alcohol
+  return 0
 }
 
 export function furnaceUnit(item: Item): number {

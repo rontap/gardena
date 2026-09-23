@@ -1,3 +1,12 @@
+# 2.9.4 Refueling station
+
+A route can stop on the south side of a Refueling station and take fuel.
+
+- ✨ Place a Refueling station. Fill it with Wood, Olive oil, Sugar cane, wine, cider, or spirits, and a Quad or Tractor takes the fuel on a route.
+  - Wait for fuel holds the vehicle until its fuel is full. No wait leaves after that one stop.
+  - Buy from market spends money on the liters the station is not holding, when you can pay for all of those liters.
+  - A working Furnace nearby makes the batch finish faster than it does without one.
+
 # 2.9.1 Crop Variety Station
 
 Completely reworked the crop variety station, now fruits can be used to gain insight into their details, including almanac details and different varieties. Researching is capped to 10/20/30 units depending on the crop, and provides passive boosts to market impact recover, store-bought seed quality and variety increase chance.

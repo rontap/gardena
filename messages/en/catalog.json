@@ -30,6 +30,7 @@
   "catalog_valve": "Sits on one pipe, and lays that pipe too if the edge is bare. Click it and the gardener walks over to shut that pipe off, or open it again. Water still reaches a sprinkler by any other open route.",
   "catalog_tap": "Fills a bucket at {rate} L/s, as long as pipe connects it to a source. Put one next to your tilled soil and you stop walking back to the pump. Once the tanks run dry it fills only as fast as your sources make water.",
   "catalog_hangar": "{w}×{h} industrial shed. Buy Quads and tractors at a hangar.",
+  "catalog_refuel": "Makes fuel in a batch of {batch} L, once {batch} units are in and it holds none. A route takes that fuel on the south side. Buy from market pays for the liters it is not holding, when you can pay for all of them.",
   "catalog_silo": "{w}×{h} field store. Walk up to take what it holds.",
   "catalog_lever": "A switch you flip by hand to send a signal down its wire, and flip again to stop it. Wire it to a valve or a sprinkler and you control water without walking there. An incoming signal flips it too.",
   "catalog_button": "Press it to send one short signal that stops on its own.",

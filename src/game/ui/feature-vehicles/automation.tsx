@@ -110,6 +110,7 @@ const PAD_NAME: { readonly [K in PadCell['kind']]: () => string } = {
   station: () => m.names_building_station(),
   grinder: () => m.names_building_grinder(),
   necronomicon: () => m.names_building_necronomicon(),
+  refuel: () => m.names_building_refuel(),
   'weather-station': () => m.names_sensor_weather(),
   barrel: () => m.names_building_barrel(),
   postbox: () => m.names_building_postbox(),
@@ -123,6 +124,7 @@ function padName(world: World, at: Coord): string {
 function stopLabel(world: World, s: RouteStop): string {
   if (s.kind === 'goto') return m.vehicles_stop_go()
   if (s.kind === 'wait') return m.vehicles_stop_wait()
+  if (s.kind === 'refuel') return m.vehicles_stop_refuel({ at: padName(world, s.at) })
   const at = padName(world, s.at)
   if (s.kind === 'load') return m.vehicles_stop_load({ at })
   return m.vehicles_stop_unload({ at })
@@ -276,7 +278,11 @@ export function Automation({
               </div>
               <Boom world={world} route={route} />
               <Label>{m.vehicles_stops_title()}</Label>
-              {route.stops.length === 0 && <p className="text-sm text-ink/60">{m.vehicles_stops_none()}</p>}
+              {route.stops.length === 0 && (
+                <p className="text-sm text-ink/60">
+                  {m.vehicles_stops_none()}
+                </p>
+              )}
               <Stops world={world} route={route} />
               <Label>{m.vehicles_on_route()}</Label>
               {out.length === 0 && <p className="text-sm text-ink/60">{m.vehicles_on_route_none()}</p>}
@@ -402,6 +408,17 @@ function Stops({ world, route }: { world: World; route: Route }) {
           </div>
           {(s.kind === 'load' || s.kind === 'unload') && (
             <PickRow world={world} route={route} at={s.at} pick={s.pick} i={i} />
+          )}
+          {s.kind === 'refuel' && (
+            <select
+              aria-label={m.vehicles_wait_fuel()}
+              className="mt-1 ml-6 cursor-pointer border border-ink/30 bg-parch px-1.5 py-1 text-xs text-ink"
+              value={s.wait ? 'wait' : 'now'}
+              onChange={e => world.setStopWait(route.id, i, e.target.value === 'wait')}
+            >
+              <option value="now">{m.vehicles_no_wait()}</option>
+              <option value="wait">{m.vehicles_wait_fuel()}</option>
+            </select>
           )}
         </div>
       ))}

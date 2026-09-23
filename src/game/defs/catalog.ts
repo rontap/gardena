@@ -21,6 +21,7 @@ import {
   FURNACE_ASH,
   FURNACE_NEED,
   FURNACE_SECONDS,
+  FUEL_BATCH,
   SPRINKLER_TILE_DAY,
   SUGAR_BAG,
   SUGAR_SHOP,
@@ -437,6 +438,12 @@ export function catalogEntries(): CatalogEntry[] {
       title: m.names_building_hangar(),
       icon: { kind: 'hangar' },
       blurb: m.catalog_hangar({ w: HANGAR_W, h: HANGAR_H }),
+    },
+    {
+      id: 'refuel',
+      title: m.names_building_refuel(),
+      icon: { kind: 'refuel' },
+      blurb: m.catalog_refuel({ batch: FUEL_BATCH }),
     },
     {
       id: 'silo-seed',

@@ -82,6 +82,25 @@ export function doFurnace(w: World, at: Coord): void {
   w.track(at, furnace)
 }
 
+export function canRefuel(w: World, at: Coord): boolean {
+  if (w.act.hand.kind !== 'hold') return false
+  const c = w.cell(at)
+  if (c.kind !== 'refuel') return false
+  return c.accept(w.act.hand.item) > 0
+}
+
+export function doRefuel(w: World, at: Coord): void {
+  if (!canRefuel(w, at)) return
+  if (w.act.hand.kind !== 'hold') return
+  const station = w.cell(at)
+  if (station.kind !== 'refuel') return
+  const n = station.accept(w.act.hand.item)
+  if (n <= 0) return
+  station.apply(w.act.hand.item, n)
+  takeHandCount(w, n)
+  w.track(at, station)
+}
+
 export function canStation(w: World, at: Coord): boolean {
   if (w.act.hand.kind !== 'hold') return false
   const c = w.cell(at)

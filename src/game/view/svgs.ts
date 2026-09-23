@@ -39,6 +39,8 @@ import itemBarrel from '../../assets/items/item-barrel.svg?raw'
 import itemJamMachine from '../../assets/items/item-jam-machine.svg?raw'
 import itemFreezer from '../../assets/items/item-freezer.svg?raw'
 import itemFurnace from '../../assets/items/item-furnace.svg?raw'
+import itemRefuel from '../../assets/items/item-refuel.svg?raw'
+import itemFuel from '../../assets/items/item-fuel.svg?raw'
 import itemWeatherStation from '../../assets/items/item-weather-station.svg?raw'
 import itemStation from '../../assets/items/item-research-station.svg?raw'
 import itemAxe from '../../assets/items/item-axe.svg?raw'
@@ -74,6 +76,7 @@ import propBarrel from '../../assets/props/prop-barrel.svg?raw'
 import propJam from '../../assets/props/prop-jam.svg?raw'
 import propFreezer from '../../assets/props/prop-freezer.svg?raw'
 import propFurnace from '../../assets/props/prop-furnace.svg?raw'
+import propRefuel from '../../assets/props/prop-refuel.svg?raw'
 import propInfuser from '../../assets/props/prop-infuser.svg?raw'
 import itemSorter from '../../assets/items/item-sorter.svg?raw'
 import propStation from '../../assets/props/prop-research-station.svg?raw'
@@ -100,6 +103,7 @@ import uiDashTractor from '../../assets/ui/ui-dash-tractor.svg?raw'
 import uiHangarReturn from '../../assets/ui/ui-hangar-return.svg?raw'
 import uiPadDrop from '../../assets/ui/ui-pad-drop.svg?raw'
 import uiPadTake from '../../assets/ui/ui-pad-take.svg?raw'
+import uiPadRefuel from '../../assets/ui/ui-pad-refuel.svg?raw'
 import uiSlotDown from '../../assets/ui/ui-slot-down.svg?raw'
 import uiArrowRight from '../../assets/ui/ui-arrow-right.svg?raw'
 import propSeedSilo from '../../assets/props/prop-seed-silo.svg?raw'
@@ -433,12 +437,14 @@ export function itemInner(item: Face): string {
   if (item.kind === 'valve') return svgInner(itemValve)
   if (item.kind === 'tap') return svgInner(itemTap)
   if (item.kind === 'water') return svgInner(uiWater)
+  if (item.kind === 'fuel') return svgInner(itemFuel)
   if (item.kind === 'mill') return svgInner(itemMill)
   if (item.kind === 'jam-machine') return svgInner(itemJamMachine)
   if (item.kind === 'still') return svgInner(itemStill)
   if (item.kind === 'barrel') return svgInner(itemBarrel)
   if (item.kind === 'freezer') return svgInner(itemFreezer)
   if (item.kind === 'furnace') return svgInner(itemFurnace)
+  if (item.kind === 'refuel') return stageOnly(itemRefuel, 'off')
   if (item.kind === 'weather-station') return svgInner(itemWeatherStation)
   if (item.kind === 'station') return stageOnly(itemStation, 'off')
   if (item.kind === 'hangar') return svgInner(itemHangar)
@@ -541,6 +547,7 @@ export function skuInner(id: SkuId): string {
   if (id === 'buy-jam') return itemInner({ kind: 'jam-machine' })
   if (id === 'buy-still') return itemInner({ kind: 'still' })
   if (id === 'buy-furnace') return itemInner({ kind: 'furnace' })
+  if (id === 'buy-refuel') return itemInner({ kind: 'refuel' })
   if (id === 'buy-weather-station') return itemInner({ kind: 'weather-station' })
   if (id === 'buy-research-station') return itemInner({ kind: 'station' })
   if (id === 'buy-barrel') return itemInner({ kind: 'barrel' })
@@ -731,6 +738,10 @@ export const FREEZER = svgInner(propFreezer)
 export function furnaceArt(on: boolean): string {
   return stageOnly(propFurnace, on ? 'on' : 'off')
 }
+export function refuelArt(on: boolean): string {
+  return stageOnly(propRefuel, on ? 'on' : 'off')
+}
+export const PAD_REFUEL = svgInner(uiPadRefuel)
 export const FURNACE = furnaceArt(false)
 export function stationArt(on: boolean): string {
   return stageOnly(propStation, on ? 'on' : 'off')

@@ -75,7 +75,9 @@ Footer **Close**. Backdrop / Esc: same as Close. Close runs `World.seeRecap(day)
 
 ## Object HUD
 
-Same `Chrome` shell, `w-56`, anchored on the map. Not a dock. Family: sprinkler tune + water / harvest / counter / day / logic / variety / weather / pressure sensor config. Sensor rows: `Checkbox` / `Radio` from `frame.tsx`. No new chrome. [[ui/sensors]]
+Same `Chrome` shell, `w-56`, anchored on the map. Not a dock. Family: sprinkler tune + water / harvest / counter / day / logic / variety / weather / pressure sensor config + the Refueling station. Sensor rows: `Checkbox` / `Radio` from `frame.tsx`. No new chrome. [[ui/sensors]]
+
+Refueling station: remote, no walk. Click the building opens it (`Act.openHud` `k: 'refuel'`) and does not add a Go stop. Centered above the cell. Title **Refueling station**. The only row is the checkbox **Buy from market**, default on, `Act.setFuelBuy`. No store, no units, no bar. How full it is, and the batch, are the hover look and the recipe row — [[ui/machines]] [[ui/recipe]]. **×** `closeHud`. Map click elsewhere closes unless it is another object-HUD hit.
 
 Sprinklers, only after **Smart irrigation** (`unlock-smart-irrigation`) — the same row that grants the signal input. Anchored at the vertex. Title **Sprinkler output**.
 

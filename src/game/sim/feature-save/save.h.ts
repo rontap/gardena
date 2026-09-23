@@ -96,6 +96,7 @@ export type SaveCell =
   | { kind: 'jam'; base: RectBase; crop: JamCrop | 'none'; variety: VarietyId; quality: number; fruit: number; sugar: number; progress: number; inn: 0 | 1 }
   | { kind: 'still'; base: RectBase; feed: { crop: StillCrop; variety: VarietyId; quality: number; count: number }[]; progress: number; n: number; inn: 0 | 1 }
   | { kind: 'furnace'; base: RectBase; recipe: FurnaceRecipe; quality: number; units: number; progress: number; inn: 0 | 1; out: 0 | 1; hold: number }
+  | { kind: 'refuel'; base: RectBase; buy: boolean; store: number; units: number; progress: number }
   | { kind: 'infuser'; base: RectBase; lock: Infusable | 'none'; quality: number; unitSale: number; units: number; flakes: number; extract: number; progress: number; inn: 0 | 1 }
   | { kind: 'necronomicon'; base: RectBase; crop: GrownCrop | 'none'; cropCount: number; fruit: GrownCrop[]; ash: number; gold: number; agaric: number; tool: boolean; supper: SupperId[]; pages: PageId[] }
   | { kind: 'weather-station'; base: RectBase }

@@ -15,6 +15,7 @@ import {
   type Necronomicon,
   type WeatherStation,
   type Furnace,
+  type Refuel,
   type Infuser,
   type PotStill,
   type Pump,
@@ -83,6 +84,7 @@ export type Cell =
   | JamMachine
   | PotStill
   | Furnace
+  | Refuel
   | Infuser
   | Necronomicon
   | WeatherStation

@@ -101,6 +101,23 @@ No `inn`. No wire. No HUD. No hopper: `held` plus `progress`. Takes seeds, fruit
 
 `FurnaceRecipe` `'none' | 'ash' | 'bread'`. `RectBase` `w = 1` `h = 2`, origin NW, no rotate, same instance both cells, tick origin. First accepted dump locks `recipe`. `units === 0` → `'none'`. Flour locks `'bread'`. Ash feedstock locks `'ash'`. Mix ash freely among ash feedstock. Variety, quality, `infused` ignored on ash. Production ticks iff need is met and `inn === 0` and `progress < 1`. `progress += dt × furnaceMul / FURNACE_SECONDS`. Not a machinery job. Ash at 1: consume `FURNACE_NEED`, drop `FURNACE_ASH` ash. Bread at 1: consume `FURNACE_BREAD_IN` flour, drop `{ kind: 'bread' }`. East store else `frontOf`. `out` high iff `units === 0`. Port `in` origin top, `out` origin bottom. South cell: no port. Working: two state VFX — [[#Invariants]] `machines.furnace-smoke`. Art [[art/machines]]. [[mechanics/infusion]] `infusion.furnace`.
 
+## Refueling station
+
+Cell kind `refuel`. 1×1, no rotate, no `inn`, no wire. It is a `MachineId`. Fuel in the store is liters, not an Item. The yield face is `fuel`. `buy` boolean, default true. `store` liters, `units`, `progress`. Demolish drops neither `units` nor `store`.
+
+`FUEL_WORTH` preference. One pool, no lock. Variety, quality, `infused` ignored.
+
+| item | units |
+|---|---|
+| `{ kind: 'wood' }` | 10 × count |
+| `{ kind: 'oil' }` | 20 × count |
+| `{ kind: 'fruit'; crop: 'sugar-cane' }` | 3 × count |
+| `spirit` or `cask` | 15 × count |
+
+Anything else refuses, including Sugar, seeds, jam, tools. A dump adds whole counts until the next count would pass `FURNACE_CAP`. Walk dump `{ act: 'refuel'; at }`, the west chest on each `BIG_TICK`, and a north Unload all use that accept. No east chest. No east push.
+
+`FUEL_STORE` preference 10. `FUEL_BATCH` preference 10. `FUEL_SECONDS` preference 60. The timer runs only while `units >= FUEL_BATCH` and `store === 0`. `progress += dt × furnaceMul / FUEL_SECONDS`. Not `machineMul`. Not a machinery job. At 1, and only while `store === 0`: subtract `FUEL_BATCH` units, add `FUEL_BATCH` liters, `progress` 0, once per crossing. Leftover units stay and do not start another timer until `store` is 0 again. `tickDispatch` runs before `tickMachines`, so a vehicle that empties `store` is served before that add. This building is a haste target, not a source: it is never in `n`. Prop `off` / `on` from the timer running. Art [[art/machines]]. Stop and transfer: [[mechanics/vehicles]] `vehicles.refuel`.
+
 ## Feedstock
 
 `furnaceValue(item)` — `FURNACE_VALUE` preference. Refuse → 0.
@@ -177,7 +194,7 @@ Spirit / wine / jam / oil / flour / extract / flakes / vanilla-extract / bread /
 
 `machines.water` — `STILL_WATER` preference; start still requires full pull; every still recipe carries that many liters on the water face.
 
-`machines.io-side` — West chest/freezer is input, east is output, same row `base.row + base.h - 1`; mill / infuser / furnace use the south row; jam / still / station use origin row; still east of `base.col + base.w`; the station has no output side.
+`machines.io-side` — West chest/freezer is input, east is output, same row `base.row + base.h - 1`; mill / infuser / furnace use the south row; jam / still / station use origin row; still east of `base.col + base.w`; the station has no output side; the refuel building is west only, no east.
 
 `machines.io-pull` — Each `BIG_TICK`, dump-all legal from the west store into the machine.
 
@@ -209,7 +226,7 @@ Spirit / wine / jam / oil / flour / extract / flakes / vanilla-extract / bread /
 
 `familiarity.refuse` — The station refuses fruit whose crop is already at `familiarityMax`, and takes only as many as can still count: `ceil(left / gain) - units`. That bound holds on the walk dump and on the west chest pull alike, so a chest cannot feed a crop past the cap.
 
-`machines.recipe-source` — `sim/recipe.ts` is the only recipe enumeration; mill, jam, still and barrel pin every variety of their crops (grass: one); mill inputs equal `millNeed`; jam rows carry `JAM_IN` fruit and `jamSugar`; barrel inputs equal `barrelNeed` and `age` not `work`; no apple jam; named jam titles on `concord` `black-raspberry` `san-marzano`; every other tomato is Ketchup; grinder two rows; compost four; furnace seven; no station rows; infuser four, each `INFUSE_IN` good + 1 reagent.
+`machines.recipe-source` — `sim/recipe.ts` is the only recipe enumeration; mill, jam, still and barrel pin every variety of their crops (grass: one); mill inputs equal `millNeed`; jam rows carry `JAM_IN` fruit and `jamSugar`; barrel inputs equal `barrelNeed` and `age` not `work`; no apple jam; named jam titles on `concord` `black-raspberry` `san-marzano`; every other tomato is Ketchup; grinder two rows; compost four; furnace seven; no station rows; infuser four, each `INFUSE_IN` good + 1 reagent; refuel four: one wood, one oil, one sugar-cane fruit, and alcohol (`spirit` and `cask`) as one `any`, each one item worth `FUEL_WORTH` liters over `(FUEL_SECONDS * worth) / FUEL_BATCH` seconds, yield face `fuel`.
 
 `machines.recipe-collapse` — `recipesOf(machine)` is the catalog listing and collapses; the per-variety rows behind it stay whole for `craftState`; rows of one machine and one crop whose output reads the same name and draws the same group merge into one cycling `any` row; `recipesUsing` matches a `one` input on crop + variety, and a collapsed `any` input whose faces are all one crop; it never matches the grinder, furnace or mixed-still rows.
 
@@ -217,7 +234,7 @@ Spirit / wine / jam / oil / flour / extract / flakes / vanilla-extract / bread /
 
 `machines.recipe-compost` — Compost lists four recipes (fruit any `CropId`; green weed/grass; rotten `CropClass` faces; ash `one`); the box counts `COMPOST_NEED` waste; empty box cycles all list rows.
 
-`machines.recipe-haste` — `work` durations divide by `machineMul`; `fixed` and `age` do not; `furnaceMul` multiplies mill, jam, grinder, infuser, still, compost-box, furnace progress, not barrel, not station; infuser is `fixed`; catalog `clockText` stays nominal.
+`machines.recipe-haste` — `work` durations divide by `machineMul`; `fixed` and `age` do not; `furnaceMul` multiplies mill, jam, grinder, infuser, still, compost-box, furnace, and refuel progress, not barrel, not station; infuser and refuel are `fixed`; catalog `clockText` stays nominal.
 
 `machines.furnace-feed` — Ash lock: compost feedstock + oil + spirit + wood + tree-seed + graft at `FURNACE_VALUE`; mix ash; cap `FURNACE_CAP`; refuse jam/cask/extract/vanilla-extract/flakes/bread/ash/tools; flour is bread lock; variety, quality, `infused` ignored on ash.
 
@@ -225,13 +242,17 @@ Spirit / wine / jam / oil / flour / extract / flakes / vanilla-extract / bread /
 
 `machines.furnace-lock` — First dump locks `'ash' | 'bread'`; `units === 0` → `'none'`; no mix — [[mechanics/infusion]] `infusion.furnace`.
 
-`machines.furnace-haste` — Working furnace Chebyshev ≤ `FURNACE_REACH` on footprint; `1 + FURNACE_HASTE × n`, the target itself never in `n`; still, compost, infuser take it; barrel and station do not; waiting / empty / gated do not count.
+`machines.furnace-haste` — Working furnace Chebyshev ≤ `FURNACE_REACH` on footprint; `1 + FURNACE_HASTE × n`, the target itself never in `n`; still, compost, infuser, refuel take it; barrel and station do not; the refuel building is never a source; waiting / empty / gated do not count.
 
 `machines.furnace-io` — West pull, east push on the south row; pads; `in` top; `out` bottom high iff `units === 0`; signal ports stay origin; south cell no port; origin row is not chest I/O.
 
 `machines.furnace-draw` — `Furnace` is 1×2, origin NW, no rotate, same instance both cells, tick origin.
 
 `machines.furnace-smoke` — Working furnace mounts two state VFX: `furnace` at the south cell (opening) and `furnace-smoke` at the origin cell (chimney); reduced motion: frame 0 both; idle: neither.
+
+`machines.refuel-feed` — `refuel` takes wood at 10, oil at 20, sugar-cane fruit at 3, and spirit or cask at 15, per count, into one pool; variety, quality, and `infused` ignored; no lock; cap `FURNACE_CAP`; whole counts until the next would pass; walk dump, west `BIG_TICK` pull, and north Unload share that accept; Sugar, seeds, jam, and tools refuse; demolish drops neither `units` nor `store`.
+
+`machines.refuel-cycle` — `FUEL_BATCH` units become `FUEL_BATCH` liters in `FUEL_SECONDS` while `units >= FUEL_BATCH` and `store === 0`; `progress += dt × furnaceMul / FUEL_SECONDS`, not `machineMul`; one completion subtracts `FUEL_BATCH` units and adds `FUEL_BATCH` liters; leftover units stay; `FUEL_STORE` is 10, so the add is only at `store === 0`; haste target, not source; it is a `MachineId`, and the live row is that batch.
 
 `machines.furnace-cover` — Covering area is Chebyshev ≤ `FURNACE_REACH` over the 1×2; armed `buy-furnace` and unarmed hover of a placed furnace paint that area stroke-only; not a lens, not a dock, not sprinkler fill — [[ui/place]].
 

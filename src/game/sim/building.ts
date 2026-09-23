@@ -11,6 +11,8 @@ import {
   FURNACE_ASH,
   FURNACE_BREAD_IN,
   FURNACE_CAP,
+  FUEL_BATCH,
+  FUEL_SECONDS,
   FAMILIARITY_GAIN,
   stationSeconds,
   FURNACE_NEED,
@@ -69,6 +71,7 @@ import {
   fruitVariety,
   furnaceMul,
   furnaceUnit,
+  fuelUnit,
   grindProduct,
   infusableOf,
   infusedProduct,
@@ -188,6 +191,7 @@ const ONE_CELL_SKUS: readonly SkuId[] = [
   'buy-barrel',
   'buy-tap',
   'buy-well',
+  'buy-refuel',
 ]
 
 export const SKU_FOOT: { readonly [K in string]?: { w: number; h: number } } = {
@@ -213,7 +217,9 @@ export function skuBase(id: SkuId, at: Coord, facing: Facing = 'e'): RectBase | 
 }
 
 export function skuPorts(id: SkuId, base: RectBase, facing: Facing): IoPort[] {
-  return id === 'buy-sorter' ? sorterPorts(base, facing) : defaultStorePorts(base)
+  if (id === 'buy-sorter') return sorterPorts(base, facing)
+  if (id === 'buy-refuel') return [{ at: { col: base.col - 1, row: base.row }, role: 'in' }]
+  return defaultStorePorts(base)
 }
 
 function tileBox(base: Base): { col0: number; row0: number; col1: number; row1: number } {
@@ -929,6 +935,59 @@ export class Furnace extends Machine {
       this.quality = 0
     }
     w.track(at, this)
+    return true
+  }
+}
+
+export class Refuel extends BaseBuilding {
+  readonly kind = 'refuel' as const
+  override readonly pads = 'both' as const
+  override readonly ticks = true
+  override readonly hasted = true
+  buy = true
+  store = 0
+  units = 0
+  progress = 0
+  constructor(base: RectBase) {
+    super(base)
+  }
+  override storePorts(): IoPort[] {
+    return [{ at: { col: this.base.col - 1, row: this.base.row }, role: 'in' }]
+  }
+  override padGoods(role: 'in' | 'out'): PadGoods {
+    if (role === 'out') return []
+    return [
+      ...slots('compostable', ['wood']),
+      ...slots('produce', ['oil']),
+      ...slots('fruit', ['sugar-cane']),
+      ...allSlots('alcohol'),
+    ]
+  }
+  timerOn(): boolean {
+    return this.units >= FUEL_BATCH && this.store === 0
+  }
+  override accept(item: Item): number {
+    const unit = fuelUnit(item)
+    if (unit <= 0 || !('count' in item) || item.count <= 0) return 0
+    const room = FURNACE_CAP - this.units
+    if (room <= 0) return 0
+    const maxN = Math.floor(room / unit)
+    if (maxN <= 0) return 0
+    return item.count < maxN ? item.count : maxN
+  }
+  override apply(item: Item, n: number): void {
+    if (n <= 0) return
+    this.units += fuelUnit(item) * n
+  }
+  override tick(w: World, at: Coord, dt: number): boolean {
+    if (!this.timerOn()) return false
+    this.progress += (dt * furnaceMul(w.furnaceSnap, this.base)) / FUEL_SECONDS
+    if (this.progress < 1 || this.store !== 0) return false
+    this.units -= FUEL_BATCH
+    this.store += FUEL_BATCH
+    this.progress = 0
+    w.track(at, this)
+    w.ping()
     return true
   }
 }

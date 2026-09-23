@@ -1523,6 +1523,17 @@ export class World {
     this.commit({ a: Act.refill, t: this.now, p: this.local, c: [at.col, at.row] })
   }
 
+  setFuelBuy(at: Coord, on: boolean): void {
+    this.commit({ a: Act.setFuelBuy, t: this.now, p: this.local, c: [at.col, at.row], on })
+  }
+
+  setFuelBuyBody(at: Coord, on: boolean): void {
+    const c = this.cell(at)
+    if (c.kind !== 'refuel') return
+    c.buy = on
+    this.ping()
+  }
+
   refillCost(): number {
     return this.vehicles.reduce((n, v) => n + (1 - v.fuel) * QUAD_REFILL, 0)
   }
@@ -1599,6 +1610,10 @@ export class World {
     this.commit({ a: Act.route, t: this.now, p: this.local, k: 'pick', r, i, q })
   }
 
+  setStopWait(r: RouteId, i: number, on: boolean): void {
+    this.commit({ a: Act.route, t: this.now, p: this.local, k: 'setWait', r, i, on })
+  }
+
   padGoodsAt(at: Coord): PadGoods {
     return vehicles.padGoodsAt(this, at)
   }
@@ -1653,7 +1668,7 @@ export class World {
     return vehicles.unloadWould(this)
   }
 
-  machinePads(): { col: number; row: number; side: 'dropoff' | 'takeup'; legal: boolean }[] {
+  machinePads(): { col: number; row: number; side: 'dropoff' | 'takeup' | 'refuel'; legal: boolean }[] {
     return vehicles.machinePads(this)
   }
 

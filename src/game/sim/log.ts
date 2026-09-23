@@ -76,6 +76,7 @@ export const Act = {
   reorderContract: 'Z',
   route: 'o',
   necronomicon: '0',
+  setFuelBuy: 'fb',
 } as const
 
 export type Act = (typeof Act)[keyof typeof Act]
@@ -112,7 +113,7 @@ export type Cmd =
       a: typeof Act.openHud
       t: number
       p: SeatId
-      k: 'sprinkler' | 'water' | 'harvest' | 'counter' | 'day' | 'logic' | 'variety' | 'weather' | 'pressure'
+      k: 'sprinkler' | 'water' | 'harvest' | 'counter' | 'day' | 'logic' | 'variety' | 'weather' | 'pressure' | 'refuel'
       c: XY
     }
   | { a: typeof Act.closeHud; t: number; p: SeatId }
@@ -182,6 +183,8 @@ export type Cmd =
   | { a: typeof Act.route; t: number; p: SeatId; k: 'deploy'; r: RouteId }
   | { a: typeof Act.route; t: number; p: SeatId; k: 'recall'; v: VehicleId }
   | { a: typeof Act.route; t: number; p: SeatId; k: 'automate'; v: VehicleId; c: XY }
+  | { a: typeof Act.route; t: number; p: SeatId; k: 'setWait'; r: RouteId; i: number; on: boolean }
+  | { a: typeof Act.setFuelBuy; t: number; p: SeatId; c: XY; on: boolean }
 
 export type LogSink = { push(cmd: Cmd): void; reset(seed: number): void }
 

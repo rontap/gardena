@@ -14,7 +14,7 @@ Categories are a **vertical** `Tabs.List` down the left of the pane, `tabRailLis
 |---|---|---|---|
 | Tools | Digging shovel, better-shovel · Mining pickaxe, hardened, axe, chainsaw · Carry bucket, large bucket | none | Dig, mine, chop, and carry water. |
 | Water | Source pumpjack, well · Flow tap, pipe, valve · Output sprinkler, vertical, large | build | Source, flow, output. |
-| Automation | Grinding grinder, mill · Brewing still, barrel · Preserving jam · Infusing infuser · Compost compost-box, furnace · Grafting station · Hangar `buy-hangar` | build | Machines that make goods, and the hangar your vehicles come home to. |
+| Automation | Grinding grinder, mill · Brewing still, barrel · Preserving jam · Infusing infuser · Compost compost-box, furnace · Grafting station · Hangar `buy-hangar`, `buy-refuel` | build | Machines that make goods, and the hangar your vehicles come home to. |
 | Storage | Boxes chest, freezer, large freezer · Silos seed, spray, produce | build | Boxes for what you picked, and the field silos that load trailers. |
 | Sensors | lever, button, lamp, logic, NOT, pulser, counter, traffic-light, water, fert, harvest, variety, weather, vehicle-detector, day | build | Signal, gates, readers. |
 | Land | Paving cobble → brick → paved · Fencing fence · `buy-weather-station` | none | Paving and fencing. A Weather Forecast Station shows tomorrow's weather. |

@@ -10,7 +10,7 @@ Eight underline tabs. Wrap the tab list so a label never splits. Do not shrink t
 | `trees` | Trees | apple apricot olive cherry |
 | `utility` | Utility | shovel better-shovel pickaxe better-pickaxe axe chainsaw bucket large-bucket fertilizer weed-spray compost sugar wood ash rotary-shovel diamond-pickaxe |
 | `sensors` | Sensors | **Overview**, then lever button lamp logic not pulser counter sensor-water sensor-fert sensor-harvest sensor-variety sensor-weather water-system vehicle-detector traffic-light sensor-day |
-| `automation` | Automation | **Overview**, then chest grinder compost-box mill furnace still barrel jam freezer station infuser hangar silo-seed silo-produce silo-spray |
+| `automation` | Automation | **Overview**, then chest grinder compost-box mill furnace still barrel jam freezer station infuser hangar refuel silo-seed silo-produce silo-spray |
 | `water` | Water systems | pumpjack well tap pipe valve sprinkler sprinkler-vert sprinkler-large |
 | `building` | Building | fence tile-cobble tile-brick tile-paved weather-station |
 | `concepts` | Game concepts | Variety, Quality, Freshness, Happiness, Day & Night, Market, Skills, Family, Research, Automation, Luck, Burrow, Infusion |
@@ -33,7 +33,7 @@ Crop stats: Grow time, Drink, Water range, Fertilizer, Sell, Seed price, Freshne
 
 Sugar-cane is a CropPane. Product face is cane fruit, not the sugar bag. Vanilla: no CropPane mill line. Chilli: no CropPane mill line. Extract, flour, brandy, mill sugar, flakes, vanilla-extract, infused goods sit in Ingredients, not as extra product panes. Infused goods do not get their own pane — one Game concepts **Infusion** page. [[ui/recipe]] [[mechanics/infusion]] `infusion.overlay`
 
-Olive is `TreeId`: TreePane only. Utility `sugar`: liters bag face. Hangar and field silo panes [[ui/vehicles]]. Sensor panes: generic chrome — title, one plate, description. Titles match look names [[ui/sensors]]. Water-system pane stays (sku hidden from Build). Advanced sensors is a research card, not a `CatalogEntry`. Quad / tractor / trailer are hangar-buys, not almanac SKUs. SKU panes stay generic / crop / tree / pipe. Station pane is generic Automation chrome. No Recipes block.
+Olive is `TreeId`: TreePane only. Utility `sugar`: liters bag face. Hangar and field silo panes [[ui/vehicles]]. Sensor panes: generic chrome — title, one plate, description. Titles match look names [[ui/sensors]]. Water-system pane stays (sku hidden from Build). Advanced sensors is a research card, not a `CatalogEntry`. Quad / tractor / trailer are hangar-buys, not almanac SKUs. SKU panes stay generic / crop / tree / pipe. Station pane is generic Automation chrome. No Recipes block. Refueling station pane is that chrome plus the Recipes block. `blurb` is the batch, the south side, and **Buy from market**. Worth of each item is the recipe rows. The **Automated dispatch** card says **Place a Refueling station so a route can stop on its south side and the vehicle takes fuel there.**
 
 ## Plate fills
 
@@ -77,4 +77,4 @@ Same shell as CropPane: fruit face + 24×48 prop at `'base'`, then `Stat` rows w
 
 ## Pipe
 
-Water systems list row `pipe` only. Valve and the sprinklers stay their own static rows. Same generic pane chrome as other non-crop entries. The plate is not `itemInner({ kind: 'pipe' })`. Cycle join art the way CropPane cycles stages: `useCycle(PIPE_JOINS.length)`, `CYCLE_MS` — [[ui/recipe]]. Order, rot 0: `PIPE_STUB` `PIPE_I` `PIPE_L` `PIPE_T` `PIPE_X`. Not `pipe-source`. Not `pipe-valve`. Pipe, crop and tree panes share `useCycle`. One cadence, one hook. Variety row does not cycle. The machine ids add a **Recipes** block under the description, `size="md"` — [[ui/recipe]]. Station does not. Infuser yield faces draw overlay-infused.
+Water systems list row `pipe` only. Valve and the sprinklers stay their own static rows. Same generic pane chrome as other non-crop entries. The plate is not `itemInner({ kind: 'pipe' })`. Cycle join art the way CropPane cycles stages: `useCycle(PIPE_JOINS.length)`, `CYCLE_MS` — [[ui/recipe]]. Order, rot 0: `PIPE_STUB` `PIPE_I` `PIPE_L` `PIPE_T` `PIPE_X`. Not `pipe-source`. Not `pipe-valve`. Pipe, crop and tree panes share `useCycle`. One cadence, one hook. Variety row does not cycle. The machine ids add a **Recipes** block under the description, `size="md"` — [[ui/recipe]]. Station does not. Refuel does. Infuser yield faces draw overlay-infused.

@@ -1,7 +1,7 @@
 import { m } from '../../paraglide/messages.js'
 import { CROP_NAME, cropVariety } from '../defs/crops.ts'
 import { tierOf, type VarietyId } from '../defs/varieties.ts'
-import { inWorld, sortVariety, sorterBase, sorterCells, type Barrel, type Coord, type Facing, type Furnace, type Grinder, type Infuser, type JamMachine, type Mill, type PotStill, type ResearchStation, type Sorter, type Tree } from './building.ts'
+import { inWorld, sortVariety, sorterBase, sorterCells, type Barrel, type Coord, type Facing, type Furnace, type Grinder, type Infuser, type JamMachine, type Mill, type PotStill, type Refuel, type ResearchStation, type Sorter, type Tree } from './building.ts'
 import { onCell, topIndex } from './drop.ts'
 import type { CropId, GrownCrop, JamCrop, MillRecipe, SensorKind, SkuId } from './ids.ts'
 import { DAY_SECONDS } from './clock.ts'
@@ -17,7 +17,9 @@ import {
   JAM_IN,
   STILL_CAP,
   FURNACE_BREAD_IN,
+  FURNACE_CAP,
   FURNACE_NEED,
+  FUEL_STORE,
   INFUSE_EXTRACT,
   INFUSE_FLAKES,
   INFUSE_IN,
@@ -185,6 +187,8 @@ export function taskName(w: World, i: Intent): TaskName {
       return m.names_building_still()
     case 'furnace':
       return m.names_building_furnace()
+    case 'refuel':
+      return m.names_building_refuel()
     case 'station':
       return m.names_building_station()
     case 'barrel':
@@ -361,6 +365,7 @@ const DELETE_NAME: { readonly [K in string]?: () => string } = {
   sorter: m.names_building_sorter,
   still: m.names_building_still,
   furnace: m.names_building_furnace,
+  refuel: () => skuLabel('buy-refuel'),
   'weather-station': () => m.names_sku_buy_weather_station(),
   barrel: m.names_building_barrel,
   jam: m.names_building_jam,
@@ -661,6 +666,13 @@ export function readPrompt(w: World, at: Coord): Prompt {
     if (w.act.hand.kind === 'hold' && cell.accept(w.act.hand.item) > 0) {
       if (w.act.hand.item.kind === 'flour') return intent(m.prompt_bake(), { act: 'furnace', at })
       return intent(m.prompt_burn(), { act: 'furnace', at })
+    }
+    return { kind: 'blocked', text: look }
+  }
+  if (cell.kind === 'refuel') {
+    const look = refuelLook(cell)
+    if (w.act.hand.kind === 'hold' && cell.accept(w.act.hand.item) > 0) {
+      return intent(m.prompt_fill(), { act: 'refuel', at })
     }
     return { kind: 'blocked', text: look }
   }
@@ -1080,6 +1092,15 @@ export function stationLook(st: ResearchStation, hand: Hand, familiarityOf: (cro
       left: st.units,
       n: Math.floor(st.progress * 100),
     }),
+  )
+}
+
+export function refuelLook(station: Refuel): string {
+  const name = m.names_building_refuel()
+  if (station.units === 0 && station.store === 0) return name
+  return labeled(
+    name,
+    m.prompt_refuel_held({ units: station.units, cap: FURNACE_CAP, store: station.store, storeCap: FUEL_STORE }),
   )
 }
 

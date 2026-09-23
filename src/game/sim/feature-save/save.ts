@@ -194,6 +194,7 @@ export function originOf(c: Cell, owned: readonly ChunkId[]): Coord | undefined 
     c.kind === 'jam' ||
     c.kind === 'still' ||
     c.kind === 'furnace' ||
+    c.kind === 'refuel' ||
     c.kind === 'infuser' ||
     c.kind === 'necronomicon' ||
     c.kind === 'weather-station' ||
@@ -319,6 +320,8 @@ function dumpCell(c: Cell, at: Coord, owned: readonly ChunkId[]): SaveCell {
         out: c.out,
         hold: c.hold,
       }
+    case 'refuel':
+      return { kind: 'refuel', base: c.base, buy: c.buy, store: c.store, units: c.units, progress: c.progress }
     case 'necronomicon':
       return {
         kind: 'necronomicon',
@@ -485,6 +488,7 @@ function dumpPose(pose: Vehicle['pose']): SaveVehicle['pose'] {
 function dumpStop(s: RouteStop): RouteStop {
   const at = { col: s.at.col, row: s.at.row }
   if (s.kind === 'load' || s.kind === 'unload') return { kind: s.kind, at, pick: { ...s.pick } }
+  if (s.kind === 'refuel') return { kind: 'refuel', at, wait: s.wait }
   return { kind: s.kind, at }
 }
 

@@ -488,10 +488,46 @@ function RowList({ spec }: { spec: Extract<HudSpec, { chrome: 'rows' }> }) {
   )
 }
 
+function RefuelHud({
+  world,
+  at,
+  cam,
+  onClose,
+}: {
+  world: World
+  at: Coord
+  cam: Camera
+  onClose: () => void
+}) {
+  const c = world.cell(at)
+  if (c.kind !== 'refuel') return undefined
+  return (
+    <HudShell
+      col={at.col}
+      row={at.row}
+      cam={cam}
+      title={m.names_building_refuel()}
+      onClose={onClose}
+      pin="above"
+      width="w-56"
+    >
+      <label className="flex cursor-pointer items-center gap-2 py-0.5">
+        <Checkbox
+          checked={c.buy}
+          onChange={() => world.setFuelBuy(at, !c.buy)}
+          label={m.hud_refuel_buy()}
+        />
+        <span className="text-base leading-none">{m.hud_refuel_buy()}</span>
+      </label>
+    </HudShell>
+  )
+}
+
 export function ObjectHud({ world, cam, onClose }: { world: World; cam: Camera; onClose: () => void }) {
   const target = world.hud
   if (target === undefined) return undefined
   if (target.kind === 'counter') return <CounterHud world={world} at={target.at} cam={cam} onClose={onClose} />
+  if (target.kind === 'refuel') return <RefuelHud world={world} at={target.at} cam={cam} onClose={onClose} />
   const spec = hudSpec(world, target)
   if (spec === undefined) return undefined
   if (spec.chrome === 'slider') return <SprinklerHud spec={spec} cam={cam} onClose={onClose} />

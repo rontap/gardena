@@ -50,7 +50,7 @@ export const SHELVES: readonly Shelf[] = [
       { label: 'Grafting', skus: ['buy-research-station'] },
       { label: 'Sorting', skus: ['buy-sorter'] },
       { label: 'Necronomicon', skus: ['buy-necronomicon'] },
-      { label: 'Hangar', skus: ['buy-hangar'] },
+      { label: 'Hangar', skus: ['buy-hangar', 'buy-refuel'] },
     ],
   },
   {

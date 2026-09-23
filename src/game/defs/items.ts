@@ -91,6 +91,17 @@ export const FURNACE_VALUE = {
   'fly-agaric': 1,
 } as const
 
+export const FUEL_STORE = 10
+export const FUEL_BATCH = 10
+export const FUEL_SECONDS = 60
+export const FUEL_LITERS = 25
+export const FUEL_WORTH = {
+  wood: 10,
+  oil: 20,
+  cane: 3,
+  alcohol: 15,
+} as const
+
 export const STATION_SECONDS_BASE = 30
 export const STATION_SECONDS_STEP = 3
 export const FAMILIARITY_GAIN: { readonly [K in VarietyTier]: number } = { base: 1, variant: 2, heirloom: 3 }

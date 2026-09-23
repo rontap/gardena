@@ -1043,6 +1043,17 @@ export default function App({ sink }: { sink: WorkerSink }) {
                 setPanel({ kind: 'none' })
                 return
               }
+              if (hit.kind === 'cell' && world.seats[world.local].place.kind === 'none' && world.cell(hit.at).kind === 'refuel') {
+                if (editRoute !== 'none') {
+                  world.openHud({ kind: 'refuel', at: hit.at })
+                  return
+                }
+                const prompted = world.prompt(hit.at)
+                if (prompted.kind !== 'intent' || prompted.intent.act !== 'refuel') {
+                  world.openHud({ kind: 'refuel', at: hit.at })
+                  return
+                }
+              }
               if (editRoute !== 'none' && world.seats[world.local].place.kind === 'none' && hit.kind === 'cell') {
                 const s = world.stopAt(hit.at)
                 if (s !== undefined) world.addStop(editRoute, s)
@@ -1527,6 +1538,7 @@ function addStopHint(world: World, route: RouteId | 'none', hover: PromptHit | u
   if (s.kind === 'goto') return m.vehicles_hint_go()
   if (s.kind === 'load') return m.vehicles_hint_load()
   if (s.kind === 'unload') return m.vehicles_hint_unload()
+  if (s.kind === 'refuel') return m.vehicles_hint_refuel()
   return m.vehicles_hint_wait()
 }
 

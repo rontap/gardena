@@ -132,7 +132,7 @@ Held `weed-spray`, tilled plot, `liters >= 1`: **Spray**. `{ act: 'weed-spray'; 
 
 ## Machines
 
-Mill, jam, still, barrel, freezer, grinder, furnace, infuser: look and prompt [[ui/machines]]. Station: look, prompt, and walk-up panel [[ui/station]]. Not plots. No Growth / Happiness / Fertilizer / Water / Freshness bars. No ObjectHud. Mill, jam, still, barrel, grinder, compost-box, furnace, infuser hover adds one recipe row under the look block — [[ui/recipe]]. Freezer has no recipe. Station has no recipe row. Covering haste is a `lookText` line in that same look block, after the machine look — [[ui/machines]].
+Mill, jam, still, barrel, freezer, grinder, furnace, infuser: look and prompt [[ui/machines]]. Station: look, prompt, and walk-up panel [[ui/station]]. Not plots. No Growth / Happiness / Fertilizer / Water / Freshness bars. No ObjectHud. Mill, jam, still, barrel, grinder, compost-box, furnace, infuser, refuel hover adds one recipe row under the look block — [[ui/recipe]]. Freezer has no recipe. Station has no recipe row. Covering haste is a `lookText` line in that same look block, after the machine look — [[ui/machines]].
 
 ## Held
 

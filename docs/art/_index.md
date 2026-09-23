@@ -18,6 +18,7 @@
 - [[art/sensors]]
 - [[art/items]]
 - [[art/companies]]
+- [[art/music]]
 
 SVGs live in `src/assets/`. Farm tiles: atlas. HUD chrome: React. [[art/svg]]
 

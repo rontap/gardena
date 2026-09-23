@@ -1,5 +1,6 @@
 import type { Stop } from '../sound.h.ts'
 import { GM, ROOM, playScore, type ScoreNote } from '../sound.utils.ts'
+import { line } from './score.ts'
 
 const BPM = 72
 const BARS = 36
@@ -23,7 +24,6 @@ const THEME_CHORDS: Chord[] = ['Fmaj7', 'Am7', 'Bbmaj7', 'C', 'Dm7', 'Bbmaj7', '
 const ANSWER_CHORDS: Chord[] = ['Fmaj7', 'Am7', 'Bbmaj7', 'Gm7', 'Dm7', 'Am7', 'Bbmaj7', 'C']
 const BRIDGE_CHORDS: Chord[] = ['Dm', 'Am', 'Bbmaj7', 'Fmaj7', 'Gm7', 'Am7', 'Bbmaj7', 'Csus4']
 
-// One string per bar: `pitch beats`, `r` is a rest. Beats may be a fraction: `1/3` is one note of a triplet.
 const THEME = [
   'A4 1.5, G4 .5, F4 1, C4 1',
   'E4 1.5, F4 .5, G4 2',
@@ -62,19 +62,6 @@ const BELL = [0, 1, 2, 1, 0, 1, 2, 1]
 
 function up(pitch: string): string {
   return pitch.replace(/\d+$/, o => String(Number(o) + 1))
-}
-
-function line(out: ScoreNote[], program: number, bar: number, vel: number, bars: string[]): void {
-  bars.forEach((text, i) => {
-    let beat = (bar + i) * 4
-    text.split(',').forEach(token => {
-      const [pitch, len] = token.trim().split(' ')
-      const [num, den = '1'] = len.split('/')
-      const beats = Number(num) / Number(den)
-      if (pitch !== 'r') out.push({ beat, len: beats, pitch, vel, program })
-      beat += beats
-    })
-  })
 }
 
 function chords(bar: number, names: Chord[], play: (beat: number, c: readonly string[]) => void): void {
@@ -154,5 +141,5 @@ function score(): ScoreNote[] {
 }
 
 export function startSong3(): Stop {
-  return playScore(BPM, BARS * 4, score(), ROOM.echo)
+  return playScore({ bpm: BPM, slow: [] }, BARS * 4, score(), ROOM.echo)
 }

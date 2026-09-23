@@ -249,6 +249,7 @@ export const GM = {
   glockenspiel: 9,
   musicBox: 10,
   vibraphone: 11,
+  marimba: 12,
   accordion: 21,
   nylonGuitar: 24,
   acousticBass: 32,
@@ -264,11 +265,12 @@ export const GM = {
   recorder: 74,
   ocarina: 79,
   squareLead: 80,
+  woodblock: 115,
 } as const
 
 // `send` is the share of the voice sent to the reverb.
 const PATCH: Partial<Record<number, Patch>> = {
-  [GM.piano]: { voice: fm(3, 8, { attack: 0.008, decay: 0.4, sustain: 0.12, release: 0.55 }, 0.2, 'sine'), db: -14, poly: 32, send: 0.3, fx: DRY },
+  [GM.piano]: { voice: fm(3, 8, { attack: 0.008, decay: 0.4, sustain: 0.12, release: 0.55 }, 0.2, 'sine'), db: -14, poly: 48, send: 0.3, fx: DRY },
   [GM.electricPiano]: { voice: fm(8, 2, { attack: 0.004, decay: 0.3, sustain: 0.05, release: 0.3 }, 0.15, 'sine'), db: -16, poly: 16, send: 0.35, fx: DRY },
   [GM.celesta]: { voice: fm(4, 1.5, { attack: 0.002, decay: 1.2, sustain: 0, release: 1 }, 0.3, 'sine'), db: -16, poly: 16, send: 0.5, fx: DRY },
   [GM.glockenspiel]: { voice: fm(3.5, 2, { attack: 0.001, decay: 1.4, sustain: 0, release: 1.2 }, 0.4, 'sine'), db: -14, poly: 12, send: 0.5, fx: DRY },
@@ -280,6 +282,8 @@ const PATCH: Partial<Record<number, Patch>> = {
     send: 0.4,
     fx: () => [new Tremolo(5.5, 0.25).start()],
   },
+  [GM.marimba]: { voice: fm(4, 1.2, { attack: 0.001, decay: 0.6, sustain: 0, release: 0.4 }, 0.06, 'sine'), db: -12, poly: 16, send: 0.25, fx: DRY },
+  [GM.woodblock]: { voice: fm(3.1, 5, { attack: 0.001, decay: 0.07, sustain: 0, release: 0.05 }, 0.02, 'sine'), db: -12, poly: 8, send: 0.15, fx: DRY },
   [GM.accordion]: { ...reed('fatsquare', { attack: 0.06, decay: 0.1, sustain: 0.9, release: 0.2 }, 1350, DRY), db: -26, poly: 8, send: 0.25 },
   [GM.nylonGuitar]: { voice: fm(1, 2.2, PLUCK, 0.12, 'triangle'), db: -14, poly: 12, send: 0.3, fx: DRY },
   [GM.acousticBass]: { voice: wave('triangle', { attack: 0.005, decay: 0.7, sustain: 0.25, release: 0.3 }), db: -14, poly: 8, send: 0.1, fx: DRY },
@@ -342,16 +346,31 @@ export const ROOM = {
 
 export type ScoreNote = { beat: number; len: number; pitch: string; vel: number; program: number }
 
-export function playScore(bpm: number, beats: number, score: ScoreNote[], room: Room): Stop {
-  const sec = 60 / bpm
+// `slow` spans are ritardandos: from beat `from` to beat `to` the tempo moves evenly from `bpm` to the span's
+// `bpm`, and at `to` it is back at `bpm`.
+export type Tempo = { bpm: number; slow: { from: number; to: number; bpm: number }[] }
+
+// Seconds from the start of the score to a beat.
+function clock(tempo: Tempo): (beat: number) => number {
+  const { bpm } = tempo
+  return beat =>
+    tempo.slow.reduce((sec, s) => {
+      const x = Math.min(Math.max(beat, s.from), s.to) - s.from
+      const k = (s.bpm - bpm) / (s.to - s.from)
+      return sec + (60 / k) * Math.log((bpm + k * x) / bpm) - (x * 60) / bpm
+    }, (beat * 60) / bpm)
+}
+
+export function playScore(tempo: Tempo, beats: number, score: ScoreNote[], room: Room): Stop {
+  const sec = clock(tempo)
   const notes = score.map(n => ({
-    sec: n.beat * sec,
-    dur: n.len * sec,
+    sec: sec(n.beat),
+    dur: sec(n.beat + n.len) - sec(n.beat),
     hz: Frequency(n.pitch).toFrequency(),
     vel: n.vel,
     program: n.program,
   }))
-  return playNotes(notes, beats * sec, bpm, room)
+  return playNotes(notes, sec(beats), tempo.bpm, room)
 }
 
 export function playMidi(bytes: Uint8Array, bpm: number): Stop {

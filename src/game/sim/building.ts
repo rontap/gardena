@@ -592,6 +592,7 @@ export class Grinder extends Machine {
     const count = floor + Math.floor(u * (GRIND_MAX - floor + 1))
     if (!emitProduct(w, this.base, grindProduct(this, count))) return false
     this.progress = 0
+    w.cue({ kind: 'machine', machine: 'grinder' })
     this.units -= 1
     this.n += 1
     if (this.units === 0) this.crop = 'none'
@@ -627,6 +628,7 @@ export class CompostBox extends BaseBuilding {
     if (this.progress < 1) return false
     if (!emitProduct(w, this.base, makeCompost())) return false
     this.progress = 0
+    w.cue({ kind: 'machine', machine: 'compost-box' })
     this.units -= COMPOST_NEED
     w.track(at, this)
     return true
@@ -701,6 +703,7 @@ export class Mill extends Machine {
     if (this.progress < 1) return false
     if (!emitProduct(w, this.base, millProduct(this.recipe, this.variety, this.quality))) return false
     this.progress = 0
+    w.cue({ kind: 'machine', machine: 'mill' })
     this.units -= need
     if (this.units === 0) {
       const mill: Mill = this
@@ -786,6 +789,7 @@ export class JamMachine extends Machine {
       return false
     }
     this.progress = 0
+    w.cue({ kind: 'machine', machine: 'jam' })
     this.fruit -= JAM_IN
     this.sugar -= jamSugar(this.crop, this.variety)
     if (this.fruit === 0) {
@@ -850,6 +854,7 @@ export class PotStill extends Machine {
     }
     this.feed = []
     this.progress = 0
+    w.cue({ kind: 'machine', machine: 'still' })
     this.n += 1
     w.track(at, this)
     return true
@@ -932,6 +937,7 @@ export class Furnace extends Machine {
         : { kind: 'ash', count: FURNACE_ASH }
     if (!emitProduct(w, this.base, out)) return false
     this.progress = 0
+    w.cue({ kind: 'machine', machine: 'furnace' })
     this.units -= need
     if (this.units === 0) {
       this.recipe = 'none'
@@ -1052,6 +1058,7 @@ export class Infuser extends Machine {
     if (this.progress < 1) return false
     if (!emitProduct(w, this.base, infusedProduct(this))) return false
     this.progress = 0
+    w.cue({ kind: 'machine', machine: 'infuser' })
     this.units -= INFUSE_IN
     if (this.flakes >= INFUSE_FLAKES) this.flakes -= INFUSE_FLAKES
     else this.extract -= INFUSE_EXTRACT
@@ -1161,6 +1168,7 @@ export class Barrel extends BaseBuilding {
     if (was < BARREL_MATURE && this.age >= BARREL_MATURE) {
       this.feed = [{ variety: feedVariety(this.feed), quality: meanQuality(this.feed), count: barrelNeed(this.crop) }]
       this.n += 1
+      w.cue({ kind: 'machine', machine: 'barrel' })
     }
     w.track(at, this)
     return was < BARREL_AGE && this.age >= BARREL_AGE

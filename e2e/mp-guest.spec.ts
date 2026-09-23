@@ -70,7 +70,7 @@ test('Guest Expand plates and Cheat are gone; Pipe and Wooden fence arm', async 
   await expect(page.getByRole('button', { name: /Expand/ })).toHaveCount(0)
   await openBuild(page)
   await page.getByRole('tab', { name: 'Water' }).click()
-  const pipe = page.getByRole('button', { name: /^Pipe(?: placing)? 3$/ })
+  const pipe = page.getByRole('button', { name: /^Pipe(?: placing)? 2$/ })
   await expect(pipe).toBeVisible()
   await expect(pipe).toHaveAttribute('aria-disabled', 'false')
   await page.getByRole('tab', { name: 'Sensors' }).click()

@@ -38,6 +38,7 @@ import type { Camera } from './game/view/camera.ts'
 import { MapView, type Lens, type MapClick } from './game/view/map.tsx'
 import { PIPE_PLACE } from './game/view/hit.ts'
 import { bindDash, bindHud, paintMotion } from './game/view/motion.ts'
+import { armSound, holdSound } from './game/sim/feature-sound/sound.ts'
 import { BARREL_AGE, BARREL_CAP, QUAD_SHOW_MUL, STILL_CAP, TRAILER_CAP } from './game/defs/items.ts'
 import { STATION, STILL, UI_DASH_QUAD, UI_DASH_TRACTOR, symHref } from './game/view/svgs.ts'
 import { Plant } from './game/sim/plant.ts'
@@ -288,6 +289,10 @@ export default function App({ sink }: { sink: WorkerSink }) {
   }, [world, prefs.pauseWhenHidden])
 
   useEffect(() => {
+    holdSound(paused)
+  }, [paused])
+
+  useEffect(() => {
     if (world === undefined) return
     let last = performance.now()
     let fpsEma = 0
@@ -518,12 +523,14 @@ export default function App({ sink }: { sink: WorkerSink }) {
   }
 
   function playNew(): void {
+    armSound()
     const next = new World(undefined, sink)
     next.tutorial = startTutorial('new', slotExists())
     session(next)
   }
 
   function playLoad(): void {
+    armSound()
     const text = readSlot()
     if (text === undefined) return
     const r = parse(text, sink)
@@ -535,6 +542,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
   }
 
   function playUpload(text: string): void {
+    armSound()
     const r = parse(text, sink)
     if (!r.ok) {
       setFail(r.reason)
@@ -882,6 +890,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
   }
 
   function onJoin(key: string): void {
+    armSound()
     setMpFail(undefined)
     setConnecting(true)
     roomRef.current = key

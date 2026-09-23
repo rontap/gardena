@@ -287,6 +287,7 @@ export function begin(world: World, i: Intent): void {
         return
       }
       world.act.cue = { kind: 'chest', at: { ...i.at } }
+      world.cue({ kind: 'open', building: c.kind })
       shiftHead(world)
       return
     }
@@ -473,35 +474,102 @@ export function shiftHead(world: World): void {
 export function finishWork(world: World): void {
   const i = world.act.queue[0]
   if (i === undefined) return
-  if (i.act === 'shovel') field.doShovel(world, i.at)
-  if (i.act === 'mine') field.doMine(world, i.at)
-  if (i.act === 'plant') field.doPlant(world, i.at)
-  if (i.act === 'water' && field.doWater(world, i.at)) {
-    world.burst('pour', i.at)
-    markTutorial(world, 'poured')
+  if (i.act === 'shovel') {
+    field.doShovel(world, i.at)
+    world.cue({ kind: 'act', act: 'shovel' })
   }
-  if (i.act === 'fertilize' && field.doFertilize(world, i.at)) markTutorial(world, 'fertilized')
-  if (i.act === 'compost') machines.doCompost(world, i.at)
-  if (i.act === 'harvest') field.doHarvest(world, i.at)
-  if (i.act === 'grind') machines.doGrind(world, i.at)
-  if (i.act === 'mill') machines.doMill(world, i.at)
-  if (i.act === 'still') machines.doStill(world, i.at)
-  if (i.act === 'furnace') machines.doFurnace(world, i.at)
-  if (i.act === 'refuel') machines.doRefuel(world, i.at)
-  if (i.act === 'station') machines.doStation(world, i.at)
-  if (i.act === 'barrel') machines.doBarrel(world, i.at)
-  if (i.act === 'jam') machines.doJam(world, i.at)
-  if (i.act === 'valve') doValve(world, i.edge)
-  if (i.act === 'toggle') doToggle(world, i.at)
+  if (i.act === 'mine') {
+    field.doMine(world, i.at)
+    world.cue({ kind: 'act', act: 'mine' })
+  }
+  if (i.act === 'plant') {
+    field.doPlant(world, i.at)
+    world.cue({ kind: 'act', act: 'plant' })
+  }
+  if (i.act === 'water') {
+    if (field.doWater(world, i.at)) {
+      world.burst('pour', i.at)
+      markTutorial(world, 'poured')
+    }
+    world.cue({ kind: 'act', act: 'water' })
+  }
+  if (i.act === 'fertilize') {
+    if (field.doFertilize(world, i.at)) markTutorial(world, 'fertilized')
+    world.cue({ kind: 'act', act: 'fertilize' })
+  }
+  if (i.act === 'compost') {
+    machines.doCompost(world, i.at)
+    world.cue({ kind: 'act', act: 'compost' })
+  }
+  if (i.act === 'harvest') {
+    field.doHarvest(world, i.at)
+    world.cue({ kind: 'act', act: 'harvest' })
+  }
+  if (i.act === 'grind') {
+    machines.doGrind(world, i.at)
+    world.cue({ kind: 'act', act: 'grind' })
+  }
+  if (i.act === 'mill') {
+    machines.doMill(world, i.at)
+    world.cue({ kind: 'act', act: 'mill' })
+  }
+  if (i.act === 'still') {
+    machines.doStill(world, i.at)
+    world.cue({ kind: 'act', act: 'still' })
+  }
+  if (i.act === 'furnace') {
+    machines.doFurnace(world, i.at)
+    world.cue({ kind: 'act', act: 'furnace' })
+  }
+  if (i.act === 'refuel') {
+    machines.doRefuel(world, i.at)
+    world.cue({ kind: 'act', act: 'refuel' })
+  }
+  if (i.act === 'station') {
+    machines.doStation(world, i.at)
+    world.cue({ kind: 'act', act: 'station' })
+  }
+  if (i.act === 'barrel') {
+    machines.doBarrel(world, i.at)
+    world.cue({ kind: 'act', act: 'barrel' })
+  }
+  if (i.act === 'jam') {
+    machines.doJam(world, i.at)
+    world.cue({ kind: 'act', act: 'jam' })
+  }
+  if (i.act === 'valve') {
+    doValve(world, i.edge)
+    world.cue({ kind: 'act', act: 'valve' })
+  }
+  if (i.act === 'toggle') {
+    doToggle(world, i.at)
+    world.cue({ kind: 'act', act: 'toggle' })
+  }
   if (i.act === 'tend') {
     field.doTend(world, i.at)
     world.burst('tend', i.at)
+    world.cue({ kind: 'act', act: 'tend' })
   }
-  if (i.act === 'weed-spray') field.doWeedSpray(world, i.at)
-  if (i.act === 'chop') field.doChop(world, i.at)
-  if (i.act === 'graft') field.doGraft(world, i.at)
-  if (i.act === 'infuse') machines.doInfuse(world, i.at)
-  if (i.act === 'necronomicon') doSacrifice(world, i.at)
+  if (i.act === 'weed-spray') {
+    field.doWeedSpray(world, i.at)
+    world.cue({ kind: 'act', act: 'weed-spray' })
+  }
+  if (i.act === 'chop') {
+    field.doChop(world, i.at)
+    world.cue({ kind: 'act', act: 'chop' })
+  }
+  if (i.act === 'graft') {
+    field.doGraft(world, i.at)
+    world.cue({ kind: 'act', act: 'graft' })
+  }
+  if (i.act === 'infuse') {
+    machines.doInfuse(world, i.at)
+    world.cue({ kind: 'act', act: 'infuse' })
+  }
+  if (i.act === 'necronomicon') {
+    doSacrifice(world, i.at)
+    world.cue({ kind: 'act', act: 'necronomicon' })
+  }
   shiftHead(world)
 }
 

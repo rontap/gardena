@@ -17,6 +17,8 @@ One exception: `mermaid`, for the `#debug-techtree` unlock graph only — [[ui/c
 
 `chart.js` is the same kind of exception for the `#debug-balance` planted-income chart only. Dynamic `import('chart.js/auto')` from that page, not the game bundle.
 
+`tone` is the same kind of exception for sound, imported only from `src/game/sim/feature-sound/sound.utils.ts`.
+
 Renderer: **PixiJS v8 canvas world**. HUD/panels are React + Tailwind, not Pixi. No `@pixi/react`. Chrome SVGs stay in React. Contract: [[architecture/view]].
 
 App lives at repo root: `package.json`, `vite.config.ts`, `src/`. Tailwind v4 via `@tailwindcss/vite`. `npm run dev` / `npm run build`. Project `.npmrc` sets `audit=false`: electron-builder's tree makes the registry audit POST stall `npm i`.

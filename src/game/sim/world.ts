@@ -47,6 +47,7 @@ import type {
   VfxId
 } from './ids.ts'
 import { emptyFamiliarity } from './ids.ts'
+import type { SoundCue } from './feature-sound/sound.h.ts'
 import { WALK } from './actor.ts'
 import { defaultSeatName, joinKit, soloSeat, STARTER_SEEDS } from './seat.ts'
 import { localPlayerId, localPlayerName } from './player.ts'
@@ -350,6 +351,7 @@ export class World {
   private readonly dirtEdgeCache = new Map<string, string>()
   readonly vfx = new Map<string, boolean>()
   readonly bursts: Burst[] = []
+  readonly cues: SoundCue[] = []
   private burstSeq = 0
   private readonly subs = new Set<(kind: PingKind, reasons: ReadonlySet<DirtyReason>) => void>()
   private pendingDirty = new Set<DirtyReason>()
@@ -1979,6 +1981,14 @@ export class World {
 
   drainBursts(): Burst[] {
     return this.bursts.splice(0, this.bursts.length)
+  }
+
+  cue(c: SoundCue): void {
+    this.cues.push(c)
+  }
+
+  drainCues(): SoundCue[] {
+    return this.cues.splice(0, this.cues.length)
   }
 
   dropSpot(base: RectBase): Coord | undefined {

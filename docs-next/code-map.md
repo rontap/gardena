@@ -46,6 +46,7 @@ Game state and game rules. No React or Pixi imports.
 - `feature-contracts/` — contract board, and Market saturation.
 - `feature-burrow/`, `feature-enclosure/`, `feature-necronomicon/`.
 - `feature-save/` — save file shape, write, parse.
+- `feature-sound/` — playback. `sound.ts` runs the cues. `sound.utils.ts` is the only `tone` import. `music/` is one file per song. `machines/` and `vfx/` are the other cues.
 
 ## Tuning — `src/game/defs/`
 
@@ -62,6 +63,8 @@ Developer pages: `debug-*.tsx`, `atlas-view.tsx`, `techtree.ts`.
 ## Map — `src/game/view/`
 
 Pixi. `world-view.ts` draws the world through `layers/` (ground, plots, props, pipes, actors, overlay, VFX). `atlas.ts` rasterizes SVG groups; `svgs.ts` serves SVGs to React. `map.tsx` is the canvas component and pointer input; `hit.ts` turns a pointer into a target; `camera.ts`, `cursor.ts`, `motion.ts`, `outline.ts`.
+
+Picture effects stay here: `vfx.ts`, `layers/vfx.ts`. Sound is `sim/feature-sound/`.
 
 ## Other
 

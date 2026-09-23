@@ -15,6 +15,7 @@ import { PropsLayer } from './layers/props.ts'
 import { ActorsLayer } from './layers/actors.ts'
 import { OverlayLayer } from './layers/overlay.ts'
 import { VfxLayer, type VfxMount } from './layers/vfx.ts'
+import { bindSound, tickSound, unbindSound } from '../sim/feature-sound/sound.ts'
 import type { DirtyReason } from '../sim/world.ts'
 
 export type ViewHooks = {
@@ -81,6 +82,7 @@ export class WorldView {
     this.app.stage.addChild(this.farm)
     this.actors.bind(world)
     this.vfx.bind(world)
+    bindSound(world)
     this.patch('all')
     this.unsub = world.on((kind, reasons) => {
       if (kind !== 'dirty') return
@@ -149,6 +151,7 @@ export class WorldView {
 
   destroy(): void {
     if (this.unsub !== undefined) this.unsub()
+    unbindSound(this.world)
     destroyApp(this.app)
   }
 
@@ -157,6 +160,7 @@ export class WorldView {
     this.actors.tick(world)
     this.props.tick(world, performance.now())
     this.vfx.tick(world, performance.now())
+    tickSound(world)
     this.overlay.flowTick(world, performance.now())
     const driven = world.driverVehicle(world.local)
     if (driven !== undefined && driven.pose.kind === 'field') {

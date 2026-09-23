@@ -10,6 +10,7 @@ One page per system that several features use, or that the engine runs. Copy [[s
 - [[systems/net]] — multiplayer transport, snapshot, digest, resync
 - [[systems/i18n]] — player strings and their compile
 - [[systems/view]] — rendering, atlas, layers, VFX
+- [[systems/sound]] — sound beside the picture effects
 - [[systems/building-io]] — footprints, ports, pads, pull and push
 - [[systems/signals]] — wires, signal evaluation, device inputs
 - [[systems/water-network]] — pipe networks, sources, pull

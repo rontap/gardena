@@ -4,6 +4,7 @@ import actorSvg from '../../assets/actor.svg?raw'
 import type { Coord } from '../sim/building.ts'
 import type { World } from '../sim/world.ts'
 import { HAT } from '../view/map.tsx'
+import { hearNotices } from '../sim/feature-sound/sound.ts'
 import { ACTOR, COMPANY, EXPAND_LAND, fruitInner, itemInner, researchInner, SKILL_POINT, UI_NOTICE_RAIL, UI_RECAP_NIGHT } from '../view/svgs.ts'
 import { STAT_COLOR } from './status.tsx'
 import { useCycle } from './cycle.ts'
@@ -225,6 +226,10 @@ export function Notices({
   }, [world])
 
   const blocks = groupNotices([...recapRows(world), ...roster, ...rows.filter(r => r.kind !== 'recap')])
+  const freshKey = noticeRows(world).map(r => r.id).join('\n')
+  useEffect(() => {
+    hearNotices(world)
+  }, [world, freshKey])
 
   if (off) return undefined
 

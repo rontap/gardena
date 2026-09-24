@@ -1,9 +1,10 @@
 import type { Stop } from '../sound.h.ts'
-import { GM, ROOM, playScore, type ScoreNote } from '../sound.utils.ts'
+import { GM, ROOM, playScore, type ScoreNote, type Tempo } from '../sound.utils.ts'
 import { line } from './score.ts'
 
-const BPM = 72
 const BARS = 36
+// The return slows across the bar of `HOME` that carries the answer, into the F.
+const TEMPO: Tempo = { bpm: 72, slow: [{ from: 34 * 4, to: 35 * 4, bpm: 56 }] }
 
 // Voicings from the bass up. Index 0 is the bass, 2 to 4 are the upper chord, kept between F3 and F4.
 const CHORD = {
@@ -23,6 +24,7 @@ const INTRO: Chord[] = ['Fmaj7', 'Bbmaj7', 'Fmaj7', 'Csus4']
 const THEME_CHORDS: Chord[] = ['Fmaj7', 'Am7', 'Bbmaj7', 'C', 'Dm7', 'Bbmaj7', 'Gm7', 'Csus4']
 const ANSWER_CHORDS: Chord[] = ['Fmaj7', 'Am7', 'Bbmaj7', 'Gm7', 'Dm7', 'Am7', 'Bbmaj7', 'C']
 const BRIDGE_CHORDS: Chord[] = ['Dm', 'Am', 'Bbmaj7', 'Fmaj7', 'Gm7', 'Am7', 'Bbmaj7', 'Csus4']
+const RETURN_CHORDS: Chord[] = [...THEME_CHORDS.slice(0, 6), 'C', 'Fmaj7']
 
 const THEME = [
   'A4 1.5, G4 .5, F4 1, C4 1',
@@ -34,6 +36,9 @@ const THEME = [
   'Bb4 1.5, A4 .5, G4 1/3, A4 1/3, Bb4 1/3, C5 1',
   'G4 .5, A4 .5, Bb4 .5, D5 .5, C5 2',
 ]
+// The theme's falling answer, its bar 4, over C, then down a step from its G to F.
+const HOME = [THEME[3], 'F4 4']
+const RETURN = [...THEME.slice(0, 6), ...HOME]
 const ANSWER = [
   'A4 1.5, G4 .5, F4 1, C5 1',
   'C5 .5, A4 .5, G4 .5, A4 .5, E4 2',
@@ -97,6 +102,11 @@ function pizzicato(out: ScoreNote[], bar: number, names: Chord[], vel: number): 
   )
 }
 
+// The harp's chord rolled from the bottom, one string every fifth of a beat, held for the bar.
+function roll(out: ScoreNote[], bar: number, name: Chord, vel: number): void {
+  CHORD[name].forEach((pitch, j) => out.push({ beat: bar * 4 + j * 0.2, len: 4 - j * 0.2, pitch, vel, program: GM.harp }))
+}
+
 function drone(out: ScoreNote[], bar: number, bars: number): void {
   for (let i = 0; i < bars; i += 2) {
     out.push({ beat: (bar + i) * 4, len: 8, pitch: 'F2', vel: 0.16, program: GM.strings })
@@ -132,14 +142,17 @@ function score(): ScoreNote[] {
   bell(out, 20, BRIDGE_CHORDS, 0.34)
   pizzicato(out, 20, BRIDGE_CHORDS, 0.46)
 
-  line(out, GM.ocarina, 28, 0.48, THEME)
-  harp(out, 28, THEME_CHORDS, 0.53)
-  bell(out, 28, THEME_CHORDS, 0.38)
-  drone(out, 32, 4)
+  line(out, GM.ocarina, 28, 0.48, RETURN)
+  line(out, GM.vibraphone, 34, 0.42, HOME)
+  harp(out, 28, RETURN_CHORDS.slice(0, 7), 0.53)
+  roll(out, 35, 'Fmaj7', 0.62)
+  bell(out, 28, RETURN_CHORDS, 0.38)
+  roots(out, 34, RETURN_CHORDS.slice(6), 0.36)
+  drone(out, 32, 2)
 
   return out
 }
 
 export function startSong3(): Stop {
-  return playScore({ bpm: BPM, slow: [] }, BARS * 4, score(), ROOM.echo)
+  return playScore({ tempo: TEMPO, beats: BARS * 4, notes: score(), room: ROOM.echo, sweeps: [] })
 }

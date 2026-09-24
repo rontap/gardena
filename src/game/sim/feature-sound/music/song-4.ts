@@ -176,5 +176,5 @@ function score(): ScoreNote[] {
 }
 
 export function startSong4(): Stop {
-  return playScore(TEMPO, BARS * 4, score(), ROOM.hall)
+  return playScore({ tempo: TEMPO, beats: BARS * 4, notes: score(), room: ROOM.hall, sweeps: [] })
 }

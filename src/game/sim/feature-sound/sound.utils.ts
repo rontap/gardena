@@ -26,11 +26,7 @@ import {
 } from 'tone'
 import type { Stop } from './sound.h.ts'
 
-// The global context carries music, scheduled one second ahead so a slow frame does not break the sound.
-// `updateInterval` keeps that scheduling in 0.1 s steps; without it Tone sets it to half of `lookAhead` and schedules in bursts.
-// A `PolySynth` holds a voice from the moment its note is scheduled until it falls silent, so `poly` covers `lookAhead` too.
-// Sound effects must not wait that long: they get their own context with `latencyHint: 'interactive'`.
-setContext(new Context({ latencyHint: 'playback', lookAhead: 1, updateInterval: 0.1 }))
+setContext(new Context({ context: new AudioContext({ latencyHint: 'playback' }), lookAhead: 0.1 }))
 
 export type Length = 0.25 | 0.5 | 1 | 2
 export type Note = { time: string; notes: string[]; dur: string; vel: number }
@@ -54,11 +50,12 @@ export function playSong(song: Song): Stop {
   })
   synth.volume.value = -16
   synth.maxPolyphony = 48
+  const { mix } = bus()
   const send = new Gain(0.6)
   const space = ROOM.hall(song.bpm)
-  synth.fan(getDestination(), send)
+  synth.fan(mix, send)
   send.connect(space[0])
-  space[0].connect(getDestination())
+  space[0].connect(mix)
   const part = new Part<Note>((time, ev) => {
     synth.triggerAttackRelease(ev.notes, ev.dur, time, ev.vel)
   }, song.notes)
@@ -75,6 +72,7 @@ export function playSong(song: Song): Stop {
     synth.dispose()
     send.dispose()
     space.forEach(n => n.dispose())
+    mix.dispose()
     transport.stop()
     transport.position = 0
   }
@@ -311,6 +309,7 @@ export const GM = {
   acousticBass: 32,
   violin: 40,
   synthBass: 38,
+  sawBass: 39,
   cello: 42,
   pizzicato: 45,
   harp: 46,
@@ -324,6 +323,8 @@ export const GM = {
   recorder: 74,
   ocarina: 79,
   squareLead: 80,
+  sawLead: 81,
+  warmPad: 89,
   woodblock: 115,
   // Not a program: the drum kit, which General MIDI puts on channel 10. Its pitches are `DRUM`.
   drums: 128,
@@ -383,25 +384,59 @@ const PATCH: Partial<Record<number, Patch>> = {
     fx: DRY,
   },
   [GM.synthBass]: { ...reed('square', { attack: 0.005, decay: 0.25, sustain: 0.7, release: 0.15 }, 420, DRY), db: -12, poly: 8, send: 0.1 },
+  [GM.sawBass]: { ...reed('sawtooth', { attack: 0.005, decay: 0.3, sustain: 0.8, release: 0.08 }, 600, DRY), db: -14, poly: 8, send: 0.05 },
+  [GM.sawLead]: { ...reed('sawtooth', { attack: 0.02, decay: 0.2, sustain: 0.8, release: 0.15 }, 3000, DRY), db: -20, poly: 8, send: 0.2 },
+  [GM.warmPad]: {
+    ...reed('sawtooth', { attack: 0.05, decay: 0.25, sustain: 0.7, release: 0.35 }, 900, () => [new Chorus({ frequency: 0.8, delayTime: 3, depth: 0.4, wet: 0.4 }).start()]),
+    db: -18,
+    poly: 16,
+    send: 0.4,
+  },
   // Choir-like "ooh"s opening on each note, a faint vibrato and a light chorus: clear triangles, and buzzier
   // sawtooths. Song 5 sings its line on both at once.
   [GM.voiceOoh]: { ...vowel('fattriangle', 15, 1200, 1.5), db: -10, poly: 8, send: 0.55, fx: VOICE_FX },
   [GM.synthVoice]: { ...vowel('fatsawtooth', 30, 700, 2), db: -14, poly: 8, send: 0.55, fx: VOICE_FX },
 }
 const OTHER: Patch = { ...wave('triangle', SING), db: -15, poly: 16, send: 0.3, fx: DRY }
-const KIT: Pick<Patch, 'db' | 'send' | 'fx'> = { db: -8, send: 0.1, fx: DRY }
+const KIT_PATCH: Pick<Patch, 'db' | 'send' | 'fx'> = { db: -8, send: 0.1, fx: DRY }
 
-// One synth per drum behind one volume, struck by General MIDI drum key. A hit cuts off the same drum's last hit.
-function kit(): Voice {
+type Band = { hz: number; q: number; decay: number }
+export type Kit = {
+  kick: { note: string; pitchDecay: number; octaves: number; decay: number; hold: number }
+  snare: Band
+  clap: Band
+  hat: { hz: number; decay: number; open: number }
+}
+
+export const KIT = {
+  standard: {
+    kick: { note: 'A1', pitchDecay: 0.05, octaves: 5, decay: 0.4, hold: 0.1 },
+    snare: { hz: 1800, q: 0.8, decay: 0.16 },
+    clap: { hz: 1200, q: 1.2, decay: 0.12 },
+    hat: { hz: 7000, decay: 0.04, open: 0.3 },
+  },
+  deep: {
+    kick: { note: 'E1', pitchDecay: 0.15, octaves: 4, decay: 0.45, hold: 0.45 },
+    snare: { hz: 1800, q: 0.8, decay: 0.16 },
+    clap: { hz: 1000, q: 0.75, decay: 0.15 },
+    hat: { hz: 1500, decay: 0.07, open: 0.3 },
+  },
+} satisfies Record<string, Kit>
+
+function kit(k: Kit): Voice {
   const vol = new Volume()
-  const snareBand = new Filter({ frequency: 1800, type: 'bandpass', Q: 0.8 }).connect(vol)
-  const clapBand = new Filter({ frequency: 1200, type: 'bandpass', Q: 1.2 }).connect(vol)
-  const hatHigh = new Filter({ frequency: 7000, type: 'highpass' }).connect(vol)
-  const kick = new MembraneSynth({ pitchDecay: 0.05, octaves: 5, envelope: { attack: 0.001, decay: 0.4, sustain: 0, release: 0.1 } }).connect(vol)
-  const snare = new NoiseSynth({ envelope: { attack: 0.001, decay: 0.16, sustain: 0 } }).connect(snareBand)
-  const clap = new NoiseSynth({ envelope: { attack: 0.002, decay: 0.12, sustain: 0 } }).connect(clapBand)
-  const hat = new NoiseSynth({ envelope: { attack: 0.001, decay: 0.04, sustain: 0 } }).connect(hatHigh)
-  const openHat = new NoiseSynth({ envelope: { attack: 0.001, decay: 0.3, sustain: 0 } }).connect(hatHigh)
+  const snareBand = new Filter({ frequency: k.snare.hz, type: 'bandpass', Q: k.snare.q }).connect(vol)
+  const clapBand = new Filter({ frequency: k.clap.hz, type: 'bandpass', Q: k.clap.q }).connect(vol)
+  const hatHigh = new Filter({ frequency: k.hat.hz, type: 'highpass' }).connect(vol)
+  const kick = new MembraneSynth({
+    pitchDecay: k.kick.pitchDecay,
+    octaves: k.kick.octaves,
+    envelope: { attack: 0.001, decay: k.kick.decay, sustain: 0, release: 0.1 },
+  }).connect(vol)
+  const snare = new NoiseSynth({ envelope: { attack: 0.001, decay: k.snare.decay, sustain: 0 } }).connect(snareBand)
+  const clap = new NoiseSynth({ envelope: { attack: 0.002, decay: k.clap.decay, sustain: 0 } }).connect(clapBand)
+  const hat = new NoiseSynth({ envelope: { attack: 0.001, decay: k.hat.decay, sustain: 0 } }).connect(hatHigh)
+  const openHat = new NoiseSynth({ envelope: { attack: 0.001, decay: k.hat.open, sustain: 0 } }).connect(hatHigh)
   const riserBand = new Filter({ frequency: 400, type: 'bandpass', Q: 1 }).connect(vol)
   const riser = new NoiseSynth({ envelope: { attack: 1, attackCurve: 'exponential', decay: 0.05, sustain: 1, release: 0.3 } }).connect(riserBand)
   const hit: Record<number, (time: number, vel: number, dur: number) => void> = {
@@ -411,7 +446,7 @@ function kit(): Voice {
       riserBand.frequency.exponentialRampToValueAtTime(7000, time + dur)
       riser.triggerAttackRelease(dur, time, vel)
     },
-    36: (time, vel) => kick.triggerAttackRelease('A1', 0.1, time, vel),
+    36: (time, vel) => kick.triggerAttackRelease(k.kick.note, k.kick.hold, time, vel),
     38: (time, vel) => snare.triggerAttackRelease(0.1, time, vel),
     39: (time, vel) => clap.triggerAttackRelease(0.08, time, vel),
     42: (time, vel) => hat.triggerAttackRelease(0.03, time, vel),
@@ -438,10 +473,10 @@ function wire(p: Pick<Patch, 'db' | 'fx'>, send: number, voice: Voice | Solo, ro
   return [...fx, out, gain]
 }
 
-function makeVoice(program: number, room: ToneAudioNode, mix: ToneAudioNode, send: number): Played {
+function makeVoice(program: number, room: ToneAudioNode, mix: ToneAudioNode, send: number, drums: Kit): Played {
   if (program === GM.drums) {
-    const voice = kit()
-    return { voice, nodes: wire(KIT, send, voice, room, mix) }
+    const voice = kit(drums)
+    return { voice, nodes: wire(KIT_PATCH, send, voice, room, mix) }
   }
   const p = PATCH[program] ?? OTHER
   const voice = p.voice()
@@ -456,8 +491,13 @@ function makeSolo(program: number, room: ToneAudioNode, mix: ToneAudioNode, send
 }
 
 function patchSend(program: number): number {
-  if (program === GM.drums) return KIT.send
+  if (program === GM.drums) return KIT_PATCH.send
   return (PATCH[program] ?? OTHER).send
+}
+
+function bus(): { mix: Filter } {
+  const mix = new Filter({ frequency: 20000, type: 'lowpass', rolloff: -24 }).connect(getDestination())
+  return { mix }
 }
 
 function sing(voice: Solo, n: MidiNote, bend: Bend, time: number): void {
@@ -504,7 +544,7 @@ function clock(tempo: Tempo): (beat: number) => number {
 
 // A ramp of the low-pass filter on the whole mix: set to `from` Hz at `beat`, then to `to` Hz over `len` beats.
 export type Sweep = { beat: number; len: number; from: number; to: number }
-export type Score = { tempo: Tempo; beats: number; notes: ScoreNote[]; room: Room; sweeps: Sweep[] }
+export type Score = { tempo: Tempo; beats: number; notes: ScoreNote[]; room: Room; sweeps: Sweep[]; kit: Kit }
 type Ramp = { sec: number; dur: number; from: number; to: number }
 
 export function playScore(song: Score): Stop {
@@ -519,17 +559,26 @@ export function playScore(song: Score): Stop {
   }))
   const ramps = song.sweeps.map(s => ({ sec: sec(s.beat), dur: sec(s.beat + s.len) - sec(s.beat), from: s.from, to: s.to }))
   const bars = Array.from({ length: song.beats / 4 }, (_, i) => sec(i * 4))
-  return playNotes(notes, ramps, bars, sec(song.beats), song.tempo.bpm, song.room, patchSend)
+  return playNotes(notes, ramps, bars, sec(song.beats), song.tempo.bpm, song.room, patchSend, song.kit)
 }
 
 export function playMidi(bytes: Uint8Array, bpm: number): Stop {
   const { notes, end } = readMidi(bytes, bpm)
-  return playNotes(notes, [], [], end, bpm, ROOM.hall, () => 0.6)
+  return playNotes(notes, [], [], end, bpm, ROOM.hall, () => 0.6, KIT.standard)
 }
 
 // `bars` are the start of each 4/4 bar in seconds; each one logs `[music] bar N` when it is heard.
-function playNotes(notes: MidiNote[], ramps: Ramp[], bars: number[], end: number, bpm: number, room: Room, sendFor: (program: number) => number): Stop {
-  const mix = new Filter({ frequency: 20000, type: 'lowpass', rolloff: -24 }).connect(getDestination())
+function playNotes(
+  notes: MidiNote[],
+  ramps: Ramp[],
+  bars: number[],
+  end: number,
+  bpm: number,
+  room: Room,
+  sendFor: (program: number) => number,
+  drums: Kit,
+): Stop {
+  const { mix } = bus()
   const space = room(bpm)
   space[0].chain(...space.slice(1), mix)
   const played: Record<number, Played> = {}
@@ -541,7 +590,7 @@ function playNotes(notes: MidiNote[], ramps: Ramp[], bars: number[], end: number
       return
     }
     if (played[n.program] !== undefined) return
-    played[n.program] = makeVoice(n.program, space[0], mix, sendFor(n.program))
+    played[n.program] = makeVoice(n.program, space[0], mix, sendFor(n.program), drums)
   })
   const sweep = new Part<Ramp & { time: number }>(
     (time, r) => {

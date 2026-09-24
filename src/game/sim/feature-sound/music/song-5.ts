@@ -1,5 +1,5 @@
 import type { Stop } from '../sound.h.ts'
-import { DRUM, GM, ROOM, playScore, type ScoreNote, type Sweep, type Tempo } from '../sound.utils.ts'
+import { DRUM, GM, KIT, ROOM, playScore, type ScoreNote, type Sweep, type Tempo } from '../sound.utils.ts'
 import { grid, line, sing } from './score.ts'
 
 // Built on the buildup of a live DJ cover, recreated from its analysis: 140 bpm with the drums in half time.
@@ -279,5 +279,5 @@ function score(): ScoreNote[] {
 }
 
 export function startSong5(): Stop {
-  return playScore({ tempo: TEMPO, beats: BARS * 4, notes: score(), room: ROOM.hall, sweeps: SWEEPS })
+  return playScore({ tempo: TEMPO, beats: BARS * 4, notes: score(), room: ROOM.hall, sweeps: SWEEPS, kit: KIT.standard })
 }

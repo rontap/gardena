@@ -10,5 +10,6 @@ Roadmap. Not rules. Live rules stay on [[mechanics/_index]]. Shipped history is 
 | [[plans/next-variant-patch]] | minor | Contract offers: Variety and Quality floor |
 | [[plans/next-vehicle]] | feature | Field silos as vehicle Load / Unload |
 | [[plans/next-automation]] | feature | Seed grinder, Compost box, Furnace — mill pattern. Barrel stays hand collect |
+| [[plans/next-sound]] | feature | Music: six songs, song 5 in progress, the engine's limits, how the developer gives feedback |
 
 Command Center is done. The tutorial redesign is done — [[mechanics/tutorial]]. Electricity is not a note.

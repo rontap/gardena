@@ -5,6 +5,7 @@ import { startSong3 } from './song-3.ts'
 import { startSong4 } from './song-4.ts'
 import { startSong5 } from './song-5.ts'
 import { startSong6 } from './song-6.ts'
+import { startSong7 } from './song-7.ts'
 
 export const songs: Record<string, () => Stop> = {
   'song-1': startSong1,
@@ -13,6 +14,7 @@ export const songs: Record<string, () => Stop> = {
   'song-4': startSong4,
   'song-5': startSong5,
   'song-6': startSong6,
+  'song-7': startSong7,
 }
 
 const BY_HASH: Partial<Record<string, string>> = {
@@ -21,6 +23,7 @@ const BY_HASH: Partial<Record<string, string>> = {
   '#music=4': 'song-4',
   '#music=5': 'song-5',
   '#music=6': 'song-6',
+  '#music=7': 'song-7',
 }
 
 export function farmMusic(): LoopFn {

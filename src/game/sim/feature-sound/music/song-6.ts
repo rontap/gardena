@@ -1,5 +1,5 @@
 import type { Stop } from '../sound.h.ts'
-import { GM, ROOM, playScore, type ScoreNote, type Tempo } from '../sound.utils.ts'
+import { GM, KIT, ROOM, playScore, type ScoreNote, type Tempo } from '../sound.utils.ts'
 import { line } from './score.ts'
 
 const BARS = 48
@@ -155,5 +155,5 @@ function score(): ScoreNote[] {
 }
 
 export function startSong6(): Stop {
-  return playScore({ tempo: TEMPO, beats: BARS * 4, notes: score(), room: ROOM.echo, sweeps: [] })
+  return playScore({ tempo: TEMPO, beats: BARS * 4, notes: score(), room: ROOM.echo, sweeps: [], kit: KIT.standard })
 }

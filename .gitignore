@@ -27,3 +27,9 @@ dist-ssr
 
 # electron
 release
+
+# audio analysis: decoded tracks and stems stay local
+music-analysis/**/*.wav
+music-analysis/**/*.mp3
+music-analysis/**/stems/
+music-analysis/**/__pycache__/

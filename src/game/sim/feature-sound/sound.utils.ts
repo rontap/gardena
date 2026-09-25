@@ -298,6 +298,7 @@ const PLUCK: Env = { attack: 0.002, decay: 1.1, sustain: 0, release: 0.8 }
 // General MIDI program numbers.
 export const GM = {
   piano: 0,
+  rhodes: 4,
   electricPiano: 5,
   celesta: 8,
   glockenspiel: 9,
@@ -337,6 +338,7 @@ export const DRUM = { kick: 'C2', snare: 'D2', clap: 'D#2', hat: 'F#2', openHat:
 // `send` is the share of the voice sent to the reverb.
 const PATCH: Partial<Record<number, Patch>> = {
   [GM.piano]: { ...fm(3, 8, { attack: 0.008, decay: 0.4, sustain: 0.12, release: 0.55 }, 0.2, 'sine'), db: -14, poly: 48, send: 0.3, fx: DRY },
+  [GM.rhodes]: { ...fm(1, 2.5, { attack: 0.005, decay: 1.2, sustain: 0.25, release: 1.5 }, 0.6, 'sine'), db: -13, poly: 32, send: 0.35, fx: DRY },
   [GM.electricPiano]: { ...fm(8, 2, { attack: 0.004, decay: 0.3, sustain: 0.05, release: 0.3 }, 0.15, 'sine'), db: -16, poly: 16, send: 0.35, fx: DRY },
   [GM.celesta]: { ...fm(4, 1.5, { attack: 0.002, decay: 1.2, sustain: 0, release: 1 }, 0.3, 'sine'), db: -16, poly: 16, send: 0.5, fx: DRY },
   [GM.glockenspiel]: { ...fm(3.5, 2, { attack: 0.001, decay: 1.4, sustain: 0, release: 1.2 }, 0.4, 'sine'), db: -14, poly: 16, send: 0.5, fx: DRY },

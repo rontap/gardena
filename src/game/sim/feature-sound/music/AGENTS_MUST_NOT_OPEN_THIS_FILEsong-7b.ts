@@ -2,7 +2,7 @@ import type { Stop } from '../sound.h.ts'
 import { DRUM, GM, KIT, ROOM, playScore, type ScoreNote, type Sweep, type Tempo } from '../sound.utils.ts'
 import { grid, line } from './score.ts'
 
-const TEMPO: Tempo = { bpm: 95, slow: [] }
+const TEMPO: Tempo = { bpm: 90, slow: [] }
 
 const SWEEPS: Sweep[] = [
   { beat: 0, len: 108, from: 205, to: 1755 },
@@ -29,17 +29,16 @@ const THEME = [
   'r 1.5, C#5 2.5',
 ]
 const STABS = [
-  { bar: 0, beats: [3.5], notes: ['B3', 'D4', 'G4'], vel: 0.45 },
-  { bar: 1, beats: [1.5, 3.5], notes: ['D4', 'G4', 'B4'], vel: 0.5 },
-  { bar: 2, beats: [1.5, 2.5, 3.5], notes: ['E4', 'A4', 'C#5'], vel: 0.57 },
+  { bar: 0, beats: [3.5], notes: ['B3', 'D4', 'G4'], vel: 0.35 },
+  { bar: 1, beats: [1.5, 3.5], notes: ['D4', 'G4', 'B4'], vel: 0.4 },
+  { bar: 2, beats: [1.5, 2.5, 3.5], notes: ['E4', 'A4', 'C#5'], vel: 0.47 },
 ]
 const FALL = [
   { beat: 0.5, notes: ['A4', 'C#5', 'E5'] },
-  { beat: 2, notes: ['A4', 'C#5', 'E5'] },
-  { beat: 3, notes: ['F#4', 'A4', 'D5'] },
+  { beat: 1.5, notes: ['F#4', 'A4', 'D5'] },
+  { beat: 2.5, notes: ['E4', 'A4', 'C#5'] },
   { beat: 3.5, notes: ['E4', 'A4', 'C#5'] },
 ]
-const ARRIVAL = ['B2', 'F#3', 'B3', 'D4', 'F#4', 'B4']
 const SCALE = ['C#', 'D', 'E', 'F#', 'G', 'A', 'B']
 
 const KICK = 'X...X...X...X...'
@@ -117,16 +116,6 @@ function roll(out: ScoreNote[], beat: number, notes: string[], len: number, vel:
   notes.forEach((pitch, j) => out.push({ beat: beat + j * 0.06, len: len - j * 0.06, pitch, vel, program: GM.rhodes }))
 }
 
-function strike(out: ScoreNote[], beat: number, notes: string[], len: number, vel: number): void {
-  notes.forEach(pitch => out.push({ beat, len, pitch, vel, program: GM.rhodes }))
-}
-
-const LEFT_HAND: Record<Root, string[]> = { B: ['B2', 'B3'], G: ['G2', 'G3'], A: ['A2', 'A3'] }
-
-function leftHand(out: ScoreNote[], bar: number, names: Root[]): void {
-  names.forEach((name, i) => [0, 2].forEach(at => strike(out, (bar + i) * 4 + at, LEFT_HAND[name], 0.75, 0.55)))
-}
-
 function groove(out: ScoreNote[], bar: number, names: Root[]): void {
   names.forEach((name, i) => {
     const root = ROOT[name]
@@ -202,35 +191,9 @@ function build(out: ScoreNote[], bar: number): void {
   grid(out, DRUM.openHat, bar, 0.34, [BREAK_OPEN, OPEN_TURN, OPEN_TURN, NO_HAT])
   out.push({ beat: bar * 4, len: 16, pitch: DRUM.riser, vel: 0.5, program: GM.drums })
   STABS.forEach(s => s.beats.forEach(at => roll(out, (bar + s.bar) * 4 + at, s.notes, 0.5, s.vel)))
-  FALL.forEach(s => strike(out, (bar + 3) * 4 + s.beat, s.notes, 0.5, 0.65))
-  leftHand(out, bar, RISE)
+  FALL.forEach(s => roll(out, (bar + 3) * 4 + s.beat, s.notes, 0.5, 0.55))
   line(out, GM.warmPad, bar + 2, 0.2, [LOOP_HINT, LOOP_HINT])
   line(out, GM.warmPad, bar + 2, 0.12, [LOOP_HINT_OCTAVE, LOOP_HINT_OCTAVE])
-}
-
-function ending(out: ScoreNote[]): void {
-  build(out, 51)
-  groove(out, 55, CYCLE)
-  loop(out, 55, times(8, [0.48]))
-  strike(out, 55 * 4, ARRIVAL, 4, 0.7)
-  out.push({ beat: 55 * 4, len: 0.5, pitch: 'B1', vel: 0.6, program: GM.sawBass })
-  line(out, GM.rhodes, 57, 0.45, ['r .5, F#4 .5, B4 3'])
-  roll(out, 59 * 4, ['B3', 'D4', 'G4'], 4, 0.45)
-  strike(out, 59 * 4, LEFT_HAND.G, 1, 0.5)
-  roll(out, 61 * 4, ['C#4', 'E4', 'A4'], 4, 0.45)
-  strike(out, 61 * 4, LEFT_HAND.A, 1, 0.5)
-  outro(out, 63)
-}
-
-function refrain(): ScoreNote[] {
-  const out: ScoreNote[] = []
-  rise(out)
-  half(out, 43)
-  line(out, GM.rhodes, 43, 0.65, THEME)
-  line(out, GM.rhodes, 47, 0.38, THEME.slice(4).map(third))
-  leftHand(out, 43, CYCLE)
-  ending(out)
-  return out
 }
 
 function bridge(): ScoreNote[] {
@@ -239,7 +202,14 @@ function bridge(): ScoreNote[] {
   broken(out, 43)
   line(out, GM.rhodes, 43, 0.55, THEME)
   line(out, GM.rhodes, 47, 0.33, THEME.slice(4).map(third))
-  ending(out)
+  build(out, 51)
+  groove(out, 55, CYCLE)
+  loop(out, 55, times(8, [0.48]))
+  roll(out, 55 * 4, ['B3', 'D4', 'F#4', 'B4'], 4, 0.55)
+  line(out, GM.rhodes, 57, 0.35, ['r .5, F#4 .5, B4 3'])
+  roll(out, 59 * 4, ['B3', 'D4', 'G4'], 4, 0.35)
+  roll(out, 61 * 4, ['C#4', 'E4', 'A4'], 4, 0.35)
+  outro(out, 63)
   return out
 }
 

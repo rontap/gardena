@@ -448,6 +448,14 @@ export function begin(world: World, i: Intent): void {
   }
 }
 
+// Closing the panel the `chest` walk-up opened: the sound of that building shutting.
+export function cueClose(world: World): void {
+  if (world.act.cue.kind !== 'chest') return
+  const c = world.cell(world.act.cue.at)
+  if (c.kind !== 'chest' && c.kind !== 'freezer' && c.kind !== 'silo-produce' && c.kind !== 'postbox') return
+  world.cue({ kind: 'close', building: c.kind })
+}
+
 export function arm(world: World, seconds: number): void {
   if (seconds <= 0) {
     finishWork(world)

@@ -82,6 +82,11 @@ export function armAudio(): void {
   void start()
 }
 
+// `gain` multiplies all music at the output: 1 plays it at the levels the songs set, 0 is silent.
+export function musicGain(gain: number): void {
+  getDestination().volume.value = 20 * Math.log10(gain)
+}
+
 export function holdAudio(paused: boolean): void {
   const raw = getContext().rawContext as AudioContext
   if (paused) void raw.suspend()

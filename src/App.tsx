@@ -38,7 +38,7 @@ import type { Camera } from './game/view/camera.ts'
 import { MapView, type Lens, type MapClick } from './game/view/map.tsx'
 import { PIPE_PLACE } from './game/view/hit.ts'
 import { bindDash, bindHud, paintMotion } from './game/view/motion.ts'
-import { armSound, holdSound } from './game/sim/feature-sound/sound.ts'
+import { armSound, holdSound, volumeSound } from './game/sim/feature-sound/sound.ts'
 import { BARREL_AGE, BARREL_CAP, QUAD_SHOW_MUL, STILL_CAP, TRAILER_CAP } from './game/defs/items.ts'
 import { STATION, STILL, UI_DASH_QUAD, UI_DASH_TRACTOR, symHref } from './game/view/svgs.ts'
 import { Plant } from './game/sim/plant.ts'
@@ -166,6 +166,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
 
   useEffect(() => {
     document.documentElement.toggleAttribute('data-reduced-motion', prefs.reducedMotion)
+    volumeSound(prefs.music, prefs.effects)
   }, [prefs])
 
   useEffect(() => {
@@ -1230,6 +1231,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
               onMainMenu={toMainMenu}
               settings={prefs}
               onSettings={applySettings}
+              onVolume={volumeSound}
               onClose={() => setPanel({ kind: 'none' })}
             />
           )}

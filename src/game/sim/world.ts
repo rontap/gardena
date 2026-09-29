@@ -1385,6 +1385,7 @@ export class World {
   }
 
   ackCueBody(): void {
+    queue.cueClose(this)
     this.act.cue = { kind: 'none' }
     this.ping()
   }

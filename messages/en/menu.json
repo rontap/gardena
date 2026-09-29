@@ -11,6 +11,8 @@
   "menu_back": "Back",
   "menu_revert_default": "Revert to default",
   "menu_save_settings": "Save",
+  "menu_music": "Music",
+  "menu_effects": "Sound effects",
   "menu_reduced_motion": "Reduced motion",
   "menu_reduced_motion_body": "Sprays, dust, steam and the menu farm hold still instead of animating.",
   "menu_pause_hidden": "Pause when this tab is not in front",

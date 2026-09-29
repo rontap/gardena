@@ -46,6 +46,7 @@ type MenuProps =
       onMainMenu: () => void
       settings: Settings
       onSettings: (next: Settings) => void
+      onVolume: (music: number, effects: number) => void
       onClose: () => void
     }
 
@@ -142,6 +143,7 @@ export function Menu(props: MenuProps) {
                 setPage({ kind: 'home' })
               }}
               onBack={() => setPage({ kind: 'home' })}
+              onVolume={props.onVolume}
             />
           ) : (
             <>

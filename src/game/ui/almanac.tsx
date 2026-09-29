@@ -1,34 +1,69 @@
 import { m } from '../../paraglide/messages.js'
-import { createContext, useContext, useState, type ReactNode } from 'react'
+import { createContext, Fragment, useContext, useState, type ReactNode } from 'react'
 import * as Tabs from '@radix-ui/react-tabs'
 import { catalogEntries, type CatalogEntry } from '../defs/catalog.ts'
-import { CROP_NAME, CROPS } from '../defs/crops.ts'
-import type { VarietyId } from '../defs/varieties.ts'
+import { CROP_NAME, CROPS, varietyName } from '../defs/crops.ts'
+import {
+  ALMANAC_AT,
+  HEIRLOOM_AT,
+  HEIRLOOM_PLACE_AT,
+  HEIRLOOM_PURPOSE_AT,
+  needsNeighbour,
+  PURPOSE_MUL,
+  tierOf,
+  VARIANT_AT,
+  VARIANT_PURPOSE_AT,
+  VARIETIES,
+  VARIETY,
+  type AlmanacEntry,
+  type Purpose,
+  type VarietyId,
+} from '../defs/varieties.ts'
 import { JAM_ROT, SKILLS } from '../defs/skills.ts'
-import { TREES, TREE_OFF_MUL, TREE_YIELD_DAYS, TREE_YIELD_MUL } from '../defs/trees.ts'
-import { PLANT_CROPS, TREE_IDS, type GrownCrop, type TreeId } from '../sim/ids.ts'
+import { TREES, TREE_RATE_HAPPY, TREE_RATE_ON, TREE_YIELD_DAYS } from '../defs/trees.ts'
+import { PLANT_CROPS, TREE_IDS, type GrownCrop, type SkuId, type TreeId } from '../sim/ids.ts'
 import { faceName, type Face } from '../sim/item.ts'
-import { statsOf } from '../sim/modifiers.ts'
-import { FERT_PLOT_MAX, SOIL_WATER_MID } from '../sim/soil.ts'
+import { statsOf, type Stats } from '../sim/modifiers.ts'
+import { FERT_PLOT_MAX, SOIL_WATER_MID, TREE_FERT_MAX, TREE_WATER_MID } from '../sim/soil.ts'
 import { DAY_SECONDS, days } from '../sim/clock.ts'
 import type { World } from '../sim/world.ts'
-import { MILL_IN, SUGAR_BAG } from '../defs/items.ts'
-import { cropInner, faceGfx, itemInner, meterInner, PIPE_I, PIPE_L, PIPE_STUB, PIPE_T, PIPE_X, ripeGroup, treeStage } from '../view/svgs.ts'
+import { AXES, CONTAINERS, COUNTER_MAX, NEIGHBOUR_REACH, PICKAXES, SHOVELS } from '../defs/items.ts'
+import { SKUS } from '../defs/research.ts'
+import {
+  buttonArt,
+  counterArt,
+  cropInner,
+  daySensorArt,
+  faceGfx,
+  fertSensorArt,
+  harvestSensorArt,
+  itemInner,
+  lampArt,
+  leverArt,
+  logicArt,
+  PIPE_I,
+  PIPE_L,
+  PIPE_STUB,
+  PIPE_T,
+  PIPE_X,
+  PROP_NOT,
+  pulserArt,
+  ripeGroup,
+  treeStage,
+  UI_ARROW_FILL,
+  UI_ARROW_INK,
+  varietySensorArt,
+  vehicleDetectorArt,
+  waterSensorArt,
+  weatherSensorArt,
+} from '../view/svgs.ts'
 import { CalloutHover } from './callout-hover.tsx'
-import { Coin, Overlay, tabTriggerClass } from './frame.tsx'
+import { Coin, Label, Overlay, tabTriggerClass } from './frame.tsx'
 import { useCycle } from './cycle.ts'
 import { MACHINE_IDS, recipesUsing, type MachineId, type Recipe } from '../sim/feature-machines/recipe.ts'
 import { Recipes } from './recipe.tsx'
 
-type AlmanacTab =
-  | 'seeds'
-  | 'trees'
-  | 'utility'
-  | 'sensors'
-  | 'automation'
-  | 'water'
-  | 'building'
-  | 'concepts'
+type AlmanacTab = 'fruits' | 'utility' | 'water' | 'machines' | 'vehicles' | 'sensors' | 'concepts' | 'misc'
 
 type ConceptId =
   | 'variety'
@@ -40,7 +75,6 @@ type ConceptId =
   | 'skills'
   | 'family'
   | 'research'
-  | 'automation'
   | 'luck'
   | 'burrow'
   | 'infusion'
@@ -51,108 +85,143 @@ type ListRow =
   | { kind: 'overview' }
   | { kind: 'concept'; id: ConceptId }
   | { kind: 'sku'; id: string }
+  | { kind: 'forms'; id: string; title: () => string; ids: readonly string[] }
+  | { kind: 'tools'; id: string; title: () => string; family: ToolFamily }
 
-const SEED_IDS = [
-  'carrot',
-  'potato',
-  'wheat',
-  'tomato',
-  'raspberry',
-  'grape',
-  'vanilla',
-  'chilli',
-  'sugar-cane',
-  'soil',
-  'weed',
-  'grass-seeds',
-  'grass',
-  'rotten',
-  'dead',
-]
-const TREE_TAB_IDS = [...TREE_IDS]
-const UTIL_IDS = [
-  'shovel',
-  'better-shovel',
-  'pickaxe',
-  'better-pickaxe',
-  'axe',
-  'chainsaw',
-  'bucket',
-  'large-bucket',
-  'fertilizer',
-  'weed-spray',
-  'compost',
-  'sugar',
-  'wood',
-  'ash',
-  'fly-agaric',
-  'rotary-shovel',
-  'diamond-pickaxe',
-]
-const SENSOR_IDS = [
-  'lever',
-  'button',
-  'lamp',
-  'logic',
-  'not',
-  'pulser',
-  'counter',
-  'sensor-water',
-  'sensor-fert',
-  'sensor-harvest',
-  'sensor-variety',
-  'sensor-weather',
-  'water-system',
-  'vehicle-detector',
-  'traffic-light',
-  'dispatch',
-  'sensor-day',
-]
-const AUTO_IDS = [
-  'chest',
-  'grinder',
-  'compost-box',
-  'mill',
-  'furnace',
-  'still',
-  'barrel',
-  'jam',
-  'freezer',
-  'station',
-  'infuser',
-  'sorter',
-  'hangar',
-  'refuel',
-  'silo-seed',
-  'silo-produce',
-  'silo-spray',
-]
-const WATER_IDS = [
-  'pumpjack',
-  'well',
-  'tap',
-  'pipe',
-  'valve',
-  'sprinkler',
-  'sprinkler-vert',
-  'sprinkler-large',
-]
-const BUILD_IDS = ['fence', 'tile-cobble', 'tile-brick', 'tile-paved']
-export const CONCEPT_IDS: ConceptId[] = [
-  'variety',
-  'quality',
-  'freshness',
-  'happiness',
-  'day',
-  'market',
-  'skills',
-  'family',
-  'research',
-  'automation',
-  'luck',
-  'burrow',
-  'infusion',
-]
+type ListItem = ListRow | { kind: 'heading'; label: () => string }
+
+const overview: ListRow = { kind: 'overview' }
+const heading = (label: () => string): ListItem => ({ kind: 'heading', label })
+const sku = (id: string): ListRow => ({ kind: 'sku', id })
+const concept = (id: ConceptId): ListRow => ({ kind: 'concept', id })
+const forms = (title: () => string, ids: readonly string[]): ListRow => ({ kind: 'forms', id: ids[0], title, ids })
+const tools = (title: () => string, family: ToolFamily): ListRow => ({
+  kind: 'tools',
+  id: toolIds(family)[0],
+  title,
+  family,
+})
+
+type Price = { kind: 'sku'; sku: SkuId } | { kind: 'prize' }
+
+type ToolFamily =
+  | { kind: 'work'; desc: () => string; tools: readonly { id: string; price: Price; uses: number; workSeconds: number }[] }
+  | { kind: 'hold'; desc: () => string; tools: readonly { id: string; price: Price; liters: number }[] }
+
+const sold = (sku: SkuId): Price => ({ kind: 'sku', sku })
+const PRIZE: Price = { kind: 'prize' }
+
+function toolIds(family: ToolFamily): string[] {
+  switch (family.kind) {
+    case 'work':
+      return family.tools.map(t => t.id)
+    case 'hold':
+      return family.tools.map(t => t.id)
+  }
+}
+
+const SHOVEL_TOOLS: ToolFamily = {
+  kind: 'work',
+  desc: () => m.almanac_tool_shovel(),
+  tools: [
+    { id: 'shovel', price: sold('buy-shovel'), ...SHOVELS.shovel },
+    { id: 'better-shovel', price: sold('buy-better-shovel'), ...SHOVELS['better-shovel'] },
+    { id: 'rotary-shovel', price: PRIZE, ...SHOVELS['rotary-shovel'] },
+  ],
+}
+
+const PICKAXE_TOOLS: ToolFamily = {
+  kind: 'work',
+  desc: () => m.almanac_tool_pickaxe(),
+  tools: [
+    { id: 'pickaxe', price: sold('buy-pickaxe'), ...PICKAXES.pickaxe },
+    { id: 'better-pickaxe', price: sold('buy-better-pickaxe'), ...PICKAXES['better-pickaxe'] },
+    { id: 'diamond-pickaxe', price: PRIZE, ...PICKAXES['diamond-pickaxe'] },
+  ],
+}
+
+const AXE_TOOLS: ToolFamily = {
+  kind: 'work',
+  desc: () => m.almanac_tool_axe({ skill: SKILLS.grafting.name }),
+  tools: [
+    { id: 'axe', price: sold('buy-axe'), ...AXES.axe },
+    { id: 'chainsaw', price: sold('buy-chainsaw'), ...AXES.chainsaw },
+    { id: 'electric-chainsaw', price: PRIZE, ...AXES['electric-chainsaw'] },
+  ],
+}
+
+const BUCKET_TOOLS: ToolFamily = {
+  kind: 'hold',
+  desc: () => m.almanac_tool_bucket(),
+  tools: [
+    { id: 'bucket', price: sold('buy-bucket'), liters: CONTAINERS.bucket.capacityLiters },
+    { id: 'large-bucket', price: sold('buy-bucket-large'), liters: CONTAINERS['large-bucket'].capacityLiters },
+  ],
+}
+
+const LISTS: { readonly [K in AlmanacTab]: readonly ListItem[] } = {
+  fruits: [
+    overview,
+    heading(() => m.almanac_group_crops()),
+    ...PLANT_CROPS.map(sku),
+    heading(() => m.almanac_group_trees()),
+    ...TREE_IDS.map(sku),
+  ],
+  utility: [
+    heading(() => m.almanac_group_tools()),
+    tools(() => m.names_shovel_shovel(), SHOVEL_TOOLS),
+    tools(() => m.names_pickaxe_pickaxe(), PICKAXE_TOOLS),
+    tools(() => m.names_item_axe(), AXE_TOOLS),
+    tools(() => m.names_container_bucket(), BUCKET_TOOLS),
+    heading(() => m.almanac_group_bags()),
+    ...['fertilizer', 'compost', 'weed-spray', 'sugar'].map(sku),
+    heading(() => m.almanac_group_storage()),
+    ...['chest', 'freezer', 'silo-seed', 'silo-spray', 'silo-produce'].map(sku),
+  ],
+  water: [
+    ...['pumpjack', 'well', 'tap', 'pipe', 'valve'].map(sku),
+    forms(() => m.names_building_sprinkler(), ['sprinkler', 'sprinkler-vert', 'sprinkler-large']),
+  ],
+  machines: [
+    overview,
+    ...['grinder', 'mill', 'jam', 'still', 'barrel', 'infuser', 'compost-box', 'furnace', 'station', 'sorter'].map(sku),
+  ],
+  vehicles: [
+    ...['hangar', 'refuel', 'dispatch', 'traffic-light'].map(sku),
+  ],
+  sensors: [
+    overview,
+    heading(() => m.almanac_group_signal()),
+    ...['lever', 'button', 'lamp', 'logic', 'not', 'pulser', 'counter'].map(sku),
+    heading(() => m.almanac_group_readers()),
+    ...['sensor-water', 'sensor-fert', 'sensor-harvest', 'sensor-variety', 'sensor-weather', 'sensor-day', 'vehicle-detector'].map(sku),
+  ],
+  concepts: [
+    heading(() => m.almanac_group_plants()),
+    ...(['variety', 'quality', 'freshness', 'happiness'] as const).map(concept),
+    heading(() => m.almanac_group_days()),
+    concept('day'),
+    heading(() => m.almanac_group_money()),
+    concept('market'),
+    heading(() => m.almanac_group_family()),
+    ...(['family', 'skills', 'research'] as const).map(concept),
+    heading(() => m.almanac_group_other()),
+    concept('luck'),
+    concept('infusion'),
+    sku('necronomicon'),
+  ],
+  misc: [
+    heading(() => m.almanac_group_ground()),
+    sku('soil'),
+    concept('burrow'),
+    sku('fence'),
+    forms(() => m.almanac_forms_paving(), ['tile-asphalt', 'tile-cobble', 'tile-brick', 'tile-paved']),
+    heading(() => m.almanac_group_compostable()),
+    sku('weed'),
+    forms(() => m.names_ground_grass(), ['grass', 'grass-seeds']),
+    ...['rotten', 'dead', 'wood', 'ash', 'fly-agaric'].map(sku),
+  ],
+}
 
 const CONCEPT_LABEL: { readonly [K in ConceptId]: () => string } = {
   variety: () => m.almanac_concept_variety(),
@@ -164,21 +233,20 @@ const CONCEPT_LABEL: { readonly [K in ConceptId]: () => string } = {
   skills: () => m.almanac_concept_skills(),
   family: () => m.family_title(),
   research: () => m.names_role_research(),
-  automation: () => m.hud_research_automation(),
   luck: () => m.almanac_concept_luck(),
   burrow: () => m.almanac_concept_burrow(),
   infusion: () => m.almanac_concept_infusion(),
 }
 
 const TABS: { id: AlmanacTab; label: () => string }[] = [
-  { id: 'seeds', label: () => m.almanac_tab_seeds() },
-  { id: 'trees', label: () => m.almanac_tab_trees() },
+  { id: 'fruits', label: () => m.almanac_tab_fruits() },
   { id: 'utility', label: () => m.almanac_tab_utility() },
-  { id: 'sensors', label: () => m.almanac_tab_sensors() },
-  { id: 'automation', label: () => m.hud_research_automation() },
   { id: 'water', label: () => m.almanac_tab_water() },
-  { id: 'building', label: () => m.almanac_tab_building() },
+  { id: 'machines', label: () => m.almanac_tab_machines() },
+  { id: 'vehicles', label: () => m.almanac_tab_vehicles() },
+  { id: 'sensors', label: () => m.almanac_tab_sensors() },
   { id: 'concepts', label: () => m.almanac_tab_concepts() },
+  { id: 'misc', label: () => m.almanac_tab_misc() },
 ]
 
 const CROP_IDS: readonly GrownCrop[] = PLANT_CROPS
@@ -206,25 +274,12 @@ function AlmanacLink({ to, children }: { to: AlmanacNav; children: ReactNode }) 
   )
 }
 
+export const CONCEPT_IDS: ConceptId[] = Object.values(LISTS).flatMap(list =>
+  list.flatMap(r => (r.kind === 'concept' ? [r.id] : [])),
+)
+
 function rowsOf(tab: AlmanacTab): ListRow[] {
-  switch (tab) {
-    case 'seeds':
-      return [{ kind: 'overview' }, ...SEED_IDS.map(id => ({ kind: 'sku' as const, id }))]
-    case 'trees':
-      return TREE_TAB_IDS.map(id => ({ kind: 'sku' as const, id }))
-    case 'utility':
-      return UTIL_IDS.map(id => ({ kind: 'sku' as const, id }))
-    case 'sensors':
-      return [{ kind: 'overview' }, ...SENSOR_IDS.map(id => ({ kind: 'sku' as const, id }))]
-    case 'automation':
-      return [{ kind: 'overview' }, ...AUTO_IDS.map(id => ({ kind: 'sku' as const, id }))]
-    case 'water':
-      return WATER_IDS.map(id => ({ kind: 'sku' as const, id }))
-    case 'building':
-      return BUILD_IDS.map(id => ({ kind: 'sku' as const, id }))
-    case 'concepts':
-      return CONCEPT_IDS.map(id => ({ kind: 'concept' as const, id }))
-  }
+  return LISTS[tab].filter((r): r is ListRow => r.kind !== 'heading')
 }
 
 function rowId(row: ListRow): string {
@@ -233,6 +288,8 @@ function rowId(row: ListRow): string {
       return 'overview'
     case 'concept':
     case 'sku':
+    case 'forms':
+    case 'tools':
       return row.id
   }
 }
@@ -251,6 +308,9 @@ function rowTitle(row: ListRow, byId: Map<string, CatalogEntry>): string {
       return CONCEPT_LABEL[row.id]()
     case 'sku':
       return skuEntry(byId, row.id).title
+    case 'forms':
+    case 'tools':
+      return row.title()
   }
 }
 
@@ -264,29 +324,13 @@ function tabOf(id: string): AlmanacTab {
   return t.id
 }
 
-function colMin(key: 'growSeconds' | 'waterUsePerSec' | 'sale' | 'seed' | 'rotSeconds'): number {
-  return Math.min(...CROP_IDS.map(id => CROPS[id][key]))
-}
-
-function colMax(key: 'growSeconds' | 'waterUsePerSec' | 'sale' | 'seed' | 'rotSeconds'): number {
-  return Math.max(...CROP_IDS.map(id => CROPS[id][key]))
-}
-
-function meterN(v: number, min: number, max: number): number {
-  if (max === min) return 3
-  return 1 + Math.round((4 * (v - min)) / (max - min))
-}
-
-function liters(n: number): string {
-  return `${Number(n.toFixed(2))}L`
-}
-
 const STAGES = ['sprout', 'grow', 'ripe'] as const
+const TREE_STAGES = ['trunk', 'grow', 'unripe', 'ripe'] as const
 
 export function Almanac({ world, onClose }: { world: World; onClose: () => void }) {
   const entries = catalogEntries()
-  const [tab, setTab] = useState<AlmanacTab>('seeds')
-  const [id, setId] = useState(firstId('seeds'))
+  const [tab, setTab] = useState<AlmanacTab>('fruits')
+  const [id, setId] = useState(firstId('fruits'))
   const [tip, setTip] = useState<Tip>(undefined)
   const byId = new Map(entries.map(e => [e.id, e]))
   const rows = rowsOf(tab)
@@ -337,7 +381,14 @@ export function Almanac({ world, onClose }: { world: World; onClose: () => void 
           </Tabs.List>
           <div className="relative z-20 flex min-h-0 flex-1 mx-[-0.75rem]">
             <div className="scroll-pane w-44 shrink-0 min-h-0 overflow-y-auto border-r border-ink/20">
-              {rows.map(r => {
+              {LISTS[tab].map(r => {
+                if (r.kind === 'heading') {
+                  return (
+                    <div key={r.label()} className="px-2 pt-2">
+                      <Label>{r.label()}</Label>
+                    </div>
+                  )
+                }
                 const rid = rowId(r)
                 return (
                   <button
@@ -351,7 +402,7 @@ export function Almanac({ world, onClose }: { world: World; onClose: () => void 
                       setTip(undefined)
                     }}
                   >
-                    {r.kind === 'sku' ? (
+                    {r.kind === 'sku' || r.kind === 'forms' || r.kind === 'tools' ? (
                       <svg
                         className="h-4 w-4 shrink-0"
                         viewBox="0 0 24 24"
@@ -374,6 +425,7 @@ export function Almanac({ world, onClose }: { world: World; onClose: () => void 
                   furnace: world.done.has('unlock-furnace'),
                   infusion: world.done.has('unlock-infusion'),
                 }}
+                familiarity={world.familiarity}
                 tab={tab}
               />
             </div>
@@ -391,11 +443,13 @@ function RowPane({
   row,
   byId,
   done,
+  familiarity,
   tab,
 }: {
   row: ListRow
   byId: Map<string, CatalogEntry>
   done: AlmanacDone
+  familiarity: World['familiarity']
   tab: AlmanacTab
 }) {
   switch (row.kind) {
@@ -404,7 +458,11 @@ function RowPane({
     case 'concept':
       return <ConceptPane id={row.id} />
     case 'sku':
-      return <Pane entry={skuEntry(byId, row.id)} done={done} tab={tab} />
+      return <Pane entry={skuEntry(byId, row.id)} done={done} familiarity={familiarity} tab={tab} />
+    case 'forms':
+      return <FormsPane title={row.title()} entries={row.ids.map(id => skuEntry(byId, id))} tab={tab} />
+    case 'tools':
+      return <ToolPane title={row.title()} family={row.family} byId={byId} />
   }
 }
 
@@ -419,22 +477,22 @@ function OverviewPane({ tab }: { tab: AlmanacTab }) {
 
 function overviewBody(tab: AlmanacTab) {
   switch (tab) {
-    case 'seeds':
-      return <SeedsOverview />
+    case 'fruits':
+      return <FruitsOverview />
     case 'sensors':
       return <SensorsOverview />
-    case 'automation':
-      return <AutomationOverview />
-    case 'trees':
+    case 'machines':
+      return <MachinesOverview />
     case 'utility':
     case 'water':
-    case 'building':
+    case 'vehicles':
     case 'concepts':
+    case 'misc':
       throw new Error(tab)
   }
 }
 
-function SeedsOverview() {
+function FruitsOverview() {
   return (
     <>
       <div>
@@ -460,6 +518,7 @@ function SeedsOverview() {
         <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>{m.names_role_market()}</AlmanacLink>
         {m.almanac_seeds_p3_f()}
       </div>
+      <div>{m.almanac_tree_seasons({ days: TREE_YIELD_DAYS })}</div>
       <div>
         {m.almanac_see()}
         <AlmanacLink to={{ tab: 'concepts', id: 'variety' }}>{m.almanac_concept_variety()}</AlmanacLink>
@@ -487,19 +546,19 @@ function SensorsOverview() {
         {m.almanac_sensors_p2_b()}
       </div>
       <div>
-        <AlmanacLink to={{ tab: 'concepts', id: 'automation' }}>{m.hud_research_automation()}</AlmanacLink>
+        <AlmanacLink to={{ tab: 'machines', id: 'overview' }}>{m.hud_research_automation()}</AlmanacLink>
         {m.almanac_sensors_p3_a()}
       </div>
       <div>
         {m.almanac_see()}
-        <AlmanacLink to={{ tab: 'concepts', id: 'automation' }}>{m.hud_research_automation()}</AlmanacLink>
+        <AlmanacLink to={{ tab: 'machines', id: 'overview' }}>{m.hud_research_automation()}</AlmanacLink>
         {m.almanac_period()}
       </div>
     </>
   )
 }
 
-function AutomationOverview() {
+function MachinesOverview() {
   return (
     <>
       <div>
@@ -509,7 +568,7 @@ function AutomationOverview() {
       </div>
       <div>
         {m.almanac_auto_p2_a()}
-        <AlmanacLink to={{ tab: 'automation', id: 'mill' }}>{m.names_building_mill()}</AlmanacLink>
+        <AlmanacLink to={{ tab: 'machines', id: 'mill' }}>{m.names_building_mill()}</AlmanacLink>
         {m.almanac_auto_p2_b()}
         <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>{m.names_role_market()}</AlmanacLink>
         {m.almanac_auto_p2_c()}
@@ -562,8 +621,6 @@ function conceptBody(id: ConceptId) {
       return <FamilyConcept />
     case 'research':
       return <ResearchConcept />
-    case 'automation':
-      return <AutomationConcept />
     case 'luck':
       return <LuckConcept />
     case 'burrow':
@@ -616,13 +673,13 @@ function FreshnessConcept() {
       </div>
       <div>
         {m.almanac_fresh_p2_a()}
-        <AlmanacLink to={{ tab: 'seeds', id: 'rotten' }}>{m.almanac_rotten_produce()}</AlmanacLink>
+        <AlmanacLink to={{ tab: 'misc', id: 'rotten' }}>{m.almanac_rotten_produce()}</AlmanacLink>
         {m.almanac_fresh_p2_b()}
-        <AlmanacLink to={{ tab: 'automation', id: 'chest' }}>{m.names_building_chest()}</AlmanacLink>
+        <AlmanacLink to={{ tab: 'utility', id: 'chest' }}>{m.names_building_chest()}</AlmanacLink>
         {m.almanac_fresh_p2_c()}
         <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>{m.market_sell_all_label()}</AlmanacLink>
         {m.almanac_fresh_p2_d()}
-        <AlmanacLink to={{ tab: 'automation', id: 'freezer' }}>{m.names_building_freezer()}</AlmanacLink>
+        <AlmanacLink to={{ tab: 'utility', id: 'freezer' }}>{m.names_building_freezer()}</AlmanacLink>
         {m.almanac_fresh_p2_e()}
         <AlmanacLink to={{ tab: 'utility', id: 'sugar' }}>{m.names_item_sugar()}</AlmanacLink>
         {m.almanac_fresh_p2_f()}
@@ -683,11 +740,11 @@ function HappinessConcept() {
       </div>
       <div>
         {m.almanac_happy_p4_a()}
-        <AlmanacLink to={{ tab: 'seeds', id: 'dead' }}>{m.almanac_dead_plant()}</AlmanacLink>
+        <AlmanacLink to={{ tab: 'misc', id: 'dead' }}>{m.almanac_dead_plant()}</AlmanacLink>
         {m.almanac_happy_p4_b()}
-        <AlmanacLink to={{ tab: 'seeds', id: 'rotten' }}>{m.almanac_rotten_produce()}</AlmanacLink>
+        <AlmanacLink to={{ tab: 'misc', id: 'rotten' }}>{m.almanac_rotten_produce()}</AlmanacLink>
         {m.almanac_happy_p4_c()}
-        <AlmanacLink to={{ tab: 'seeds', id: 'dead' }}>{m.almanac_dead_plant()}</AlmanacLink>
+        <AlmanacLink to={{ tab: 'misc', id: 'dead' }}>{m.almanac_dead_plant()}</AlmanacLink>
         {m.almanac_happy_p4_d()}
         <AlmanacLink to={{ tab: 'concepts', id: 'freshness' }}>{m.almanac_loses_freshness()}</AlmanacLink>
         {m.almanac_happy_p4_e()}
@@ -876,7 +933,7 @@ function ResearchConcept() {
       <div>{m.almanac_research_p2()}</div>
       <div>
         {m.almanac_research_p3_a()}
-        <AlmanacLink to={{ tab: 'concepts', id: 'automation' }}>{m.almanac_word_machines()}</AlmanacLink>
+        <AlmanacLink to={{ tab: 'machines', id: 'overview' }}>{m.almanac_word_machines()}</AlmanacLink>
         {m.almanac_research_p3_b()}
         <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>{m.almanac_concept_skills()}</AlmanacLink>
         {m.almanac_research_p3_c()}
@@ -889,7 +946,7 @@ function ResearchConcept() {
         {m.almanac_comma()}
         <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>{m.almanac_concept_skills()}</AlmanacLink>
         {m.almanac_and()}
-        <AlmanacLink to={{ tab: 'concepts', id: 'automation' }}>{m.hud_research_automation()}</AlmanacLink>
+        <AlmanacLink to={{ tab: 'machines', id: 'overview' }}>{m.hud_research_automation()}</AlmanacLink>
         {m.almanac_period()}
       </div>
     </>
@@ -904,7 +961,7 @@ function LuckConcept() {
         {m.almanac_see()}
         <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>{m.almanac_concept_skills()}</AlmanacLink>
         {m.almanac_and()}
-        <AlmanacLink to={{ tab: 'concepts', id: 'burrow' }}>{m.almanac_concept_burrow()}</AlmanacLink>
+        <AlmanacLink to={{ tab: 'misc', id: 'burrow' }}>{m.almanac_concept_burrow()}</AlmanacLink>
         {m.almanac_period()}
       </div>
     </>
@@ -934,52 +991,7 @@ function InfusionConcept() {
         {m.almanac_see()}
         <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>{m.names_role_market()}</AlmanacLink>
         {m.almanac_and()}
-        <AlmanacLink to={{ tab: 'concepts', id: 'automation' }}>{m.hud_research_automation()}</AlmanacLink>
-        {m.almanac_period()}
-      </div>
-    </>
-  )
-}
-
-function AutomationConcept() {
-  return (
-    <>
-      <div>
-        {m.almanac_auto_c_p1_a()}
-        <AlmanacLink to={{ tab: 'automation', id: 'mill' }}>{m.names_building_mill()}</AlmanacLink>
-        {m.almanac_auto_c_p1_b()}
-      </div>
-      <div>
-        {m.almanac_auto_c_p2_a()}
-        <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>{m.names_role_market()}</AlmanacLink>
-        {m.almanac_auto_c_p2_b()}
-        <AlmanacLink to={{ tab: 'automation', id: 'chest' }}>{m.names_building_chest()}</AlmanacLink>
-        {m.almanac_auto_c_p2_c()}
-        <AlmanacLink to={{ tab: 'automation', id: 'freezer' }}>{m.names_building_freezer()}</AlmanacLink>
-        {m.almanac_auto_c_p2_d()}
-        <AlmanacLink to={{ tab: 'automation', id: 'freezer' }}>{m.names_building_freezer()}</AlmanacLink>
-        {m.almanac_auto_c_p2_e()}
-        <AlmanacLink to={{ tab: 'concepts', id: 'freshness' }}>{m.almanac_losing_freshness()}</AlmanacLink>
-        {m.almanac_auto_c_p2_f()}
-        <AlmanacLink to={{ tab: 'automation', id: 'hangar' }}>{m.names_building_hangar()}</AlmanacLink>
-        {m.almanac_auto_c_p2_g()}
-      </div>
-      <div>
-        {m.almanac_auto_c_p3_a()}
-        <AlmanacLink to={{ tab: 'sensors', id: 'overview' }}>{m.almanac_sensors_at_overview()}</AlmanacLink>
-        {m.almanac_auto_c_p3_b()}
-        <AlmanacLink to={{ tab: 'water', id: 'valve' }}>{m.names_building_valve()}</AlmanacLink>
-        {m.almanac_auto_c_p3_c()}
-      </div>
-      <div>
-        {m.almanac_see()}
-        <AlmanacLink to={{ tab: 'concepts', id: 'research' }}>{m.names_role_research()}</AlmanacLink>
-        {m.almanac_comma()}
-        <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>{m.names_role_market()}</AlmanacLink>
-        {m.almanac_comma()}
-        <AlmanacLink to={{ tab: 'concepts', id: 'freshness' }}>{m.almanac_concept_freshness()}</AlmanacLink>
-        {m.almanac_and()}
-        <AlmanacLink to={{ tab: 'concepts', id: 'happiness' }}>{m.almanac_concept_happiness()}</AlmanacLink>
+        <AlmanacLink to={{ tab: 'machines', id: 'overview' }}>{m.hud_research_automation()}</AlmanacLink>
         {m.almanac_period()}
       </div>
     </>
@@ -988,32 +1000,199 @@ function AutomationConcept() {
 
 const PIPE_JOINS = [PIPE_STUB, PIPE_I, PIPE_L, PIPE_T, PIPE_X] as const
 
+const SILO_IDS: readonly string[] = ['silo-seed', 'silo-spray', 'silo-produce']
+
+function CardPane({ entry, fill }: { entry: CatalogEntry; fill: string }) {
+  return (
+    <>
+      <div className="mb-2 text-lg leading-relaxed text-ink">{entry.title}</div>
+      <p className="mb-4 text-base leading-relaxed text-ink/75">{entry.blurb}</p>
+      <Portrait caption={entry.title} fill={fill}>
+        <svg className="h-16 w-16" viewBox="0 0 24 24" dangerouslySetInnerHTML={{ __html: itemInner(entry.icon) }} />
+      </Portrait>
+    </>
+  )
+}
+
+const SENSOR_IDS = [
+  'lever',
+  'button',
+  'lamp',
+  'logic',
+  'not',
+  'pulser',
+  'counter',
+  'sensor-water',
+  'sensor-fert',
+  'sensor-harvest',
+  'sensor-variety',
+  'sensor-weather',
+  'sensor-day',
+  'vehicle-detector',
+] as const
+
+type SensorId = (typeof SENSOR_IDS)[number]
+
+type SensorState = { art: string; caption: () => string }
+
+type SensorPage = { states: readonly SensorState[]; input: () => string; output: () => string }
+
+function onOff(art: (on: boolean) => string): readonly SensorState[] {
+  return [
+    { art: art(false), caption: () => m.almanac_state_off() },
+    { art: art(true), caption: () => m.almanac_state_on() },
+  ]
+}
+
+const COUNTER_STATES: readonly SensorState[] = [
+  ...(['s0', 's1', 's2', 's3'] as const).map(g => ({ art: counterArt(g), caption: () => m.almanac_state_off() })),
+  { art: counterArt('s4'), caption: () => m.almanac_state_on() },
+]
+
+const SENSOR_PAGE: { readonly [K in SensorId]: SensorPage } = {
+  lever: { states: onOff(leverArt), input: () => m.almanac_in_lever(), output: () => m.almanac_out_lever() },
+  button: { states: onOff(buttonArt), input: () => m.almanac_in_button(), output: () => m.almanac_out_button() },
+  lamp: { states: onOff(lampArt), input: () => m.almanac_in_lamp(), output: () => m.almanac_out_lamp() },
+  logic: {
+    states: [
+      { art: logicArt('or'), caption: () => m.sensors_or() },
+      { art: logicArt('and'), caption: () => m.sensors_and() },
+    ],
+    input: () => m.almanac_in_logic(),
+    output: () => m.almanac_out_logic(),
+  },
+  not: {
+    states: [{ art: PROP_NOT, caption: () => m.names_sensor_not() }],
+    input: () => m.almanac_in_one(),
+    output: () => m.almanac_out_not(),
+  },
+  pulser: { states: onOff(pulserArt), input: () => m.almanac_in_pulser(), output: () => m.almanac_out_pulser() },
+  counter: {
+    states: COUNTER_STATES,
+    input: () => m.almanac_in_counter(),
+    output: () => m.almanac_out_counter({ max: COUNTER_MAX, reset: m.sensors_reset({ n: 0 }) }),
+  },
+  'sensor-water': { states: onOff(waterSensorArt), input: () => m.almanac_in_watch(), output: () => m.almanac_out_water() },
+  'sensor-fert': { states: onOff(fertSensorArt), input: () => m.almanac_in_watch(), output: () => m.almanac_out_fert() },
+  'sensor-harvest': {
+    states: onOff(harvestSensorArt),
+    input: () => m.almanac_in_watch(),
+    output: () => m.almanac_out_harvest(),
+  },
+  'sensor-variety': {
+    states: onOff(varietySensorArt),
+    input: () => m.almanac_in_watch(),
+    output: () => m.almanac_out_variety(),
+  },
+  'sensor-weather': {
+    states: onOff(weatherSensorArt),
+    input: () => m.almanac_in_none(),
+    output: () => m.almanac_out_weather(),
+  },
+  'sensor-day': { states: onOff(daySensorArt), input: () => m.almanac_in_none(), output: () => m.almanac_out_day() },
+  'vehicle-detector': {
+    states: onOff(vehicleDetectorArt),
+    input: () => m.almanac_in_pressure(),
+    output: () => m.almanac_out_pressure(),
+  },
+}
+
+function SensorCard({ states }: { states: readonly SensorState[] }) {
+  const state = states[useCycle(states.length)]
+  return (
+    <Portrait caption={state.caption()} fill="bg-grass">
+      <svg className="h-16 w-16" viewBox="0 0 24 24" dangerouslySetInnerHTML={{ __html: state.art }} />
+    </Portrait>
+  )
+}
+
+function SensorPane({ entry, page }: { entry: CatalogEntry; page: SensorPage }) {
+  return (
+    <>
+      <div className="mb-2 text-lg leading-relaxed text-ink">{entry.title}</div>
+      <p className="mb-4 text-base leading-relaxed text-ink/75">{entry.blurb}</p>
+      <SensorCard states={page.states} />
+      <ul className="mt-4 flex list-disc flex-col gap-2 pl-5 text-base leading-relaxed text-ink">
+        <li>
+          <span className="font-semibold">{m.almanac_io_input()}</span> {page.input()}
+        </li>
+        <li>
+          <span className="font-semibold">{m.almanac_io_output()}</span> {page.output()}
+        </li>
+      </ul>
+    </>
+  )
+}
+
 function skuFill(tab: AlmanacTab, id: string): string {
-  if (id === 'sugar' || id === 'ash' || id === 'flakes' || id === 'vanilla-extract' || id === 'bread') return 'bg-water'
-  if (id === 'fly-agaric') return 'bg-dirt-dark'
-  if (tab === 'sensors' || tab === 'automation' || tab === 'water') return 'bg-grass'
+  if (id === 'sugar' || id === 'ash') return 'bg-water'
+  if (tab === 'water' || tab === 'machines' || tab === 'vehicles' || tab === 'sensors') return 'bg-grass'
+  if (id === 'chest' || id === 'freezer' || id === 'necronomicon') return 'bg-grass'
   return 'bg-dirt-dark'
 }
 
-function Pane({ entry, done, tab }: { entry: CatalogEntry; done: AlmanacDone; tab: AlmanacTab }) {
+function Plate({ entry, tab }: { entry: CatalogEntry; tab: AlmanacTab }) {
+  return (
+    <div className={`flex h-20 w-20 items-center justify-center ${skuFill(tab, entry.id)}`}>
+      <svg className="h-16 w-16" viewBox="0 0 24 24" dangerouslySetInnerHTML={{ __html: itemInner(entry.icon) }} />
+    </div>
+  )
+}
+
+function Pane({
+  entry,
+  done,
+  familiarity,
+  tab,
+}: {
+  entry: CatalogEntry
+  done: AlmanacDone
+  familiarity: World['familiarity']
+  tab: AlmanacTab
+}) {
   const tree = TREE_IDS.find(id => id === entry.id)
-  if (tree !== undefined) return <TreePane id={tree} done={done} />
+  if (tree !== undefined) return <TreePane key={tree} tree={tree} n={familiarity[tree]} done={done} />
   const crop = CROP_IDS.find(id => id === entry.id)
-  if (crop !== undefined) return <CropPane id={crop} done={done} />
+  if (crop !== undefined) return <CropPane key={crop} crop={crop} n={familiarity[crop]} done={done} />
   if (entry.id === 'pipe') return <PipePane title={entry.title} blurb={entry.blurb} />
+  if (SILO_IDS.includes(entry.id)) return <CardPane entry={entry} fill="bg-grass" />
+  const sensor = SENSOR_IDS.find(id => id === entry.id)
+  if (sensor !== undefined) return <SensorPane key={sensor} entry={entry} page={SENSOR_PAGE[sensor]} />
   const machine = MACHINE_IDS.find(m => m === entry.id)
   return (
     <>
       <div className="mb-3 text-lg leading-relaxed text-ink">{entry.title}</div>
-      <div className={`mb-3 flex h-20 w-20 items-center justify-center ${skuFill(tab, entry.id)}`}>
-        <svg
-          className="h-16 w-16"
-          viewBox="0 0 24 24"
-          dangerouslySetInnerHTML={{ __html: itemInner(entry.icon) }}
-        />
+      <div className="mb-3">
+        <Plate entry={entry} tab={tab} />
       </div>
       <div className="text-base leading-relaxed text-ink">{entry.blurb}</div>
       {machine !== undefined && <MachineRecipes machine={machine} />}
+    </>
+  )
+}
+
+function FormsPane({ title, entries, tab }: { title: string; entries: CatalogEntry[]; tab: AlmanacTab }) {
+  const blurbs = [...new Set(entries.map(e => e.blurb))]
+  return (
+    <>
+      <div className="mb-3 text-lg leading-relaxed text-ink">{title}</div>
+      <div className="flex flex-col gap-4">
+        {blurbs.map(blurb => (
+          <div key={blurb}>
+            <div className="mb-2 flex flex-wrap gap-3">
+              {entries
+                .filter(e => e.blurb === blurb)
+                .map(e => (
+                  <div key={e.id} className="flex w-20 flex-col gap-1">
+                    <Plate entry={e} tab={tab} />
+                    <div className="text-sm leading-tight text-ink">{e.title}</div>
+                  </div>
+                ))}
+            </div>
+            <div className="text-base leading-relaxed text-ink">{blurb}</div>
+          </div>
+        ))}
+      </div>
     </>
   )
 }
@@ -1048,137 +1227,450 @@ function fruitFace(crop: GrownCrop, variety: VarietyId, sale: number): Face {
   return { kind: 'fruit', crop, variety, quality: 0, count: 1, unitSale: sale, freshness: 1, cut: false }
 }
 
-function CropPane({ id, done }: { id: GrownCrop; done: AlmanacDone }) {
-  const d = CROPS[id]
-  const stage = useCycle(3)
-  const st = statsOf(id, 'base', 0, [])
-  const product = faceGfx(fruitFace(id, 'base', st.sale))
-  const plant = STAGES[stage] === 'ripe' ? ripeGroup('base') : STAGES[stage]
+type Better = 'less' | 'more'
+
+type Scale = { lo: number; hi: number; better: Better }
+
+function scaleOf(values: readonly number[], better: Better): Scale {
+  return { lo: Math.min(...values), hi: Math.max(...values), better }
+}
+
+function goodness(v: number, s: Scale): number {
+  if (s.hi === s.lo) return 1
+  const t = (v - s.lo) / (s.hi - s.lo)
+  return s.better === 'more' ? t : 1 - t
+}
+
+type GroupScales = { water: Scale; range: Scale; fert: Scale; sale: Scale; fresh: Scale }
+
+function groupScales(crops: readonly GrownCrop[]): GroupScales {
+  const all = crops.flatMap(crop => VARIETIES[crop].map(variety => statsOf(crop, variety, 0, [])))
+  const of = (f: (s: Stats) => number, better: Better) => scaleOf(all.map(f), better)
+  return {
+    water: of(s => s.waterUsePerSec, 'less'),
+    range: of(s => s.waterTolerance, 'more'),
+    fert: of(s => s.fertTolerance, 'more'),
+    sale: of(s => s.sale, 'more'),
+    fresh: of(s => s.rotSeconds, 'more'),
+  }
+}
+
+const PLANT_SCALES = groupScales(PLANT_CROPS)
+const TREE_SCALES = groupScales(TREE_IDS)
+const GROW_SCALE = scaleOf(
+  PLANT_CROPS.flatMap(crop => VARIETIES[crop].map(variety => statsOf(crop, variety, 0, []).growSeconds)),
+  'less',
+)
+const SEED_SCALE = scaleOf(PLANT_CROPS.map(crop => CROPS[crop].seed), 'less')
+const FIRST_FRUIT_SCALE = scaleOf(TREE_IDS.map(id => TREES[id].juvenileSeconds), 'less')
+const FRUIT_EVERY_SCALE = scaleOf(TREE_IDS.map(id => TREES[id].fruitSeconds), 'less')
+
+const PURPOSE_LABEL: { readonly [K in Purpose]: () => string } = {
+  produce: m.names_purpose_produce,
+  processed: m.names_purpose_processed,
+  alcohol: m.names_purpose_alcohol,
+}
+
+const BEST_NOTE: { readonly [K in Purpose]: (p: { on: number; off: number; crop: string }) => string } = {
+  produce: m.almanac_best_produce,
+  processed: m.almanac_best_processed,
+  alcohol: m.almanac_best_alcohol,
+}
+
+type Line =
+  | { kind: 'bar'; label: string; value: ReactNode; good: number }
+  | { kind: 'note'; label: string; value: string; note: string }
+  | { kind: 'unknown'; label: string; left: number }
+
+function round2(n: number): number {
+  return Number(n.toFixed(2))
+}
+
+function daysText(seconds: number): string {
+  return m.almanac_days({ n: round2(days(seconds)) })
+}
+
+function entryAt(entry: AlmanacEntry): number {
+  const at = ALMANAC_AT.find(a => a.entry === entry)
+  if (at === undefined) throw new Error(entry)
+  return at.level
+}
+
+function studied(n: number, level: number, line: Line): Line {
+  return n >= level ? line : { kind: 'unknown', label: line.label, left: level - n }
+}
+
+function varietyLines(crop: GrownCrop, variety: VarietyId, n: number, tree: boolean): Line[] {
+  if (variety === 'base') return []
+  const { tier, purpose } = VARIETY[variety]
+  const { on, off } = PURPOSE_MUL[tier]
+  const best = studied(n, tier === 'variant' ? VARIANT_PURPOSE_AT : HEIRLOOM_PURPOSE_AT, {
+    kind: 'note',
+    label: m.almanac_stat_best_for(),
+    value: PURPOSE_LABEL[purpose](),
+    note: BEST_NOTE[purpose]({ on, off, crop: CROP_NAME[crop]() }),
+  })
+  if (tier !== 'heirloom' || n < HEIRLOOM_PLACE_AT || !needsNeighbour(variety)) return [best]
+  const args = { crop: CROP_NAME[crop](), reach: NEIGHBOUR_REACH }
+  return [
+    best,
+    {
+      kind: 'note',
+      label: m.almanac_stat_needs(),
+      value: m.almanac_neighbour(),
+      note: tree ? m.almanac_neighbour_tree(args) : m.almanac_neighbour_plant(args),
+    },
+  ]
+}
+
+function waterLines(st: Stats, g: GroupScales, mid: number, n: number): Line[] {
+  return [
+    studied(n, entryAt('water'), {
+      kind: 'bar',
+      label: m.almanac_stat_water_use(),
+      value: m.almanac_l_day({ n: round2(st.waterUsePerSec * DAY_SECONDS) }),
+      good: goodness(st.waterUsePerSec, g.water),
+    }),
+    studied(n, entryAt('water'), {
+      kind: 'bar',
+      label: m.almanac_stat_water_range(),
+      value: m.almanac_litres_between({ lo: round2(mid - st.waterTolerance), hi: round2(mid + st.waterTolerance) }),
+      good: goodness(st.waterTolerance, g.range),
+    }),
+  ]
+}
+
+function plantLines(crop: GrownCrop, variety: VarietyId, n: number): Line[] {
+  const st = statsOf(crop, variety, 0, [])
+  const g = PLANT_SCALES
+  const seed: Line[] =
+    variety === 'base'
+      ? [{ kind: 'bar', label: m.almanac_stat_seed_price(), value: <Coin n={CROPS[crop].seed} />, good: goodness(CROPS[crop].seed, SEED_SCALE) }]
+      : []
+  return [
+    ...varietyLines(crop, variety, n, false),
+    { kind: 'bar', label: m.almanac_stat_sell(), value: <Coin n={st.sale} />, good: goodness(st.sale, g.sale) },
+    ...seed,
+    studied(n, entryAt('grow'), {
+      kind: 'bar',
+      label: m.almanac_stat_grow(),
+      value: daysText(st.growSeconds),
+      good: goodness(st.growSeconds, GROW_SCALE),
+    }),
+    ...waterLines(st, g, SOIL_WATER_MID, n),
+    studied(n, entryAt('fert'), {
+      kind: 'bar',
+      label: m.almanac_stat_fert(),
+      value: m.almanac_fert_above_pct({ n: Math.round(((FERT_PLOT_MAX - st.fertTolerance) / FERT_PLOT_MAX) * 100) }),
+      good: goodness(st.fertTolerance, g.fert),
+    }),
+    studied(n, entryAt('fresh'), {
+      kind: 'bar',
+      label: m.almanac_stat_fresh(),
+      value: daysText(st.rotSeconds),
+      good: goodness(st.rotSeconds, g.fresh),
+    }),
+  ]
+}
+
+function treeLines(tree: TreeId, variety: VarietyId, n: number): Line[] {
+  const st = statsOf(tree, variety, 0, [])
+  const def = TREES[tree]
+  const g = TREE_SCALES
+  return [
+    ...varietyLines(tree, variety, n, true),
+    { kind: 'bar', label: m.almanac_stat_sell(), value: <Coin n={st.sale} />, good: goodness(st.sale, g.sale) },
+    studied(n, entryAt('grow'), {
+      kind: 'bar',
+      label: m.almanac_stat_first_fruit(),
+      value: daysText(def.juvenileSeconds),
+      good: goodness(def.juvenileSeconds, FIRST_FRUIT_SCALE),
+    }),
+    studied(n, entryAt('grow'), {
+      kind: 'bar',
+      label: m.almanac_stat_fruit_every(),
+      value: m.almanac_days_in_season({ n: round2(days(def.fruitSeconds / (TREE_RATE_ON + TREE_RATE_HAPPY))) }),
+      good: goodness(def.fruitSeconds, FRUIT_EVERY_SCALE),
+    }),
+    ...waterLines(st, g, TREE_WATER_MID, n),
+    studied(n, entryAt('fert'), {
+      kind: 'bar',
+      label: m.almanac_stat_fert(),
+      value: m.almanac_fert_above_litres({ n: round2(TREE_FERT_MAX - st.fertTolerance) }),
+      good: goodness(st.fertTolerance, g.fert),
+    }),
+    studied(n, entryAt('fresh'), {
+      kind: 'bar',
+      label: m.almanac_stat_fresh(),
+      value: daysText(st.rotSeconds),
+      good: goodness(st.rotSeconds, g.fresh),
+    }),
+  ]
+}
+
+function foundVarieties(crop: GrownCrop, n: number): VarietyId[] {
+  return VARIETIES[crop].filter(v => {
+    const tier = tierOf(v)
+    if (tier === 'base') return true
+    return n >= (tier === 'variant' ? VARIANT_AT : HEIRLOOM_AT)
+  })
+}
+
+function varietyLabel(variety: VarietyId): string {
+  return variety === 'base' ? m.almanac_variety_plain() : varietyName(variety)
+}
+
+const varietyTabClass =
+  'cursor-pointer whitespace-nowrap rounded-md px-3 py-1 text-sm font-semibold text-ink/55 hover:bg-ink/10 hover:text-ink data-[state=active]:bg-dirt data-[state=active]:text-house data-[disabled]:cursor-default data-[disabled]:italic data-[disabled]:text-ink/35 data-[disabled]:hover:bg-transparent'
+
+function Portrait({ caption, fill, children }: { caption: string; fill: string; children: ReactNode }) {
+  return (
+    <div
+      className={`relative flex h-32 w-24 shrink-0 items-start justify-center overflow-hidden rounded-lg border-2 border-ink/25 pt-3 shadow-sm shadow-ink/15 ${fill}`}
+    >
+      {children}
+      <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-ink/75 to-transparent px-1 pt-5 pb-1.5 text-center text-sm leading-tight font-semibold text-white">
+        {caption}
+      </div>
+    </div>
+  )
+}
+
+function PlantGrowing({ crop, variety }: { crop: GrownCrop; variety: VarietyId }) {
+  const stage = STAGES[useCycle(STAGES.length)]
+  return (
+    <svg
+      className="h-16 w-16"
+      viewBox="0 0 24 24"
+      dangerouslySetInnerHTML={{ __html: cropInner(crop, stage === 'ripe' ? ripeGroup(variety) : stage) }}
+    />
+  )
+}
+
+function TreeGrowing({ tree, variety }: { tree: TreeId; variety: VarietyId }) {
+  const stage = TREE_STAGES[useCycle(TREE_STAGES.length)]
+  return <svg className="h-20 w-10" viewBox="0 0 24 48" dangerouslySetInnerHTML={{ __html: treeStage(tree, stage, variety) }} />
+}
+
+const RATING_DOTS = [0, 1, 2, 3, 4] as const
+
+function Rating({ good }: { good: number }) {
+  const score = 1 + 4 * good
+  return (
+    <div aria-hidden className="flex gap-1">
+      {RATING_DOTS.map(i => (
+        <div key={i} className="h-2.5 w-2.5 overflow-hidden rounded-full bg-ink/12">
+          <div
+            className="h-full bg-grass transition-[width] duration-300 motion-reduce:transition-none"
+            style={{ width: `${Math.min(1, Math.max(0, score - i)) * 100}%` }}
+          />
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function LineCells({ line }: { line: Line }) {
+  const label = <span className="text-base text-ink">{line.label}</span>
+  switch (line.kind) {
+    case 'bar':
+      return (
+        <>
+          {label}
+          <Rating good={line.good} />
+          <span className="text-base text-ink tabular-nums">{line.value}</span>
+        </>
+      )
+    case 'note':
+      return (
+        <>
+          {label}
+          <span className="col-span-2 text-base font-semibold text-ink">{line.value}</span>
+          <p className="col-span-3 -mt-1 mb-1 text-sm leading-snug text-ink/60">{line.note}</p>
+        </>
+      )
+    case 'unknown':
+      return (
+        <>
+          {label}
+          <span className="col-span-2 text-sm text-ink/40 italic">
+            {line.left === 1 ? m.almanac_study_hint_once() : m.almanac_study_hint({ n: line.left })}
+          </span>
+        </>
+      )
+  }
+}
+
+function CropShell({
+  crop,
+  n,
+  done,
+  ground,
+  growing,
+  lines,
+}: {
+  crop: GrownCrop
+  n: number
+  done: AlmanacDone
+  ground: string
+  growing: (variety: VarietyId) => ReactNode
+  lines: (variety: VarietyId) => Line[]
+}) {
+  const [variety, setVariety] = useState<VarietyId>('base')
+  const found = foundVarieties(crop, n)
+  const fruit = (v: VarietyId) => fruitFace(crop, v, statsOf(crop, v, 0, []).sale)
+  const products = recipesUsing(fruit(variety)).filter(r => recipeOpen(r.machine, done))
   return (
     <>
-      <div className="mb-2 text-lg leading-relaxed text-ink">{CROP_NAME[id]()}</div>
-      <div className="mb-3 text-base leading-relaxed text-ink/70">{d.desc()}</div>
-      {id === 'sugar-cane' ? (
-        <div className="mb-3 text-base leading-relaxed text-ink/70">{m.almanac_mill_cane({ cane: MILL_IN, liters: SUGAR_BAG })}</div>
-      ) : null}
-      <div className="mb-3 flex flex-wrap gap-3">
-        <div className="flex h-20 w-20 items-center justify-center bg-dirt-dark">
-          <svg className="h-16 w-16" viewBox="0 0 24 24" dangerouslySetInnerHTML={{ __html: product }} />
-        </div>
-        <div className="flex h-20 w-20 items-center justify-center bg-dirt-dark">
-          <svg className="h-16 w-16" viewBox="0 0 24 24" dangerouslySetInnerHTML={{ __html: cropInner(id, plant) }} />
-        </div>
+      <div className="mb-2 text-lg leading-relaxed text-ink">{CROP_NAME[crop]()}</div>
+      <p className="mb-4 text-base leading-relaxed text-ink/75">{CROPS[crop].desc()}</p>
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <Portrait caption={m.almanac_caption_fruit()} fill="bg-dirt-dark">
+          <svg className="h-16 w-16" viewBox="0 0 24 24" dangerouslySetInnerHTML={{ __html: faceGfx(fruit(variety)) }} />
+        </Portrait>
+        <Portrait caption={m.almanac_caption_growing()} fill={ground}>
+          {growing(variety)}
+        </Portrait>
+        {products.length > 0 && <ProductArrow />}
+        {products.map((recipe, i) => (
+          <ProductPortrait key={i} recipe={recipe} />
+        ))}
       </div>
-      <div className="flex flex-col gap-2 text-base text-ink">
-        <Stat
-          label={m.almanac_stat_grow()}
-          n={meterN(d.growSeconds, colMin('growSeconds'), colMax('growSeconds'))}
-          kind={{ t: 'raw', raw: m.almanac_days({ n: Number(days(st.growSeconds).toFixed(2)) }) }}
-        />
-        <Stat
-          label={m.almanac_stat_drink()}
-          n={meterN(d.waterUsePerSec, colMin('waterUsePerSec'), colMax('waterUsePerSec'))}
-          kind={{ t: 'raw', raw: m.almanac_l_day({ n: Number((d.waterUsePerSec * DAY_SECONDS).toPrecision(1)) }) }}
-        />
-        <Stat
-          label={m.almanac_stat_water_range()}
-          n={meterN(st.waterTolerance, 0.25, 1)}
-          kind={{ t: 'raw', raw: `${liters(SOIL_WATER_MID - st.waterTolerance)}–${liters(SOIL_WATER_MID + st.waterTolerance)}` }}
-        />
-        <Stat
-          label={m.hud_fertilizer()}
-          n={meterN(st.fertTolerance, 0.25, 1)}
-          kind={{ t: 'raw', raw: m.almanac_happy_above({ n: Math.round((FERT_PLOT_MAX - st.fertTolerance) * 100) }) }}
-        />
-        <Stat label={m.almanac_stat_sell()} n={meterN(d.sale, colMin('sale'), colMax('sale'))} kind={{ t: 'coin', n: st.sale }} />
-        <Stat
-          label={m.almanac_stat_seed_price()}
-          n={meterN(d.seed, colMin('seed'), colMax('seed'))}
-          kind={{ t: 'coin', n: d.seed }}
-        />
-        <Stat
-          label={m.almanac_concept_freshness()}
-          n={meterN(d.rotSeconds, colMin('rotSeconds'), colMax('rotSeconds'))}
-          kind={{ t: 'raw', raw: m.almanac_days({ n: Number(days(st.rotSeconds).toFixed(2)) }) }}
-        />
-      </div>
-      <Ingredients face={fruitFace(id, 'base', st.sale)} done={done} />
+      <Tabs.Root
+        value={variety}
+        onValueChange={v => {
+          const next = found.find(x => x === v)
+          if (next === undefined) throw new Error(v)
+          setVariety(next)
+        }}
+      >
+        {VARIETIES[crop].length > 1 && (
+          <Tabs.List className="mb-3 inline-flex flex-wrap gap-1 rounded-lg bg-ink/8 p-1">
+            {found.map(v => (
+              <Tabs.Trigger key={v} value={v} className={varietyTabClass}>
+                {varietyLabel(v)}
+              </Tabs.Trigger>
+            ))}
+            {found.length < VARIETIES[crop].length && (
+              <Tabs.Trigger value="unknown" disabled className={varietyTabClass}>
+                {m.almanac_variety_unknown()}
+              </Tabs.Trigger>
+            )}
+          </Tabs.List>
+        )}
+        {found.map(v => (
+          <Tabs.Content key={v} value={v}>
+            <div className="grid grid-cols-[max-content_5rem_1fr] items-center gap-x-3 gap-y-2">
+              {lines(v).map(line => (
+                <LineCells key={line.label} line={line} />
+              ))}
+            </div>
+          </Tabs.Content>
+        ))}
+      </Tabs.Root>
     </>
   )
 }
 
-function treeMin(key: 'juvenileSeconds' | 'fruitSeconds'): number {
-  return Math.min(...TREE_IDS.map(id => TREES[id][key]))
+function CropPane({ crop, n, done }: { crop: GrownCrop; n: number; done: AlmanacDone }) {
+  return (
+    <CropShell
+      crop={crop}
+      n={n}
+      done={done}
+      ground="bg-dirt-dark"
+      growing={v => <PlantGrowing crop={crop} variety={v} />}
+      lines={v => plantLines(crop, v, n)}
+    />
+  )
 }
 
-function treeMax(key: 'juvenileSeconds' | 'fruitSeconds'): number {
-  return Math.max(...TREE_IDS.map(id => TREES[id][key]))
+function TreePane({ tree, n, done }: { tree: TreeId; n: number; done: AlmanacDone }) {
+  return (
+    <CropShell
+      crop={tree}
+      n={n}
+      done={done}
+      ground="bg-grass"
+      growing={v => <TreeGrowing tree={tree} variety={v} />}
+      lines={v => treeLines(tree, v, n)}
+    />
+  )
 }
 
-function treeSaleMin(): number {
-  return Math.min(...TREE_IDS.map(id => CROPS[id].sale))
+type Cell = { kind: 'value'; value: ReactNode } | { kind: 'prize' }
+
+type StatRow = { label: string; cells: readonly Cell[] }
+
+function priceRow(prices: readonly Price[]): StatRow {
+  return {
+    label: m.almanac_stat_price(),
+    cells: prices.map((p): Cell => (p.kind === 'sku' ? { kind: 'value', value: <Coin n={SKUS[p.sku].price} /> } : { kind: 'prize' })),
+  }
 }
 
-function treeSaleMax(): number {
-  return Math.max(...TREE_IDS.map(id => CROPS[id].sale))
+function familyRows(family: ToolFamily): StatRow[] {
+  switch (family.kind) {
+    case 'work':
+      return [
+        priceRow(family.tools.map(t => t.price)),
+        {
+          label: m.almanac_stat_durability(),
+          cells: family.tools.map((t): Cell => ({ kind: 'value', value: m.almanac_uses({ n: t.uses }) })),
+        },
+        {
+          label: m.almanac_stat_use_time(),
+          cells: family.tools.map((t): Cell => ({ kind: 'value', value: m.almanac_seconds({ n: t.workSeconds }) })),
+        },
+      ]
+    case 'hold':
+      return [
+        priceRow(family.tools.map(t => t.price)),
+        {
+          label: m.almanac_stat_content(),
+          cells: family.tools.map((t): Cell => ({ kind: 'value', value: m.almanac_litres({ n: t.liters }) })),
+        },
+      ]
+  }
 }
 
-function treeRotMin(): number {
-  return Math.min(...TREE_IDS.map(id => CROPS[id].rotSeconds))
+function StatCell({ cell }: { cell: Cell }) {
+  switch (cell.kind) {
+    case 'value':
+      return <span className="text-center text-base text-ink tabular-nums">{cell.value}</span>
+    case 'prize':
+      return <span className="text-center text-sm leading-tight text-ink/60">{m.almanac_price_prize()}</span>
+  }
 }
 
-function treeRotMax(): number {
-  return Math.max(...TREE_IDS.map(id => CROPS[id].rotSeconds))
-}
-
-function TreePane({ id, done }: { id: TreeId; done: AlmanacDone }) {
-  const d = CROPS[id]
-  const def = TREES[id]
-  const stages = ['trunk', 'grow', 'unripe', 'ripe'] as const
-  const stage = useCycle(stages.length)
-  const st = statsOf(id, 'base', 0, [])
-  const every = 1 / def.fruitSeconds
-  const everyMin = 1 / treeMax('fruitSeconds')
-  const everyMax = 1 / treeMin('fruitSeconds')
-  const sale = st.sale
+function ToolPane({ title, family, byId }: { title: string; family: ToolFamily; byId: Map<string, CatalogEntry> }) {
+  const ids = toolIds(family)
   return (
     <>
-      <div className="mb-2 text-lg leading-relaxed text-ink">{CROP_NAME[id]()}</div>
-      <div className="mb-3 text-base leading-relaxed text-ink/70">{d.desc()}</div>
-      <div className="mb-3 text-base leading-relaxed text-ink/70">
-        {m.almanac_tree_drops({ days: TREE_YIELD_DAYS, mul: TREE_YIELD_MUL, off: TREE_OFF_MUL })}
+      <div className="mb-2 text-lg leading-relaxed text-ink">{title}</div>
+      <p className="mb-4 text-base leading-relaxed text-ink/75">{family.desc()}</p>
+      <div
+        className="grid items-center gap-x-4 gap-y-3"
+        style={{ gridTemplateColumns: `repeat(${ids.length}, 6rem) max-content` }}
+      >
+        {ids.map(id => {
+          const entry = skuEntry(byId, id)
+          return (
+            <Portrait key={id} caption={entry.title} fill="bg-dirt-dark">
+              <svg className="h-16 w-16" viewBox="0 0 24 24" dangerouslySetInnerHTML={{ __html: itemInner(entry.icon) }} />
+            </Portrait>
+          )
+        })}
+        <span />
+        {familyRows(family).map(row => (
+          <Fragment key={row.label}>
+            {row.cells.map((cell, i) => (
+              <StatCell key={i} cell={cell} />
+            ))}
+            <span className="text-base text-ink/65">{row.label}</span>
+          </Fragment>
+        ))}
       </div>
-      <div className="mb-3 flex flex-wrap gap-3">
-        <div className="flex h-20 w-20 items-center justify-center bg-dirt-dark">
-          <svg className="h-16 w-16" viewBox="0 0 24 24" dangerouslySetInnerHTML={{ __html: faceGfx(fruitFace(id, 'base', sale)) }} />
-        </div>
-        <div className="flex h-20 w-10 items-center justify-center bg-grass">
-          <svg className="h-16 w-8" viewBox="0 0 24 48" dangerouslySetInnerHTML={{ __html: treeStage(id, stages[stage], 'base') }} />
-        </div>
-      </div>
-      <div className="flex flex-col gap-2 text-base text-ink">
-        <Stat
-          label={m.almanac_stat_juvenile()}
-          n={meterN(def.juvenileSeconds, treeMin('juvenileSeconds'), treeMax('juvenileSeconds'))}
-          kind={{ t: 'raw', raw: m.almanac_days({ n: Number(days(def.juvenileSeconds).toFixed(2)) }) }}
-        />
-        <Stat
-          label={m.almanac_stat_fruit_every()}
-          n={meterN(every, everyMin, everyMax)}
-          kind={{ t: 'raw', raw: m.almanac_days({ n: Number(days(def.fruitSeconds).toFixed(2)) }) }}
-        />
-        <Stat
-          label={m.almanac_stat_sell()}
-          n={meterN(d.sale, treeSaleMin(), treeSaleMax())}
-          kind={{ t: 'coin', n: sale }}
-        />
-        <Stat
-          label={m.almanac_concept_freshness()}
-          n={meterN(d.rotSeconds, treeRotMin(), treeRotMax())}
-          kind={{ t: 'raw', raw: m.almanac_days({ n: Number(days(st.rotSeconds).toFixed(2)) }) }}
-        />
-      </div>
-      <Ingredients face={fruitFace(id, 'base', sale)} done={done} />
     </>
   )
 }
@@ -1212,55 +1704,39 @@ function yieldSale(recipe: Recipe): number | undefined {
   return 'unitSale' in face ? face.unitSale : undefined
 }
 
-function Ingredients({ face, done }: { face: Face; done: AlmanacDone }) {
-  const rows = recipesUsing(face).filter(r => recipeOpen(r.machine, done))
-  if (rows.length === 0) return null
-  return (
-    <div className="mt-3 border-t border-ink/20 pt-3">
-      <div className="mb-1 font-display text-xs leading-none text-ink">{m.hud_recipes()}</div>
-      <div className="flex flex-wrap gap-3">
-        {rows.map((recipe, i) => (
-          <IngredientPlate key={i} recipe={recipe} />
-        ))}
-      </div>
-    </div>
-  )
-}
-
 function RecipeSale({ recipe }: { recipe: Recipe }) {
   const sale = yieldSale(recipe)
   if (sale === undefined) return null
   return <Coin n={sale} />
 }
 
-function IngredientPlate({ recipe }: { recipe: Recipe }) {
-  const setTip = useContext(AlmanacTip)
-  const face = yieldFace(recipe)
+function ProductArrow() {
   return (
-    <div
-      className="flex h-20 w-20 items-center justify-center bg-water"
-      onPointerEnter={() => setTip({ title: faceName(face), recipe })}
-      onPointerLeave={() => setTip(undefined)}
-    >
-      <svg className="h-16 w-16" viewBox="0 0 24 24" dangerouslySetInnerHTML={{ __html: faceGfx(face) }} />
-    </div>
+    <span className="relative block h-6 w-12 shrink-0">
+      <svg
+        viewBox="0 0 24 24"
+        preserveAspectRatio="none"
+        className="absolute inset-0 h-full w-full"
+        dangerouslySetInnerHTML={{ __html: UI_ARROW_INK }}
+      />
+      <svg
+        viewBox="0 0 24 24"
+        preserveAspectRatio="none"
+        className="absolute inset-0 h-full w-full"
+        dangerouslySetInnerHTML={{ __html: UI_ARROW_FILL }}
+      />
+    </span>
   )
 }
 
-function Stat({
-  label,
-  n,
-  kind,
-}: {
-  label: string
-  n: number
-  kind: { t: 'raw'; raw: string } | { t: 'coin'; n: number }
-}) {
+function ProductPortrait({ recipe }: { recipe: Recipe }) {
+  const setTip = useContext(AlmanacTip)
+  const face = yieldFace(recipe)
   return (
-    <div className="flex items-center gap-2">
-      <div className="w-24 shrink-0">{label}</div>
-      <svg viewBox="0 0 40 8" className="h-2 w-20 shrink-0" dangerouslySetInnerHTML={{ __html: meterInner(n, 'leaf') }} />
-      {kind.t === 'coin' ? <Coin n={kind.n} /> : <span>{kind.raw}</span>}
+    <div onPointerEnter={() => setTip({ title: faceName(face), recipe })} onPointerLeave={() => setTip(undefined)}>
+      <Portrait caption={faceName(face)} fill="bg-water">
+        <svg className="h-16 w-16" viewBox="0 0 24 24" dangerouslySetInnerHTML={{ __html: faceGfx(face) }} />
+      </Portrait>
     </div>
   )
 }

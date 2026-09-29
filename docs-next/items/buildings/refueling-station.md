@@ -40,3 +40,7 @@ Prompt: **Fill**. Hover: **{units}/{cap} units, {store}/{storeCap} L**. Panel: *
 ## Art
 
 `prop-refuel.svg`.
+
+## Sound
+
+Putting an item in plays the machine load sound. Working pushes the `refuel` working cue ([[systems/sound]]).

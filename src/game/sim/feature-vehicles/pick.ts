@@ -24,7 +24,6 @@ export type PickGood =
   | 'shovel'
   | 'pickaxe'
   | 'axe'
-  | 'chainsaw'
   | 'container'
   | 'vanilla-extract'
   | 'flakes'
@@ -76,7 +75,7 @@ const GOODS: { readonly [K in PickType]: readonly PickGood[] } = {
   produce: [...JAM_CROPS.map((c): JamId => `jam-${c}`), 'sugar', 'oil', 'flour', 'extract', 'bread'],
   alcohol: ['vodka', 'beer', 'brandy', 'mixed', 'wine', 'cider'],
   compostable: ['wood', 'ash', 'weed', 'grass', 'dead', 'rotten', 'fly-agaric'],
-  tool: ['shovel', 'pickaxe', 'axe', 'chainsaw', 'container'],
+  tool: ['shovel', 'pickaxe', 'axe', 'container'],
   other: ['vanilla-extract', 'flakes', 'treasure', 'fertilizer', 'compost', 'weed-spray'],
 }
 
@@ -91,7 +90,7 @@ export function typeOf(item: Item): PickType {
   if (k === 'wood' || k === 'ash' || k === 'weed' || k === 'grass' || k === 'dead' || k === 'rotten' || k === 'fly-agaric') {
     return 'compostable'
   }
-  if (k === 'shovel' || k === 'pickaxe' || k === 'axe' || k === 'chainsaw' || k === 'container') return 'tool'
+  if (k === 'shovel' || k === 'pickaxe' || k === 'axe' || k === 'container') return 'tool'
   return 'other'
 }
 
@@ -220,8 +219,7 @@ const FLAT = {
   'fly-agaric': { kind: 'fly-agaric', count: 1 },
   shovel: { kind: 'shovel', id: 'shovel', usesLeft: 1, workSeconds: 1 },
   pickaxe: { kind: 'pickaxe', id: 'pickaxe', usesLeft: 1, workSeconds: 1 },
-  axe: { kind: 'axe', usesLeft: 1, workSeconds: 1 },
-  chainsaw: { kind: 'chainsaw', usesLeft: 1, workSeconds: 1 },
+  axe: { kind: 'axe', id: 'axe', usesLeft: 1, workSeconds: 1 },
   container: { kind: 'container', id: 'bucket', liters: 0, capacityLiters: 1 },
   'vanilla-extract': { kind: 'vanilla-extract', quality: 0.5, count: 1 },
   flakes: { kind: 'flakes', quality: 0.5, count: 1 },

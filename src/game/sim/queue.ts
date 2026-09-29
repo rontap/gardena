@@ -416,7 +416,7 @@ export function begin(world: World, i: Intent): void {
         shiftHead(world)
         return
       }
-      arm(world, (world.act.hand as { item: Extract<Item, { kind: 'axe' | 'chainsaw' }> }).item.workSeconds)
+      arm(world, (world.act.hand as { item: Extract<Item, { kind: 'axe' }> }).item.workSeconds)
       return
     case 'graft':
       if (!field.canGraft(world, i.at)) {

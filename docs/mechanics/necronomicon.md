@@ -48,7 +48,7 @@ Sacrifice is not dump. A dump into a mill is feedstock and something comes out. 
 | `agaric` | `NECRO_AGARIC` fly agaric | 2 pages closed |
 | `ash` | `NECRO_ASH` ash | 2 pages closed **and** `unlock-furnace` done |
 | `gold` | `NECRO_GOLD` money | 2 pages closed |
-| `tool` | one `rotary-shovel` **or** one `diamond-pickaxe` | 3 pages closed |
+| `tool` | one `rotary-shovel`, one `diamond-pickaxe` **or** one `electric-chainsaw` | 3 pages closed |
 | `supper` | one of each of `SUPPER` | 4 pages closed |
 
 Seven pages, two open at the start. Closing both opens `agaric`, `gold`, and `ash` behind the furnace; the third closure opens `tool` and the fourth `supper`. `SupperId` is `palinka` `wine` `bread`. `supperOf(item)` maps an item onto one of them: `bread` on kind alone, `palinka` on `spirit` `brandy` at `klosterneuburger`, `wine` on `cask` `wine` at `keknyelu`. Any other spirit or cask is refused outright. Quality, `unitSale` and `infused` are not read; `variety` is, and it is the only page that reads one — [[mechanics/plants]] [[mechanics/infusion]]. `agaric` is the only sink fly agaric has — [[mechanics/burrow]] `burrow.agaric`. `tool` takes the two tools no shelf sells. `Necronomicon.tool` is a boolean, so `pageFilled` reads it as 0 or 1, and the second tool is refused once the first is in. A locked page is not drawn and takes nothing. `pagesHidden` puts one line under the list saying the book has more pages. It names no gate — [[standards/lexicon]] `lex.copy`. `pageFilled` reads the field that page owns. There is no second count field. `pageWant` is off `PageNeed` — derived.

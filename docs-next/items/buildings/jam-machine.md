@@ -39,3 +39,7 @@ Prompts: **Make jam**, or **Make {jar name}** for a jar with its own name; **Fil
 ## Art
 
 `prop-jam.svg`.
+
+## Sound
+
+Putting an item in plays the machine load sound. Working and a batch put out push the `jam` cues ([[systems/sound]]).

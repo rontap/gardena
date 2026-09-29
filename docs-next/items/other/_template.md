@@ -21,3 +21,7 @@
 ## Affected by
 
 - {skills, research}
+
+## Sound
+
+{Which actions with it play a sound, by cue ([[systems/sound]]). Leave the section out when none does.}

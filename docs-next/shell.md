@@ -31,7 +31,7 @@ Pausing on open only applies to solo play (`overlayPause` checks `role === 'off'
 
 Panels opened by walking up to a building (`cued`) clear the seat's walk-up state (`ackCue`) when closed.
 
-With **Pause when this tab is not in front** on (Settings), losing window focus or hiding the tab pauses a solo game, and returning resumes it if the pause came from that.
+With **Pause when this tab is not in front** on ([[menu]]), losing window focus or hiding the tab pauses a solo game, and returning resumes it if the pause came from that.
 
 ## Command Center
 
@@ -58,12 +58,15 @@ A lens colours the map by one property: `water` (**Water need**), `land` (**Land
 
 ## Menus
 
-- Main menu (`menu.tsx`): **New Game**, **Load Save ({stamp})**, **Upload Save…**, **Join Multiplayer**, **Settings**.
-- Gear menu in play: **Back to game**, **Quick Save**, **Download Save…**, **Load Save**, **Upload Save…**, **Settings**, **Exit to main menu**. A host and a guest see a line saying another farm cannot be started or loaded during a session. See [[systems/save]].
+The main menu, the Gear menu, Settings and the version history are on [[menu]].
+
+## Sound
+
+A new Command Center row pushes a `notice` cue, once per row `id`. Pause suspends music and sound effects; the volumes are in Settings ([[systems/sound]], [[menu]]).
 
 ## Type and colour
 
-Colour tokens and type steps are defined in `src/index.css`. UI parts (`Chrome`, `Btn`, `Bar`, `Coin`, `Slider`, tab classes) are in `frame.tsx`.
+Colour tokens and type steps are defined in `src/index.css` ([[art/palette]]). UI parts (`Chrome`, `Btn`, `Bar`, `Coin`, `Slider`, tab classes) are in `frame.tsx`.
 
 ## When you change this
 

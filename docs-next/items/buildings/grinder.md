@@ -34,3 +34,7 @@ Prompt: **Grind**. Hover shows **{n} → seeds**.
 ## Art
 
 `prop-grinder.svg`.
+
+## Sound
+
+Putting an item in plays the machine load sound. Working and a batch put out push the `grinder` cues ([[systems/sound]]).

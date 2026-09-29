@@ -1,5 +1,4 @@
 import { m } from '../../paraglide/messages.js'
-import { MILL_IN, SUGAR_BAG } from './items.ts'
 import { TOL_MIN, VARIETY_TOL, type VarietyId, type VarietyTier } from './varieties.ts'
 import type { CropId, GrownCrop, TreeId } from '../sim/ids.ts'
 
@@ -142,7 +141,7 @@ export const CROPS: { readonly [K in GrownCrop]: CropDef } = {
   'sugar-cane': {
     id: 'sugar-cane',
     cls: 'grain',
-    desc: () => m.catalog_crop_sugar_cane({ cane: MILL_IN, bag: SUGAR_BAG }),
+    desc: () => m.catalog_crop_sugar_cane(),
     growSeconds: 150,
     waterUsePerSec: 0.0091667,
     waterTolerance: 0.55,

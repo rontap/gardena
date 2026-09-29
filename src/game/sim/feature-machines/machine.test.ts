@@ -417,8 +417,8 @@ describe('machines.furnace-feed', () => {
     expect(furnaceValue({ kind: 'vanilla-extract', quality: 0, count: 1 })).toBe(0)
     expect(furnaceValue({ kind: 'bread', quality: 0, count: 1, unitSale: 1 })).toBe(0)
     expect(furnaceValue({ kind: 'ash', count: 1 })).toBe(0)
-    expect(furnaceValue({ kind: 'axe', usesLeft: 3, workSeconds: 1 })).toBe(0)
-    expect(furnaceValue({ kind: 'chainsaw', usesLeft: 3, workSeconds: 1 })).toBe(0)
+    expect(furnaceValue({ kind: 'axe', id: 'axe', usesLeft: 3, workSeconds: 1 })).toBe(0)
+    expect(furnaceValue({ kind: 'axe', id: 'chainsaw', usesLeft: 3, workSeconds: 1 })).toBe(0)
     w.seats[0].actor.x = at.col + 0.5
     w.seats[0].actor.y = at.row + 2.5
     w.seats[0].hand = { kind: 'hold', item: { kind: 'wood', count: 1 } }

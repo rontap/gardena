@@ -208,7 +208,7 @@ test('chop without Tree Grafting drops wood and no grafts', async ({ page }) => 
       if (w === undefined) throw new Error('no __world')
       w.seats[0].actor.x = at.col + 0.5
       w.seats[0].actor.y = at.row + 0.5
-      w.seats[0].hand = { kind: 'hold', item: { kind: 'axe', usesLeft: uses, workSeconds: work } }
+      w.seats[0].hand = { kind: 'hold', item: { kind: 'axe', id: 'axe', usesLeft: uses, workSeconds: work } }
       const c = w.cell(at)
       if (c.kind === 'tree' && c.juvenile < 1) c.juvenile = 1
     },

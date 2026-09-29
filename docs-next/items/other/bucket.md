@@ -28,3 +28,7 @@ Values from `CONTAINERS` in `defs/items.ts`.
 - An empty bucket on a plot shows **Bucket empty**.
 
 An empty bucket stays in the hand.
+
+## Sound
+
+**Water** plays a pour and then a soak ([[systems/sound]]).

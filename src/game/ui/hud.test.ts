@@ -34,6 +34,7 @@ test('prize names reuse names_*', () => {
   expect(prizeName({ kind: 'freezer' })).toBe(m.names_sku_buy_freezer_large())
   expect(prizeName({ kind: 'tool', tool: 'rotary-shovel' })).toBe(m.names_shovel_rotary_shovel())
   expect(prizeName({ kind: 'tool', tool: 'diamond-pickaxe' })).toBe(m.names_pickaxe_diamond_pickaxe())
+  expect(prizeName({ kind: 'tool', tool: 'electric-chainsaw' })).toBe(m.names_item_electric_chainsaw())
   expect(prizeName({ kind: 'cash' })).toBe(m.market_cash())
   expect(prizeName({ kind: 'tree-seed', tree: 'cherry', variety: 'base' })).toBe(
     m.market_tree_seed({ tree: TREE_NAME.cherry() }),

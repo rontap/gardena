@@ -2,7 +2,7 @@
 
 Parent session. Not a subagent.
 
-Read [[index]], [[canon]], [[stack]], [[pipeline]] first.
+Read `docs-next/index.md`, [[canon]], [[stack]], [[pipeline]] first.
 
 ## Does
 

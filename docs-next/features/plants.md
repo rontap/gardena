@@ -128,6 +128,10 @@ Saved per plot: soil (water, fertilizer, weed chance) and plant (crop, variety, 
 
 `src/assets/crops/crop-{crop}.svg`: groups `sprout`, `grow`, `dead`, and one ripe group per variety of that crop (`ripe`, `ripe-variant`, `ripe-heirloom`). `crop-rotten.svg` for Rotten produce. Fruit items: `src/assets/fruits/`.
 
+## Sound
+
+Digging with a shovel plays a dig on every stretch of work and a turn of soil at the end; watering plays a pour and a soak; fertilizing plays a bag pour; harvesting plays leaves and the fruit coming off ([[systems/sound]]).
+
 ## Invariants
 
 | id             | rule                                                                                                                                | test             |

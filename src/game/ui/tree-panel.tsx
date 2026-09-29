@@ -18,7 +18,7 @@ import { buildTree, keyFromDomId, keyOfResearch, keyOfSkill, type Leaf } from '.
 const token = (name: string): string =>
   getComputedStyle(document.documentElement).getPropertyValue(name).trim() || '#1c1710'
 
-const ICON = 36
+const ICON = 32
 
 let booted = false
 
@@ -32,7 +32,7 @@ async function mermaidApi(): Promise<typeof import('mermaid').default> {
     htmlLabels: true,
     theme: 'base',
     maxTextSize: 500000,
-    flowchart: { htmlLabels: true, curve: 'stepAfter', nodeSpacing: 26, rankSpacing: 48, padding: 1 },
+    flowchart: { htmlLabels: true, curve: 'stepAfter', nodeSpacing: 22, rankSpacing: 48, padding: 1 },
     themeVariables: {
       fontFamily: 'Nunito, ui-sans-serif, system-ui, sans-serif',
       fontSize: '14px',
@@ -213,7 +213,7 @@ function cssRgb(hex: string): string {
 
 function cardHtml(iconInner: string, name: string, meta: string, color: string): string {
   return (
-    `<div style='display:flex;align-items:center;gap:4px;width:224px;height:56px;padding:1px 4px;color:${cssRgb(color)};font-family:Nunito,sans-serif'>` +
+    `<div style='display:flex;align-items:center;gap:4px;width:224px;height:50px;padding:1px 3px;color:${cssRgb(color)};font-family:Nunito,sans-serif'>` +
     svgImg(iconInner, ICON) +
     `<div style='display:flex;flex-direction:column;justify-content:center;min-width:0;flex:1;text-align:left;gap:1px'>` +
     `<div style='font-size:14px;font-weight:600;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis'>${escText(name)}</div>` +

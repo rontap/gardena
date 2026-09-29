@@ -37,7 +37,7 @@ import {
 } from './feature-necronomicon/necronomicon.ts'
 import { dump, parse } from './feature-save/save.ts'
 import { GRANDMA_IDS } from './ids.ts'
-import { makePickaxe, makeShovel, skuItem, type Item } from './item.ts'
+import { makeAxe, makePickaxe, makeShovel, skuItem, type Item } from './item.ts'
 import { NOTICE_ORDER, noticeRows } from '../ui/notices.ts'
 import { World } from './world.ts'
 
@@ -230,16 +230,19 @@ describe('necronomicon.pages', () => {
     expect(book.accept({ kind: 'fly-agaric', count: 1 })).toBe(0)
   })
 
-  test('The `tool` page takes one Rotary shovel or one Diamond pickaxe, whichever comes first, and refuses the other after. A starter or better tool is never a sacrifice.', () => {
+  test('The `tool` page takes one Rotary shovel, one Diamond pickaxe or one Electric chainsaw, whichever comes first, and refuses the others after. A starter or better tool is never a sacrifice.', () => {
     const { book } = farm()
     expect(book.accept(makeShovel('shovel'))).toBe(0)
     expect(book.accept(makePickaxe('pickaxe'))).toBe(0)
+    expect(book.accept(makeAxe('chainsaw'))).toBe(0)
     expect(pageClaim(book, makePickaxe('diamond-pickaxe'))).toEqual({ page: 'tool', n: 1 })
     expect(pageClaim(book, makeShovel('rotary-shovel'))).toEqual({ page: 'tool', n: 1 })
+    expect(pageClaim(book, makeAxe('electric-chainsaw'))).toEqual({ page: 'tool', n: 1 })
     book.apply(makeShovel('rotary-shovel'), 1)
     expect(book.tool).toBe(true)
     expect(pageFilled(book, 'tool')).toBe(1)
     expect(book.accept(makePickaxe('diamond-pickaxe'))).toBe(0)
+    expect(book.accept(makeAxe('electric-chainsaw'))).toBe(0)
   })
 
   test('The `supper` page takes one Barackpalinka, one Premium wine and one Bread, one of each and never a second. Any other spirit or cask falls through.', () => {

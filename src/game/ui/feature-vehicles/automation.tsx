@@ -51,7 +51,7 @@ const ANY_TYPE_NAME: { readonly [K in PickType]: () => string } = {
   other: () => m.vehicles_any_other(),
 }
 
-const GOOD_NAME: { readonly [K in 'sugar' | 'oil' | 'flour' | 'extract' | 'bread' | 'wood' | 'ash' | 'weed' | 'grass' | 'dead' | 'rotten' | 'fly-agaric' | 'shovel' | 'pickaxe' | 'axe' | 'chainsaw' | 'container' | 'vanilla-extract' | 'flakes' | 'treasure' | 'fertilizer' | 'compost' | 'weed-spray']: () => string } = {
+const GOOD_NAME: { readonly [K in 'sugar' | 'oil' | 'flour' | 'extract' | 'bread' | 'wood' | 'ash' | 'weed' | 'grass' | 'dead' | 'rotten' | 'fly-agaric' | 'shovel' | 'pickaxe' | 'axe' | 'container' | 'vanilla-extract' | 'flakes' | 'treasure' | 'fertilizer' | 'compost' | 'weed-spray']: () => string } = {
   sugar: () => m.names_item_sugar(),
   oil: () => m.names_item_oil(),
   flour: () => m.names_item_flour(),
@@ -67,7 +67,6 @@ const GOOD_NAME: { readonly [K in 'sugar' | 'oil' | 'flour' | 'extract' | 'bread
   shovel: () => m.vehicles_good_shovel(),
   pickaxe: () => m.vehicles_good_pickaxe(),
   axe: () => m.names_item_axe(),
-  chainsaw: () => m.names_item_chainsaw(),
   container: () => m.vehicles_good_container(),
   'vanilla-extract': () => m.names_item_vanilla_extract(),
   flakes: () => m.names_item_flakes(),

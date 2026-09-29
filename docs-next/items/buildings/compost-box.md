@@ -44,3 +44,7 @@ Prompt: **Compost**.
 ## Art
 
 `prop-compost-box.svg`.
+
+## Sound
+
+Putting an item in plays the machine load sound. Working and a batch put out push the `compost-box` cues ([[systems/sound]]).

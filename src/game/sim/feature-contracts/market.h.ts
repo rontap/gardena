@@ -1,4 +1,4 @@
-import type { CaskId, CropId, JamId, PickaxeId, PlantCrop, ShovelId, StallGoodId, TreeId } from '../ids.ts'
+import type { AxeId, CaskId, CropId, JamId, PickaxeId, PlantCrop, ShovelId, StallGoodId, TreeId } from '../ids.ts'
 import type { VarietyId } from '../../defs/varieties.ts'
 
 export declare const SAT_MAX_CUT: number
@@ -77,7 +77,10 @@ export type Lines = readonly [Demand] | readonly [Demand, Demand]
 
 export type Stars = 1 | 2 | 3 | 4
 
-export type PrizeTool = Extract<ShovelId, 'rotary-shovel'> | Extract<PickaxeId, 'diamond-pickaxe'>
+export type PrizeTool =
+  | Extract<ShovelId, 'rotary-shovel'>
+  | Extract<PickaxeId, 'diamond-pickaxe'>
+  | Extract<AxeId, 'electric-chainsaw'>
 
 export type Prize =
   | { kind: 'cash' }

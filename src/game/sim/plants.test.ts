@@ -1480,7 +1480,7 @@ describe('graft.axe', () => {
     tree.variety = 'bing'
     w.setCell(AT, tree)
     w.setCell(below, tree)
-    w.seats[0].hand = { kind: 'hold', item: { kind: 'axe', usesLeft: 10, workSeconds: 0.1 } }
+    w.seats[0].hand = { kind: 'hold', item: { kind: 'axe', id: 'axe', usesLeft: 10, workSeconds: 0.1 } }
     w.seats[0].actor.x = AT.col + 0.5
     w.seats[0].actor.y = AT.row + 2.5
     w.click(AT)

@@ -38,3 +38,7 @@ Prompt: **Distill**. State **Needs water** while waiting for water.
 ## Art
 
 `prop-still.svg`.
+
+## Sound
+
+Putting an item in plays the machine load sound. Working and a batch put out push the `still` cues ([[systems/sound]]).

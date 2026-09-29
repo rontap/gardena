@@ -76,10 +76,11 @@ export function pageClaim(book: Necronomicon, item: Item): PageClaim | undefined
     if (book.done.includes('agaric') || room <= 0 || item.count <= 0) return undefined
     return { page: 'agaric', n: Math.min(room, item.count) }
   }
-  if (item.kind === 'shovel' && item.id === 'rotary-shovel') {
-    return book.done.includes('tool') || book.tool ? undefined : { page: 'tool', n: 1 }
-  }
-  if (item.kind === 'pickaxe' && item.id === 'diamond-pickaxe') {
+  if (
+    (item.kind === 'shovel' && item.id === 'rotary-shovel') ||
+    (item.kind === 'pickaxe' && item.id === 'diamond-pickaxe') ||
+    (item.kind === 'axe' && item.id === 'electric-chainsaw')
+  ) {
     return book.done.includes('tool') || book.tool ? undefined : { page: 'tool', n: 1 }
   }
   if (item.kind === 'bread' || item.kind === 'spirit' || item.kind === 'cask') {

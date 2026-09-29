@@ -1,27 +1,111 @@
-# 2.9.4 Refueling station
+# 2.10.0 Sound
 
-A route can stop on the south side of a Refueling station and take fuel.
+Gardena has music and sound effects, each with its own volume in Settings.
 
-- ✨ Place a Refueling station. Fill it with Wood, Olive oil, Sugar cane, wine, cider, or spirits, and a Quad or Tractor takes the fuel on a route.
-  - Wait for fuel holds the vehicle until its fuel is full. No wait leaves after that one stop.
-  - Buy from market spends money on the liters the station is not holding, when you can pay for all of those liters.
-  - A working Furnace nearby makes the batch finish faster than it does without one.
+- 🎉 Added music. Seven songs play while you farm. Song 1 plays first; when a song ends, a different one is picked at random. Music pauses while the game is paused.
+- 🎉 Added sound effects for work done by hand.
+  - Digging, mining, chopping, watering, fertilizing and harvesting make sounds while you work. Finishing a dig, a rock, a chop, a watering or a harvest has a sound of its own.
+  - The digging sound changes with how hard the ground is, and a burrow has its own digging sound.
+  - Putting an item into a machine by hand makes a sound.
+- ✨ Added Music and Sound effects volumes to Settings. You hear a volume while you set it. Save keeps it; leaving Settings without Save goes back to the saved volume.
+
+# 2.9.6 Vehicle Automation V
+
+A Vehicle dispatcher sends vehicles out on a signal, a route can end at the hangar, and Build has a Vehicles tab.
+
+- ✨ Added Vehicle dispatcher. Set it to a route: each time its input signal turns on, it deploys one vehicle on that route from a Vehicle hangar. Its output is on while at least the number of vehicles you set are out on that route.
+- ✨ Added After the last stop to every route. Loop again starts the route over; Send back to the hangar stores the vehicle in the nearest Vehicle hangar. A new route loops.
+- 🔧 Changed Build tabs. A new Vehicles tab holds the Vehicle hangar, Traffic light, Refueling station and Vehicle dispatcher. Land is renamed Decorative and holds paving only. Wooden fence moves to Sensors, Variety sorter to Storage.
+- 🔧 Changed Weather Forecast. Finishing the research shows tomorrow's weather next to today. It replaces the Weather Forecast Station building, which is no longer sold.
+- 🔧 Changed research order. Field silos follows Vehicles, and Automated dispatch follows Field silos. The Water sensor can be bought after Automated irrigation. Inherit land is offered after Expansion instead of Landscape architecture. Advanced Plants is renamed Advanced fruits.
+- 🐛 Fixed contract rows in the Command Center opening the Market. They open Contracts.
+- 🐛 Fixed every Market price resetting to full when a farm was loaded or a guest joined.
+- 🐛 Fixed the contract board failing to fill its ninth slot at Broker III.
+- 🐛 Fixed the full-list warning on an offer at Broker II and III, which said three contracts were running. It names five or six.
+- 🐛 Fixed an offer's cancel cost, which showed the penalty for a missed contract. It shows what cancelling right after accepting costs.
+- 🐛 Fixed the Drop off prompt showing for Rotten produce before Fermentation is researched.
+- 🐛 Fixed the Market's recovery time for a crop leaving out what the Crop Variety Station has learned about it.
+
+# 2.9.5 Refueling station
+
+Automated vehicles can take fuel on their route from a Refueling station.
+
+- 🎉 Added Refueling station. It turns Wood, Olive oil, Sugar cane, spirits, Wine and Cider into Fuel, and a route stop on its south side fills the vehicle's tank. Place one after researching Automated dispatch.
+  - Fill it by hand, or Unload into it on its north side. Each item adds units: Olive oil 20, a spirit, Wine or Cider 15, Wood 10, Sugar cane 3.
+  - A batch starts once 10 units are in and the station holds no Fuel, and makes 10 L. A working Furnace nearby makes the batch finish faster than it does without one.
+  - A refuel stop is set to Wait for fuel, which holds the vehicle until its tank is full, or No wait, which leaves after one fill. New refuel stops start on No wait.
+  - Click the station to switch Buy from market. While it is on, a stop pays money for the liters the station is not holding, when you can pay for all of them. It starts on.
+
+# 2.9.4 Tree update
+
+Trees consume water and fertilizer, and how well you keep them sets how much fruit they give.
+
+- 🎉 Changed trees. Every tree consumes water and fertilizer at every stage, from a supply of its own.
+  - Water a tree with a Bucket or a Sprinkler, and feed it with a Fertilizer bag, Compost or a Sprayer. Rain, Dry, Flood and Drought change its water the way they change a plot's.
+  - A tree holds up to 10 L of water and 2 L of fertilizer; a plot holds 2 L and 1 L.
+  - Apple consumes the most, then Cherry, Apricot and Olive. Apricot takes the widest range of water and fertilizer, Olive the narrowest.
+  - Trees have Happiness. It rises while water and fertilizer are both green and falls while either is red. Happiness at 0 does not kill a tree.
+  - Happiness sets how fast fruit comes: on-season yield 275%–325%, off-season 25%–75% (was 300% and 70%).
+  - Each off-season day raises the chance to turn on-season by 10%, 15% or 20% for red, orange or green Happiness (was 20%).
+  - Inspect shows a tree's Happiness, Fertilizer and Water. The Water need and Land quality lenses color trees, the Command Center reports a tree that is wilting, drowning or starving for fertilizer, and Water and Fertilizer sensors count trees in range.
+- 🔧 Changed filling a Bucket or Large bucket. It fills at 2 L/s at a Well, 2.5 L/s at a Pump or Pumpjack and 4 L/s at a Tap while the source has water stored; with nothing stored, it fills as fast as the source gathers. It filled at the gather rate before.
+- 🔧 Rebalanced prices
+  - Vehicles: Quad 150 → 75, Tractor 250 → 125, Seeder 80 → 50, Sprayer 80 → 40, Harvester 100 → 75.
+  - Seeding silo, Additive silo and Produce silo 70 → 40.
+  - Shovel 8 → 12, Pipe 3 → 2, Seed grinder 30 → 28, Jam machine 45 → 40, Pot still 45 → 50, Infuser 50 → 85, Crop Variety Station 60 → 65, Variety sorter 45 → 25, Freezer 32 → 28.
+  - Research: Irrigation 10 → 9, Automated irrigation 16 → 12, Advanced irrigation 75 → 84, Water storage 30 → 64, Vehicles 50 → 48, Automated dispatch 100 → 160, Advanced sensors 140 → 60, Smart Irrigation Sensors 60 → 180, Preservatives 32 → 28, Fermentation 40 → 48, Infusion 48 → 92, Expansion 25 → 32, Expand land 120 → 128.
+
+# 2.9.3 Vehicle Automation IV
+
+Field silos load and unload vehicles, and built sprinklers and fences draw at full strength under every lens.
+
+- ✨ Added Load and Unload to the Seeding silo, Additive silo and Produce silo: Unload on the north side, Load on the south side. Routes can stop there, and a stop offers only what that silo takes.
+  - Loading from a Seeding silo or Additive silo restocks it when its Auto-restock is on, the same as taking by hand.
+- 🔧 Changed built Sprinklers and Wooden fences to draw at full strength under every lens. They faded unless the Pipes lens was on. A fence that does not close a ring draws lighter than a closed one.
+- 🔧 Changed Research and Family to open as wide as their trees instead of the full screen. The Family tree fits without scrolling sideways on a 1440-pixel-wide screen.
+- 🔧 Changed Sprinkler output. Crop marks alternate above and below the slider so neighbouring crops do not overlap, and hovering a mark names its crop in the title.
+- 🔧 Changed the Postbox flag to blue while a prize is waiting. It was red.
+
+# 2.9.2 Tutorial II
+
+The tutorial moves into the Command Center, and a crash shows a screen where you can download your save.
+
+- 🎉 Changed the tutorial. Its steps are rows in the Command Center; they were a card at the bottom of the screen.
+  - Nine steps cover digging plots, planting carrots, watering, refilling the Bucket at the Pump, harvesting and dropping off at the Produce Warehouse, planting more crops and fertilizing. Right-click the last row to close it.
+  - Progress is saved with the farm, so loading a farm continues from the step it was on.
+  - After the tutorial, three hints appear once each: research from day 2 if you have started none, Automated irrigation from day 5, and Contracts after 30 fruit dropped off.
+- ✨ Added a crash screen. When the game stops on an error it cannot recover from, Oops offers Download save, which downloads the farm as it was last saved, and Exit to main menu.
+- 🔧 Changed Research and Family to open faster than before. Their trees are drawn in the background once the farm has loaded, and they update in place when research or skills change.
 
 # 2.9.1 Crop Variety Station
 
-Completely reworked the crop variety station, now fruits can be used to gain insight into their details, including almanac details and different varieties. Researching is capped to 10/20/30 units depending on the crop, and provides passive boosts to market impact recover, store-bought seed quality and variety increase chance.
+The Seed Variety Station becomes the Crop Variety Station: it studies fruit to improve that crop instead of cutting grafts.
+
+- 🎉 Changed the Seed Variety Station into the Crop Variety Station. It takes any fruit, studies one at a time and uses each one up; it no longer returns fruit or cuts grafts. Grafts come from chopping a tree with Tree Grafting.
+  - Each fruit raises that crop's level: a plain fruit by 1, a named Variety by 2, an Heirloom by 3. A crop's highest level is 10 for each Variety it has, so 10, 20 or 30.
+  - Each level gives that crop +0.1% chance to ripen into a better Variety, +2% Quality on seed bought at the Seed silo or paid by a contract, and +0.5% Market price recovery.
+  - The first fruit takes 30 seconds, and each level adds 3 seconds to the next.
+  - Every station shares the same levels, so you can build more than one, and demolishing one keeps them.
+  - The panel shows each studied crop's level and bonuses. As a crop levels up, it adds that crop's Almanac lines, its named Variety and Heirloom, what each is best for, and whether the Heirloom needs a neighbour.
+  - It takes fruit from a Chest on its left and no longer puts anything into a Chest on its right.
 
 # 2.9.0 Vehicle Automation III
 
-Vehicle automation has been significantly redesigned; now routes can be managed directly and easily set up with drag and drop moving of stops both in the HUD and in the gameplay area. Stops can be removed, and vehicles can pick up or drop off only certain cargo at stations.
+Routes move to a Vehicle automation panel, where you build them on the map without driving and send vehicles out from a Vehicle hangar.
 
-- A Tractor whose boom just worked a plot is working for 3 seconds; speed cap ×0.5 while that lasts. Accel, turn, and fuel burn unchanged. An empty hopper does not set it.
-- Each Load / Unload stop can narrow what moves (any → type → good → Variety). The building’s own accept still decides.
-- 🔧 Rebalanced Vehicles, Furnace and Compost values
-  - Quad / Tractor tank lasts 360s of burn (was 180s).
-  - Compost: fruit 5 → 4; sugar 3; wood 6.
-  - Furnace: oil 25 → 20; spirit 36 → 26; wood 40 → 32.
-  - Fly agaric goes in the Compost box (4) and the Furnace (1).
+- 🎉 Changed Vehicle automation. Routes are built in a Vehicle automation panel, opened from its button on the left, with no vehicle or driver needed. It replaces the Automate button on the driving dash and the stop list it opened.
+  - Each route is a tab. New route adds one; double-click a tab to rename it. A new farm starts with one empty route.
+  - Click the map to add a stop, drag a stop on the map to move it, and right-click a stop to remove it. Drag stops in the list to reorder them.
+  - Load and Unload stops are drawn larger on the map than Go and Wait.
+  - Each route names its vehicle: a Quad, or a Tractor with a Seeder, Sprayer, Harvester or no trailer, at Boom 3 or Boom 5. Deploy sends one out from a Vehicle hangar that stores it. A Tractor route with a trailer shows the tilled plots its boom will pass over.
+  - Out on this route lists each vehicle on the route as Heading to, Stopped or Out of fuel, with its fuel. Send back to the hangar stores it in the nearest Vehicle hangar.
+  - Opening the panel turns on the Vehicle interactions lens; closing it restores the lens you had.
+- ✨ Added a choice of cargo to Load and Unload stops. Narrow what moves by kind, then by good, then by Variety. A stop offers only what that building's pad handles, and the building still refuses what it does not take.
+- 🔧 Changed Tractor speed. For 3 seconds after its boom works a plot, a Tractor's top speed is halved. A pass that changes no plot, such as with an empty Seeder, does not slow it.
+- 🔧 Rebalanced fuel, Compost box and Furnace
+  - A Quad or Tractor tank lasts 360 seconds of driving (was 180).
+  - Compost box worth per item: fruit 5 → 4, Sugar 3 per liter (was the fruit value), Wood 6 (was not accepted), Fly agaric 4 (was not accepted).
+  - Furnace worth per item: Olive oil 25 → 20, spirits 36 → 26, Wood 40 → 32, Fly agaric 1 (was not accepted).
 
 # 2.8.9 Gameplay Update
 

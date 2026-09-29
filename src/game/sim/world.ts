@@ -1702,6 +1702,10 @@ export class World {
     this.ping()
   }
 
+  cheatStudy(): void {
+    this.commit({ a: Act.cheat, t: this.now, p: this.local, k: 'study' })
+  }
+
   cheatProduce(): void {
     this.commit({ a: Act.cheat, t: this.now, p: this.local, k: 'produce' })
   }

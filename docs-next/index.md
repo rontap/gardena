@@ -24,6 +24,8 @@ Start here. Find the task type, read the pages it lists, then grep the code usin
 - [[features/_index|features]] — one page per player-facing feature.
 - [[systems/_index|systems]] — one page per shared or engine system.
 - [[shell]] — the screen around the farm.
+- [[menu]] — the main menu, the Gear menu, Settings, the version history.
+- [[art/_index|art]] — SVG rules, palette, effects, variants, music.
 - [[name-map]] — the words to use, and the words to replace.
 - [[howto/_index|howto]] — checklists for recurring tasks.
 - [[process/_index|process]] — how agents work and write.
@@ -38,5 +40,7 @@ Start here. Find the task type, read the pages it lists, then grep the code usin
 | UI pass | [[shell]], [[name-map]] | feature pages whose **Screen** changes |
 | shared system overhaul | the system page | every page in its **Used by** list |
 | engine change | [[systems/_index]] | pages that link to the changed system |
-| art | [[howto/add-art]] | [[systems/view]] |
+| art | [[art/_index]], [[art/svg]], [[art/palette]] | [[howto/add-art]], [[systems/view]] |
+| music or sound | [[art/music]] | [[systems/sound]] |
+| water, pipes, sprinklers | [[features/water]] | [[systems/water-network]], [[systems/signals]] |
 | player text | [[howto/add-player-text]], [[name-map]] | owning feature page |

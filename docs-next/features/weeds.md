@@ -77,6 +77,10 @@ Weed cells (look, growth, full-grown day) and `Soil.weedChance` are saved. The d
 
 `crop-weed-*.svg`, groups `sprout` and `grow`. The Pulled weed item art is the Command Center row's icon.
 
+## Sound
+
+**Dig weed** plays the shovel's dig and turn of soil ([[systems/sound]]).
+
 ## Invariants
 
 | id | rule | test |

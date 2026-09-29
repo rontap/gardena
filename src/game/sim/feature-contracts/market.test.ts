@@ -854,6 +854,7 @@ describe('prizes', () => {
     }
     expect(tools.has('rotary-shovel')).toBe(true)
     expect(tools.has('diamond-pickaxe')).toBe(true)
+    expect(tools.has('electric-chainsaw')).toBe(true)
     for (const rep of [0, 5, REP_MAX]) {
       const a = rollBoard(new Rng(3), 9, CONTRACT_OFFERS, rep)
       const b = rollBoard(new Rng(3), 9, CONTRACT_OFFERS, rep)

@@ -45,6 +45,7 @@ import itemWeatherStation from '../../assets/items/item-weather-station.svg?raw'
 import itemStation from '../../assets/items/item-research-station.svg?raw'
 import itemAxe from '../../assets/items/item-axe.svg?raw'
 import itemChainsaw from '../../assets/items/item-chainsaw.svg?raw'
+import itemElectricChainsaw from '../../assets/items/item-electric-chainsaw.svg?raw'
 import itemWood from '../../assets/items/item-wood.svg?raw'
 import itemAsh from '../../assets/items/item-ash.svg?raw'
 import itemFlyAgaric from '../../assets/items/item-fly-agaric.svg?raw'
@@ -322,7 +323,7 @@ import type { CropClass } from '../defs/crops.ts'
 import { caskGroup, tierOf, VARIETIES, type VarietyId, type VarietyTier } from '../defs/varieties.ts'
 import type { DayPhase } from '../sim/clock.ts'
 import type { WeatherKind } from '../sim/weather.ts'
-import { PLANT_CROPS, TREE_IDS, type CaskId, type GrownCrop, type JamCrop, type MemberId, type PickaxeId, type ResearchId, type ShovelId, type SkillId, type SkuId, type SpiritKind, type TileId, type TreeId } from '../sim/ids.ts'
+import { PLANT_CROPS, TREE_IDS, type AxeId, type CaskId, type GrownCrop, type JamCrop, type MemberId, type PickaxeId, type ResearchId, type ShovelId, type SkillId, type SkuId, type SpiritKind, type TileId, type TreeId } from '../sim/ids.ts'
 import { skuItem, type Face } from '../sim/item.ts'
 import type { CompanyId } from '../sim/feature-contracts/market.h.ts'
 
@@ -479,8 +480,7 @@ export function itemInner(item: Face): string {
   if (item.kind === 'dead') return deadInner(item.cls)
   if (item.kind === 'shovel') return SHOVEL_ART[item.id]
   if (item.kind === 'pickaxe') return PICKAXE_ART[item.id]
-  if (item.kind === 'axe') return svgInner(itemAxe)
-  if (item.kind === 'chainsaw') return svgInner(itemChainsaw)
+  if (item.kind === 'axe') return AXE_ART[item.id]
   if (item.kind === 'container') {
     if (item.id === 'bucket') return svgInner(bucket)
     return svgInner(largeBucket)
@@ -585,6 +585,12 @@ const PICKAXE_ART: { readonly [K in PickaxeId]: string } = {
   pickaxe: svgInner(pickaxe),
   'better-pickaxe': svgInner(betterPickaxe),
   'diamond-pickaxe': svgInner(diamondPickaxe),
+}
+
+const AXE_ART: { readonly [K in AxeId]: string } = {
+  axe: svgInner(itemAxe),
+  chainsaw: svgInner(itemChainsaw),
+  'electric-chainsaw': svgInner(itemElectricChainsaw),
 }
 
 export function turfInner(stage: 'sprout' | 'grow'): string {

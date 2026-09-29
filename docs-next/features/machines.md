@@ -94,6 +94,10 @@ A guest can put items into machines and collect from them.
 
 Each machine's contents, lock, quality and progress are saved with its cell. The digest carries the lock of the Mill, jam machine, Infuser and Furnace, and the Refueling station's contents.
 
+## Sound
+
+Putting an item into any machine plays one load sound: lid open, item in, lid shut. A machine working and a batch put out push their own cues (`machineLoop`, `machineOnce`), one working cue per machine kind ([[systems/sound]]).
+
 ## Invariants
 
 | id | rule | test |

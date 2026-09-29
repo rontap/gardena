@@ -10,6 +10,9 @@ export const TREE_HAPPY_WILT_SECONDS = 120
 export const TREE_HAPPY_STARVE_SECONDS = 200
 export const TREE_HAPPY_DROWN_SECONDS = 90
 export const TREE_OFF_CHANCE = { red: 0.1, orange: 0.15, green: 0.2 } as const
+export const TREE_RATE_ON = 2.75
+export const TREE_RATE_OFF = 0.25
+export const TREE_RATE_HAPPY = 0.5
 
 export type TreeDef = {
   id: TreeId

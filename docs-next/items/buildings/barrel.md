@@ -40,3 +40,7 @@ Prompts: **Fill barrel**; **Collect {name}** once mature.
 ## Art
 
 `prop-barrel.svg`.
+
+## Sound
+
+Putting an item in plays the machine load sound. Aging pushes the `barrel` working cue, and reaching `BARREL_MATURE` pushes its batch cue ([[systems/sound]]).

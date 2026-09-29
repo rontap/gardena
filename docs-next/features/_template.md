@@ -27,6 +27,10 @@ Unlocked: {from the start, or the research that unlocks it}.
 
 {Asset files and their groups.}
 
+## Sound
+
+{Which actions on this page play a sound, by cue; the sounds themselves are in [[systems/sound]]. Leave the section out when none does.}
+
 ## Invariants
 
 | id | rule | test |

@@ -136,6 +136,7 @@ function toolLoot(id: ToolId, used: boolean): LootItem {
   const d = AXES.axe
   return {
     kind: 'axe',
+    id: 'axe',
     usesLeft: used ? Math.floor(d.uses / 2) : d.uses,
     workSeconds: d.workSeconds,
   }

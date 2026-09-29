@@ -1,4 +1,5 @@
 import { Act, type Cmd } from './log.ts'
+import { GROWN_IDS } from './ids.ts'
 import * as family from './family.ts'
 import * as necro from './feature-necronomicon/necronomicon.ts'
 import * as place from './feature-place/place.ts'
@@ -111,6 +112,10 @@ export function applyCmd(w: World, cmd: Cmd): 'queued' | 'placed' | 'blocked' | 
       else if (cmd.k === 'speed') w.setCheatSpeedBody(cmd.n)
       else if (cmd.k === 'day') w.endDayBody()
       else if (cmd.k === 'produce') w.cheatProduceBody()
+      else if (cmd.k === 'study') {
+        GROWN_IDS.forEach(crop => w.learn(crop, 1))
+        w.ping()
+      }
       else family.unlockAllSkillsBody(w)
       return
     case Act.drive:

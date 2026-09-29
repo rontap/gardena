@@ -354,7 +354,7 @@ export const RESEARCH: { readonly [K in ResearchId]: ResearchDef } = {
         parent: 'unlock-grinder',
         cost: NECRO_COST,
         seconds: NECRO_SECONDS,
-        grants: ['The Necronomicon on the Build Automation shelf'],
+        grants: [m.research_grant_necronomicon()],
         blurb: m.research_unlock_necronomicon_blurb(),
         effect: {kind: 'unlock-sku', sku: 'buy-necronomicon'},
     },

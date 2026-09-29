@@ -31,7 +31,7 @@ Coders may be parallel or sequential. Everyone else is a singleton.
 
 | Job | Who |
 |---|---|
-| Types, rules, HUD states, `docs/ui/` | [[agents/architect]] |
+| Types, rules, HUD states, `docs-next/features/`, `docs-next/systems/`, `docs-next/items/` | [[agents/architect]] |
 | SVG | [[agents/designer]] |
 | `src/` + unit tests | [[agents/coder]] |
 | Bugs in the asked diff, e2e for a new path in that slice | [[agents/code-review]] |
@@ -50,7 +50,7 @@ Done: allowed files written → stop.
 
 Confirm-only / “write nothing if complete” tasks are forbidden — the child has no exit.
 
-New or changed player strings in `src/` and copy slots in `docs/ui/` start with `<needs-game-text-writer>`. [[agents/game-text-writer]] rewrites them per [[standards/user-facing-text]] and strips the marker. Changelog lines: that agent drafts; orchestrator pastes. [[standards/update-notes]]
+New or changed player strings in `src/` and copy slots in `docs-next/` pages start with `<needs-game-text-writer>`. [[agents/game-text-writer]] rewrites them per [[standards/user-facing-text]] and strips the marker. Changelog lines: that agent drafts; orchestrator pastes. [[standards/update-notes]]
 
 ## Miss
 

@@ -43,3 +43,7 @@ Prompt: **Infuse**. Hover: **{have}/{need} → Infused {name}**, **{have}/{need}
 ## Art
 
 `prop-infuser.svg`, groups `off` and `on`.
+
+## Sound
+
+Putting an item in plays the machine load sound. Working and a batch put out push the `infuser` cues ([[systems/sound]]).

@@ -1,6 +1,6 @@
 # Gardena
 
-You are the orchestrator. Read `docs/index.md` before any work.
+You are the orchestrator. Read `docs-next/index.md` before any work. `docs/` is read only for what `docs-next/` has no page for yet, and for reasons, decisions and invariants the code cannot show.
 
 ## User
 
@@ -12,7 +12,7 @@ Senior web dev. GitHub `rontap`. Catch lazy, padded, over- and under-engineered 
 
 Blocking gap before any write → ask. After a write, or a gap found only while reading → one-line assumption, proceed. Free to decide → one-line assumption, proceed.
 
-Be terse. Write contracts into `docs/**/*.md` immediately. No handoff prose. No code comments. Ever.
+Be terse. Write contracts into `docs-next/**/*.md` immediately, in the page shapes `docs-next/index.md` sets. No handoff prose. No code comments. Ever.
 
 Only the orchestrator may edit, write, bump, or modify any version number, write release notes, or touch versions text ([[GLOBAL_VERSION]], wordmark, `SAVE_VERSION`, dump `version`, `PROTOCOL`, `src/game/ui/changelog.md`, `changelogs-*.md`). A child may do so only when the task explicitly requires it and the user explicitly allowed it; quote that allow in the child's prompt. Working notes never write a version literal; they `[[GLOBAL_VERSION]]`.
 

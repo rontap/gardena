@@ -29,3 +29,7 @@ Prompt: **Study**. Hover: **Crop Variety Station**, **{name} · {left} left · {
 ## Art
 
 `prop-research-station.svg`, groups `off` and `on`.
+
+## Sound
+
+Putting an item in plays the machine load sound ([[systems/sound]]).

@@ -1,7 +1,7 @@
 import { FRESH_FULL } from '../../defs/crops.ts'
 import { GRASS_GROW, GRASS_WATER_PER_SEC } from '../../defs/items.ts'
 import { jamRotMul } from '../../defs/skills.ts'
-import { TREES, TREE_OFF_CHANCE, TREE_YIELD_DAYS } from '../../defs/trees.ts'
+import { TREES, TREE_OFF_CHANCE, TREE_RATE_HAPPY, TREE_RATE_OFF, TREE_RATE_ON, TREE_YIELD_DAYS } from '../../defs/trees.ts'
 import { needsNeighbour } from '../../defs/varieties.ts'
 import { CHUNK, chunkRect, type Coord, type Tree } from '../building.ts'
 import { DAY_SECONDS } from '../clock.ts'
@@ -231,7 +231,7 @@ export function tickTree(w: World, t: Tree, dt: number): boolean {
   if (t.yield.kind === 'pending') return false
   if (needsNeighbour(t.variety) && !hasNeighbour(w, treeCells(t), t.species)) return false
   const ripe = t.fruit >= 1
-  const mul = t.yield.kind === 'on' ? 2.75 + t.happiness * 0.5 : 0.25 + t.happiness * 0.5
+  const mul = (t.yield.kind === 'on' ? TREE_RATE_ON : TREE_RATE_OFF) + t.happiness * TREE_RATE_HAPPY
   t.fruit += dt / (TREES[t.species].fruitSeconds / mul)
   if (t.fruit < 1) return false
   if (!dropTreeFruit(w, t)) {

@@ -15,7 +15,7 @@ The gardener carries one item or stack in the hand and more in the inventory at 
 
 - counted (`count`): seeds, fruit, grafts, processed goods, Rotten produce, dead plants, Pulled weed, Cut grass, wood, ash, Fly agaric;
 - litres (`liters` and `capacityLiters`): buckets (`container`), fertilizer, compost, Weed spray, sugar;
-- uses (`usesLeft` and `workSeconds`): shovels, pickaxes, axes, chainsaws.
+- uses (`usesLeft` and `workSeconds`): shovels, pickaxes, axes.
 
 A tree seed has no count; one tree seed is one item. Treasure holds coins.
 
@@ -58,13 +58,13 @@ The field silos for vehicles (Seeding silo, Additive silo, Produce silo) use the
 
 ### Tools and buckets
 
-`defs/items.ts` defines shovels (`shovel`, `better-shovel`, `rotary-shovel`), pickaxes (`pickaxe`, `better-pickaxe`, `diamond-pickaxe`), the axe and the chainsaw, each with uses and work seconds, and the two buckets (`bucket`, `large-bucket`) with capacity in litres. Each dig, mine or chop uses one or more uses; a tool at 0 uses is removed from the hand. A bucket is filled at a pump, well or tap ([[features/water]]).
+`defs/items.ts` defines shovels (`shovel`, `better-shovel`, `rotary-shovel`), pickaxes (`pickaxe`, `better-pickaxe`, `diamond-pickaxe`), axes (`axe`, `chainsaw`, `electric-chainsaw`), each with uses and work seconds, and the two buckets (`bucket`, `large-bucket`) with capacity in litres. Each dig, mine or chop uses one or more uses; a tool at 0 uses is removed from the hand. A bucket is filled at a pump, well or tap ([[features/water]]).
 
 | tool | used for |
 |---|---|
 | shovel | till, dig up plants and dead plants, dig weeds, dig trees and burrows |
 | pickaxe | mine rock and very hard soil |
-| axe, chainsaw | chop a grown tree |
+| axe | chop a grown tree |
 | bucket | water plots and trees |
 
 ## Screen
@@ -86,6 +86,10 @@ Saved: each seat's hand and inventory; chest, freezer and postbox slots; store c
 ## Art
 
 Item faces are in `src/assets/items/` and `src/assets/fruits/`; `held.tsx` draws them.
+
+## Sound
+
+Opening a chest, freezer, Produce silo or postbox plays a lid opening; closing its panel plays the lid shutting ([[systems/sound]]).
 
 ## Invariants
 

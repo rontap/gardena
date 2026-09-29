@@ -47,7 +47,7 @@ export type LootItem =
   | { kind: 'fly-agaric'; count: number }
   | { kind: 'shovel'; id: 'better-shovel'; usesLeft: number; workSeconds: number }
   | { kind: 'pickaxe'; id: 'better-pickaxe'; usesLeft: number; workSeconds: number }
-  | { kind: 'axe'; usesLeft: number; workSeconds: number }
+  | { kind: 'axe'; id: 'axe'; usesLeft: number; workSeconds: number }
 
 export type Cover =
   | { kind: 'bare' }

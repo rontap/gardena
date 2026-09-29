@@ -1,5 +1,5 @@
 import { DAY_SECONDS } from '../sim/clock.ts'
-import type { CaskId, ContainerId, JamCrop, PickaxeId, ShovelId, SpiritKind } from '../sim/ids.ts'
+import type { AxeId, CaskId, ContainerId, JamCrop, PickaxeId, ShovelId, SpiritKind } from '../sim/ids.ts'
 import type { VarietyTier } from './varieties.ts'
 
 export const DIG_HARD_SPAN = 1.25
@@ -7,19 +7,20 @@ export const DIG_HARD_SPAN = 1.25
 export const SHOVELS: { readonly [K in ShovelId]: { uses: number; workSeconds: number } } = {
   shovel: { uses: 60, workSeconds: 1 },
   'better-shovel': { uses: 120, workSeconds: 0.7 },
-  'rotary-shovel': { uses: 1000, workSeconds: 0.3 },
+  'rotary-shovel': { uses: 480, workSeconds: 0.3 },
 }
 
 export const PICKAXES: { readonly [K in PickaxeId]: { uses: number; workSeconds: number } } = {
   pickaxe: { uses: 25, workSeconds: 4 },
   'better-pickaxe': { uses: 40, workSeconds: 2 },
-  'diamond-pickaxe': { uses: 1000, workSeconds: 0.4 },
+  'diamond-pickaxe': { uses: 120, workSeconds: 0.4 },
 }
 
-export const AXES = {
+export const AXES: { readonly [K in AxeId]: { uses: number; workSeconds: number } } = {
   axe: { uses: 30, workSeconds: 5 },
   chainsaw: { uses: 90, workSeconds: 3 },
-} as const
+  'electric-chainsaw': { uses: 360, workSeconds: 1.5 },
+}
 
 export const CONTAINERS: { readonly [K in ContainerId]: { capacityLiters: number } } = {
   bucket: { capacityLiters: 5 },

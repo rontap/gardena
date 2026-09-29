@@ -32,3 +32,7 @@ Vehicle loading spots above and below ([[systems/building-io]]). No signal ports
 ## Art
 
 `prop-silo-seed.svg`, `prop-silo-spray.svg`, `prop-silo-produce.svg`.
+
+## Sound
+
+Opening and closing the Produce silo play the chest's lid sounds ([[systems/sound]]).

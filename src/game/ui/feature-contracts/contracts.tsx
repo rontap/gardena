@@ -4,9 +4,9 @@ import { COMPANIES } from '../../defs/companies.ts'
 import { CROPS, cropVariety } from '../../defs/crops.ts'
 import { FERT_BAG_LITERS, SUGAR_MILL } from '../../defs/items.ts'
 import { JAM_CROPS, type JamCrop, type StallGoodId } from '../../sim/ids.ts'
-import { makePickaxe, makeShovel, type Item } from '../../sim/item.ts'
+import type { Item } from '../../sim/item.ts'
 import { DAY_SECONDS } from '../../sim/clock.ts'
-import { CANCEL_MIN, cancelFee, demandGood, DIFFICULTY_CEILING, filledOf, needOf, REP_MAX, rollBoard } from '../../sim/feature-contracts/market.ts'
+import { CANCEL_MIN, cancelFee, demandGood, DIFFICULTY_CEILING, filledOf, needOf, prizeTool, REP_MAX, rollBoard } from '../../sim/feature-contracts/market.ts'
 import type { Active, ContractOffer, Demand, HistoryEntry, Outcome, Prize, Stars } from '../../sim/feature-contracts/market.h.ts'
 import { isCropStall, stallGoodName } from '../../sim/stall.ts'
 import type { World } from '../../sim/world.ts'
@@ -169,7 +169,9 @@ export function prizeName(prize: Prize): string {
   if (prize.kind === 'freezer') return m.names_sku_buy_freezer_large()
   if (prize.kind === 'expansion-slot') return m.market_expansion_permit()
   if (prize.kind === 'skill-points') return prize.n === 1 ? m.market_skill_point() : m.market_skill_points({ n: prize.n })
-  return prize.tool === 'rotary-shovel' ? m.names_shovel_rotary_shovel() : m.names_pickaxe_diamond_pickaxe()
+  if (prize.tool === 'rotary-shovel') return m.names_shovel_rotary_shovel()
+  if (prize.tool === 'diamond-pickaxe') return m.names_pickaxe_diamond_pickaxe()
+  return m.names_item_electric_chainsaw()
 }
 
 function prizeItem(prize: Prize): Item | undefined {
@@ -178,9 +180,7 @@ function prizeItem(prize: Prize): Item | undefined {
   if (prize.kind === 'fertilizer') {
     return { kind: 'fertilizer', liters: FERT_BAG_LITERS, capacityLiters: FERT_BAG_LITERS }
   }
-  if (prize.kind === 'tool') {
-    return prize.tool === 'rotary-shovel' ? makeShovel('rotary-shovel') : makePickaxe('diamond-pickaxe')
-  }
+  if (prize.kind === 'tool') return prizeTool(prize.tool)
   return undefined
 }
 

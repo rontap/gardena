@@ -27,3 +27,7 @@ Vehicle loading spots above and below; signal output, on when every slot holds s
 ## Art
 
 `prop-freezer.svg`.
+
+## Sound
+
+Opening and closing play the chest's lid sounds ([[systems/sound]]).

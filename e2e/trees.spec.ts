@@ -112,7 +112,7 @@ test('axe on mature tree, trunk, grow, mature; axe no-op; shovel trunk', async (
       if (w === undefined) throw new Error('no __world')
       w.seats[0].actor.x = at.col + 0.5
       w.seats[0].actor.y = at.row + 0.5
-      w.seats[0].hand = { kind: 'hold', item: { kind: 'axe', usesLeft: uses, workSeconds: work } }
+      w.seats[0].hand = { kind: 'hold', item: { kind: 'axe', id: 'axe', usesLeft: uses, workSeconds: work } }
     },
     { at, uses: AXES.axe.uses, work: AXES.axe.workSeconds },
   )
@@ -318,7 +318,7 @@ test('chop with Chainsaw', async ({ page }) => {
       if (w === undefined) throw new Error('no __world')
       w.seats[0].actor.x = at.col + 0.5
       w.seats[0].actor.y = at.row + 0.5
-      w.seats[0].hand = { kind: 'hold', item: { kind: 'chainsaw', usesLeft: uses, workSeconds: work } }
+      w.seats[0].hand = { kind: 'hold', item: { kind: 'axe', id: 'chainsaw', usesLeft: uses, workSeconds: work } }
       const c = w.cell(at)
       if (c.kind === 'tree' && c.juvenile < 1) c.juvenile = 1
     },
@@ -343,7 +343,7 @@ test('chop with Chainsaw', async ({ page }) => {
     w.enqueue({ act: 'chop', at })
   }, at)
   await drain(page)
-  const chopped = await readWorld<{ trunk: boolean; wood: number; uses: number; kind: string }>(
+  const chopped = await readWorld<{ trunk: boolean; wood: number; uses: number; id: string }>(
     page,
     at,
     `(() => {
@@ -353,14 +353,14 @@ test('chop with Chainsaw', async ({ page }) => {
       return {
         trunk: c.trunk,
         wood,
-        kind: hand.kind === 'hold' ? hand.item.kind : 'empty',
-        uses: hand.kind === 'hold' && hand.item.kind === 'chainsaw' ? hand.item.usesLeft : 0,
+        id: hand.kind === 'hold' && hand.item.kind === 'axe' ? hand.item.id : 'empty',
+        uses: hand.kind === 'hold' && hand.item.kind === 'axe' ? hand.item.usesLeft : 0,
       }
     })()`,
   )
   expect(chopped.trunk).toBe(true)
   expect(chopped.wood).toBe(1)
-  expect(chopped.kind).toBe('chainsaw')
+  expect(chopped.id).toBe('chainsaw')
   expect(chopped.uses).toBe(AXES.chainsaw.uses - 1)
 })
 

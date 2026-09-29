@@ -6,7 +6,7 @@ Read [[standards/user-facing-text]] in full, then `messages/en/`, then the files
 
 ## Writes
 
-`messages/en/{section}.json`. Marked strings in `src/` become keys there; strip the marker. Copy slots in `docs/ui/` the same. Paste the **say** column. [[standards/lexicon]] `lex.copy` [[architecture/i18n]]
+`messages/en/{section}.json`. Marked strings in `src/` become keys there; strip the marker. Copy slots in `docs-next/` pages the same. Paste the **say** column. [[standards/lexicon]] `lex.copy` [[architecture/i18n]]
 
 Draft changelog lines for the orchestrator. Shape: [[standards/update-notes]]. Orchestrator pastes `src/game/ui/changelog.md`.
 

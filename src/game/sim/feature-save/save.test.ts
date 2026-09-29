@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest'
 import { AXES } from '../../defs/items.ts'
 import { WeatherStation } from '../building.ts'
 import { DAY_SECONDS } from '../clock.ts'
-import { makeChainsaw } from '../item.ts'
+import { makeAxe } from '../item.ts'
 import { POINTS_PER_DAY, World } from '../world.ts'
 import { dump, parse } from './save.ts'
 
@@ -18,15 +18,15 @@ describe('save.nomigrate', () => {
     expect(loaded.world.family.owned.get('boots')).toBe(1)
   })
 
-  test("`Item` `chainsaw` `usesLeft`+`workSeconds`", () => {
+  test("`Item` `axe` `id` `chainsaw` `usesLeft`+`workSeconds`", () => {
     const w = new World(1)
-    w.seats[0].hand = { kind: 'hold', item: makeChainsaw() }
+    w.seats[0].hand = { kind: 'hold', item: makeAxe('chainsaw') }
     const loaded = parse(JSON.stringify(dump(w)))
     expect(loaded.ok).toBe(true)
     if (!loaded.ok) return
     expect(loaded.world.seats[0].hand).toEqual({
       kind: 'hold',
-      item: { kind: 'chainsaw', usesLeft: AXES.chainsaw.uses, workSeconds: AXES.chainsaw.workSeconds },
+      item: { kind: 'axe', id: 'chainsaw', usesLeft: AXES.chainsaw.uses, workSeconds: AXES.chainsaw.workSeconds },
     })
   })
 })

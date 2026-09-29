@@ -413,7 +413,7 @@ export function doTend(w: World, at: Coord): void {
 
 export function canChop(w: World, at: Coord): boolean {
   if (w.act.hand.kind !== 'hold') return false
-  if (w.act.hand.item.kind !== 'axe' && w.act.hand.item.kind !== 'chainsaw') return false
+  if (w.act.hand.item.kind !== 'axe') return false
   const c = w.cell(at)
   return c.kind === 'tree' && c.juvenile >= 1 && !c.trunk
 }
@@ -422,7 +422,7 @@ export function doChop(w: World, at: Coord): void {
   if (!canChop(w, at)) return
   const c = w.cell(at)
   if (c.kind !== 'tree') return
-  const s = w.act.hand as { kind: 'hold'; item: Extract<Item, { kind: 'axe' | 'chainsaw' }> }
+  const s = w.act.hand as { kind: 'hold'; item: Extract<Item, { kind: 'axe' }> }
   s.item.usesLeft -= 1
   if (s.item.usesLeft <= 0) w.act.hand = { kind: 'empty' }
   const spot = w.dropSpot(c.base)

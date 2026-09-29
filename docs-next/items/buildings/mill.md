@@ -42,3 +42,7 @@ Hover line from `millLook`. Prompts with a matching item in hand: **Crush into {
 ## Art
 
 `prop-mill.svg`.
+
+## Sound
+
+Putting an item in plays the machine load sound. Working and a batch put out push the `mill` cues ([[systems/sound]]).

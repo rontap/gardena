@@ -4,7 +4,7 @@ import { m } from '../../paraglide/messages.js'
 import { AXES, CONTAINERS, PICKAXES, SHOVELS, SPEECH_S } from '../defs/items.ts'
 import { AdditiveStore, SeedSilo, SiloProduce, SiloSeed, SiloSpray, Pump, Well, type Coord, type RectBase } from './building.ts'
 import { cellGauge } from './look.ts'
-import { itemGauge, makeAxe, makeChainsaw, makeContainer, makePickaxe, makeShovel, type Item } from './item.ts'
+import { itemGauge, makeAxe, makeContainer, makePickaxe, makeShovel, type Item } from './item.ts'
 import { bare } from './plot.ts'
 import { Weed } from './plant.ts'
 import { SOIL_WATER_MID, Soil, WEED_CHANCE } from './soil.ts'
@@ -22,8 +22,9 @@ describe('inspect.gauge', () => {
     const rows: [Item, string, number, number][] = [
       [makeShovel('shovel'), m.hud_durability(), SHOVELS.shovel.uses, SHOVELS.shovel.uses],
       [makePickaxe('pickaxe'), m.hud_durability(), PICKAXES.pickaxe.uses, PICKAXES.pickaxe.uses],
-      [makeAxe(), m.hud_durability(), AXES.axe.uses, AXES.axe.uses],
-      [makeChainsaw(), m.hud_durability(), AXES.chainsaw.uses, AXES.chainsaw.uses],
+      [makeAxe('axe'), m.hud_durability(), AXES.axe.uses, AXES.axe.uses],
+      [makeAxe('chainsaw'), m.hud_durability(), AXES.chainsaw.uses, AXES.chainsaw.uses],
+      [makeAxe('electric-chainsaw'), m.hud_durability(), AXES['electric-chainsaw'].uses, AXES['electric-chainsaw'].uses],
       [makeContainer('bucket', 2.5), m.hud_content(), 2.5, CONTAINERS.bucket.capacityLiters],
       [{ kind: 'fertilizer', liters: 12.5, capacityLiters: 30 }, m.hud_content(), 12.5, 30],
       [{ kind: 'compost', liters: 3, capacityLiters: 20 }, m.hud_content(), 3, 20],

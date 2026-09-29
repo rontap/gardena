@@ -131,6 +131,8 @@ export type ShovelId = 'shovel' | 'better-shovel' | 'rotary-shovel'
 
 export type PickaxeId = 'pickaxe' | 'better-pickaxe' | 'diamond-pickaxe'
 
+export type AxeId = 'axe' | 'chainsaw' | 'electric-chainsaw'
+
 export type ContainerId = 'bucket' | 'large-bucket'
 
 export type MemberId = 'player' | 'husband' | 'daughter'

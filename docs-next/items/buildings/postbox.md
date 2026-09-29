@@ -16,3 +16,7 @@ Receives contract prizes that are items: tree seeds and tools ([[features/contra
 ## Art
 
 `prop-postbox.svg`.
+
+## Sound
+
+Opening and closing play the chest's lid sounds ([[systems/sound]]).

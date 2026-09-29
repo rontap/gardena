@@ -1,9 +1,6 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
   "family_title": "Family",
-  "family_blurb_player": "Works the beds. Speed, tools and the crops themselves.",
-  "family_blurb_husband": "Runs Research. Machine work, tomorrow's weather, expansion permits, and Lucky.",
-  "family_blurb_daughter": "Minds the Market. What fruit and goods sell for, contracts, and Lucky.",
   "family_point_one": "point to spend",
   "family_point_many": "points to spend",
   "family_nothing_left": "Nothing left to learn",

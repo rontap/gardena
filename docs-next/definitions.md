@@ -59,7 +59,7 @@ Every major concept, one row. The **term** is the word `docs-next/`, commits and
 | stack | — | a counted item; merges up to `stackMax` | `Countable`, `stackable` | [[features/inventory]] |
 | chest | Chest, Freezer | a placed building with item slots | `Chest`, `Freezer` | [[features/inventory]] |
 | store | Seed silo, Additive store | a building that holds seeds, or fertilizer, compost, Weed spray and sugar | `SeedSilo`, `AdditiveStore` | [[features/inventory]] |
-| tool | Shovel, Pickaxe, Axe, Chainsaw | an item with uses that works a tile | `shovel`, `pickaxe`, `axe`, `chainsaw` items | [[features/inventory]] |
+| tool | Shovel, Pickaxe, Axe, Chainsaw | an item with uses that works a tile | `shovel`, `pickaxe`, `axe` items | [[features/inventory]] |
 | SKU | shop item names | a buyable entry: building, tool, pack or bag | `SkuId`, `SKUS` | [[features/build]] |
 
 ## Buildings and machines

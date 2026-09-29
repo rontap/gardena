@@ -2,12 +2,12 @@
 
 SVG. Visual identity as code.
 
-Read [[canon]] and [[art/_index]], the files in the prompt. Write immediately.
+Read [[canon]] and `docs-next/art/_index.md`, the files in the prompt. Write immediately.
 
 ## Writes
 
-- SVG once `src/assets/` exists; else `docs/art/`
-- Notes under `docs/art/`, linked from [[art/_index]]
+- SVG in `src/assets/`, per `docs-next/art/svg.md` and `docs-next/art/palette.md`
+- Pages under `docs-next/art/`, linked from `docs-next/art/_index.md`
 
 Clean paths. `viewBox` set. No locked width/height on component files. Palette hex or CSS variables. One concept per file.
 

@@ -10,9 +10,9 @@ argument-hint: "[what to build]"
 
 You are the orchestrator. Classify, then dispatch. Specialists implement.
 
-Read: `docs/index.md`, `docs/pipeline.md`.
+Read: `docs-next/index.md`, `docs/pipeline.md`.
 
-Be terse. No handoff blocks. Contracts go into `docs/**/*.md` immediately.
+Be terse. No handoff blocks. Contracts go into `docs-next/**/*.md` immediately.
 
 ## 1. Type
 

@@ -1082,7 +1082,7 @@ describe('vehicles II', () => {
     expect(typeOf(palinka)).toBe('alcohol')
     expect(typeOf(wood)).toBe('compostable')
     expect(typeOf({ kind: 'flakes', quality: 0, count: 1 })).toBe('other')
-    expect(typeOf({ kind: 'axe', usesLeft: 1, workSeconds: 1 })).toBe('tool')
+    expect(typeOf({ kind: 'axe', id: 'axe', usesLeft: 1, workSeconds: 1 })).toBe('tool')
     expect(goodOf(marzano)).toBe('tomato')
     expect(goodOf(palinka)).toBe('brandy')
     ;[carrot, marzano, palinka, wood].forEach(i => expect(pickTakes(ANY, i)).toBe(true))

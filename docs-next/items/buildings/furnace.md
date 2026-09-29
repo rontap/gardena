@@ -63,3 +63,7 @@ Prompts: **Burn**, **Bake** with flour in hand.
 ## Art
 
 `prop-furnace.svg`, groups `off` and `on`.
+
+## Sound
+
+Putting an item in plays the machine load sound. Working and a batch put out push the `furnace` cues ([[systems/sound]]).

@@ -34,3 +34,7 @@
 ## Art
 
 `src/assets/props/{file}.svg`, groups.
+
+## Sound
+
+{Which actions on it play a sound, by cue ([[systems/sound]]). Leave the section out when none does.}

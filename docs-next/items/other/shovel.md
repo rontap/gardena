@@ -17,7 +17,7 @@ Values from `SHOVELS` in `defs/items.ts`.
 | | Shovel | Better shovel | Rotary shovel |
 |---|---|---|---|
 | id | `shovel` | `better-shovel` | `rotary-shovel` |
-| uses | 60 | 120 | 1000 |
+| uses | 60 | 120 | 480 |
 | work seconds | 1 | 0.7 | 0.3 |
 | shop | `buy-shovel`, from the start | `buy-better-shovel`, after `unlock-hardened-tools` | not sold |
 | other sources | every new seat's hand | burrow loot | contract prize (`tool` cell) |
@@ -44,5 +44,9 @@ Time per action (`shovelTime`):
 - everything else: work seconds.
 
 A shovel at 0 uses is removed from the hand.
+
+## Sound
+
+Each dig plays a hit every stretch of work, brighter on harder ground and lower on a burrow, and a turn of soil at the end. The Rotary shovel plays the same hits ([[systems/sound]]).
 
 

@@ -17,7 +17,7 @@ Law is [[standards/lexicon]]. Read it. This is the gate.
 
 | bound | free |
 |---|---|
-| text to the user, player copy, every `docs/**/*.md`, commit / PR / review text | identifiers and locals in `src/` |
+| text to the user, player copy, every `docs-next/**/*.md` and `docs/**/*.md`, commit / PR / review text | identifiers and locals in `src/` |
 
 Vault notes stay the vault term. Player copy: [[agents/game-text-writer]] pastes **say** from `docs/standards/user-facing-text.md`.
 
@@ -34,9 +34,13 @@ Both forbid coining. The player register additionally forbids the vault's own co
 
 ## Check a word
 
+`docs-next/definitions.md` names the owning page of each concept, and `docs-next/name-map.md` lists words to replace. Then:
+
 ```bash
-grep -rniE "\b<word>" docs/ src/game --include=*.md --include=*.ts --include=*.tsx | head
+grep -rniE "\b<word>" docs-next/ src/game --include=*.md --include=*.ts --include=*.tsx | head
 ```
+
+Grep `docs/` only when `docs-next/` has no page for that area yet.
 
 | result | verdict |
 |---|---|

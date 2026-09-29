@@ -28,7 +28,7 @@ import {
   type SpiritKind,
   type StallGoodId,
 } from '../ids.ts'
-import { makePickaxe, makeShovel, type Item } from '../item.ts'
+import { makeAxe, makePickaxe, makeShovel, type Item } from '../item.ts'
 import { bakeSpiritSale } from '../feature-machines/machine.ts'
 import type {
   Active,
@@ -46,6 +46,7 @@ import type {
   Lines,
   Prize,
   PrizePool,
+  PrizeTool,
   Stars,
 } from './market.h.ts'
 import { isBakedStall, isCropStall, STALL_IDS } from '../stall.ts'
@@ -714,10 +715,18 @@ function prizeSlots(stream: Spatial, day: number): readonly number[] {
   return [a, b >= a ? b + 1 : b]
 }
 
+const PRIZE_TOOLS: readonly PrizeTool[] = ['rotary-shovel', 'diamond-pickaxe', 'electric-chainsaw']
+
+export function prizeTool(tool: PrizeTool): Item {
+  if (tool === 'rotary-shovel') return makeShovel(tool)
+  if (tool === 'diamond-pickaxe') return makePickaxe(tool)
+  return makeAxe(tool)
+}
+
 function prizeFor(stream: Spatial, day: number, o: ContractOffer): Prize {
   const cell = COMPANY_PRIZES[o.company][prizeBandOf(o.difficulty)]
   const u = stream.at(day, o.slot, 32)
-  if (cell.kind === 'tool') return { kind: 'tool', tool: u < 0.5 ? 'rotary-shovel' : 'diamond-pickaxe' }
+  if (cell.kind === 'tool') return { kind: 'tool', tool: PRIZE_TOOLS[Math.floor(u * PRIZE_TOOLS.length)] }
   if (cell.kind === 'pool') return takePool(cell.pool, u, cell.count, o.reward)
   if (cell.kind === 'from-cash') return takePool(cell.pool, u, 'cash', o.reward)
   if (cell.kind === 'pool-or-vanilla') {
@@ -877,9 +886,7 @@ function payPrize(w: World, prize: Exclude<Prize, { kind: 'cash' }>, cash: numbe
   const item: Item =
     prize.kind === 'tree-seed'
       ? { kind: 'tree-seed', tree: prize.tree, variety: prize.variety, quality: 0 }
-      : prize.tool === 'rotary-shovel'
-        ? makeShovel('rotary-shovel')
-        : makePickaxe('diamond-pickaxe')
+      : prizeTool(prize.tool)
   post(w, item)
 }
 

@@ -1,5 +1,6 @@
 import { Texture } from 'pixi.js'
 import type {
+  AxeId,
   ContainerId,
   CropId,
   CaskId,
@@ -201,6 +202,7 @@ import itemFlakes from '../../assets/items/item-chilli-flakes.svg?raw'
 import itemBread from '../../assets/items/item-bread.svg?raw'
 import itemAxe from '../../assets/items/item-axe.svg?raw'
 import itemChainsaw from '../../assets/items/item-chainsaw.svg?raw'
+import itemElectricChainsaw from '../../assets/items/item-electric-chainsaw.svg?raw'
 import itemWood from '../../assets/items/item-wood.svg?raw'
 import itemAsh from '../../assets/items/item-ash.svg?raw'
 import itemFlyAgaric from '../../assets/items/item-fly-agaric.svg?raw'
@@ -364,8 +366,7 @@ export type AtlasKey =
   | 'actor-body'
   | ShovelId
   | PickaxeId
-  | 'axe'
-  | 'chainsaw'
+  | AxeId
   | 'wood'
   | 'ash'
   | 'fly-agaric'
@@ -769,6 +770,7 @@ async function load(): Promise<void> {
   put('bread', itemBread)
   put('axe', itemAxe)
   put('chainsaw', itemChainsaw)
+  put('electric-chainsaw', itemElectricChainsaw)
   put('wood', itemWood)
   put('ash', itemAsh)
   put('fly-agaric', itemFlyAgaric)
@@ -941,8 +943,7 @@ export function faceKey(item: Item): AtlasKey {
   if (item.kind === 'extract') return 'extract'
   if (item.kind === 'flakes') return 'flakes'
   if (item.kind === 'vanilla-extract') return 'vanilla-extract'
-  if (item.kind === 'axe') return 'axe'
-  if (item.kind === 'chainsaw') return 'chainsaw'
+  if (item.kind === 'axe') return item.id
   if (item.kind === 'wood') return 'wood'
   if (item.kind === 'ash') return 'ash'
   if (item.kind === 'fly-agaric') return 'fly-agaric'

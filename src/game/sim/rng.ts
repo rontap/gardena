@@ -22,7 +22,6 @@ export type SpatialId =
   | 'weed'
   | 'grass'
   | 'tree'
-  | 'skill'
   | 'grind'
   | 'contract'
   | 'weather'

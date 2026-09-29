@@ -17,7 +17,7 @@ Values from `PICKAXES` in `defs/items.ts`.
 | | Pickaxe | Hardened pickaxe | Diamond pickaxe |
 |---|---|---|---|
 | id | `pickaxe` | `better-pickaxe` | `diamond-pickaxe` |
-| uses | 25 | 40 | 1000 |
+| uses | 25 | 40 | 120 |
 | work seconds | 4 | 2 | 0.4 |
 | shop | `buy-pickaxe`, after `unlock-better-tools` | `buy-better-pickaxe`, after `unlock-hardened-tools` | not sold |
 | other sources | — | burrow loot | contract prize (`tool` cell) |
@@ -35,3 +35,7 @@ Prompt **Mine**.
 | two-tile rock | both tiles become soft untilled ground | 2; refused with fewer left | work seconds × 2 |
 
 A pickaxe at 0 uses is removed from the hand.
+
+## Sound
+
+Mining plays a pick on rock every stretch of work and the rock breaking at the end ([[systems/sound]]).

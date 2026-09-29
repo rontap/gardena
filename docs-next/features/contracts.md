@@ -170,7 +170,7 @@ Where an entry names a group, value `k` 32 picks one member uniformly:
 - Tree seeds: Plain is every tree at its Plain variety; Named and Heirloom are every tree variety of that tier (`PLAIN_TREE_POOL`, `NAMED_TREE_POOL`, `HEIRLOOM_TREE_POOL`). A tree seed prize is always one seed.
 - Annual seeds: Named and Heirloom are every annual variety of that tier, grass excluded (`NAMED_ANNUAL_POOL`, `HEIRLOOM_ANNUAL_POOL`). Plain fruit is every annual of class `fruit` except vanilla, at its Plain variety (`FRUIT_ANNUAL_POOL`).
 - "or Vanilla seeds": the Vanilla seeds are one more member beside the group's members.
-- A tool: the Rotary shovel or the Diamond pickaxe, one in two.
+- A tool: the Rotary shovel, the Diamond pickaxe or the Electric chainsaw, one in three (`PRIZE_TOOLS`).
 - "count from the reward": `ceil(reward ÷ CROPS[crop].seed)` seeds — as many as the reward would buy at the seed price.
 
 The offer still has a `reward` and `penalty`. The fertilizer and "count from the reward" prizes use the reward; the penalty and cancel fee work as for money offers.

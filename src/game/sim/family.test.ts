@@ -237,7 +237,7 @@ describe('family.grafting', () => {
     )
     w.setCell(AT, tree)
     w.setCell(below, tree)
-    w.seats[0].hand = { kind: 'hold', item: makeAxe() }
+    w.seats[0].hand = { kind: 'hold', item: makeAxe('axe') }
     w.seats[0].actor.x = AT.col + 0.5
     w.seats[0].actor.y = AT.row + 0.5
     w.enqueue({ act: 'chop', at: AT })
@@ -258,7 +258,7 @@ describe('family.grafting', () => {
     )
     g.setCell(AT, t2)
     g.setCell(below, t2)
-    g.seats[0].hand = { kind: 'hold', item: makeAxe() }
+    g.seats[0].hand = { kind: 'hold', item: makeAxe('axe') }
     g.seats[0].actor.x = AT.col + 0.5
     g.seats[0].actor.y = AT.row + 0.5
     g.enqueue({ act: 'chop', at: AT })

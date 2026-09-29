@@ -245,6 +245,10 @@ The digest carries each tree tile's variety, and at `base` the tree's happiness,
 
 `src/assets/props/prop-{species}-tree.svg`, one tile wide and two tall, with groups `trunk`, `grow`, `unripe` and one ripe group per variety the species has (`ripe`, `ripe-variant`, `ripe-heirloom`), chosen from `Tree.stage()`. Items: `item-seed-{species}.svg`, `item-graft-{species}.svg`, `item-wood.svg`; fruit faces in `src/assets/fruits/`.
 
+## Sound
+
+Chopping with an axe or chainsaw plays a knock on every stretch of work and a crack and thud at the end; digging a tree up plays the shovel's dig; watering and fertilizing play as on a plot ([[systems/sound]]).
+
 ## Invariants
 
 | id | rule | test |

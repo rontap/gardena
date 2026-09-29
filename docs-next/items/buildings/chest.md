@@ -24,3 +24,7 @@ Vehicle loading spots above and below; signal output, on when every slot holds s
 ## Art
 
 `prop-chest.svg`.
+
+## Sound
+
+Opening plays a lid opening; closing the panel plays the lid shutting ([[systems/sound]]).

@@ -175,6 +175,6 @@ function score(): ScoreNote[] {
   return out
 }
 
-export function startSong4(): Stop {
-  return playScore({ tempo: TEMPO, beats: BARS * 4, notes: score(), room: ROOM.hall, sweeps: [], kit: KIT.standard })
+export function startSong4(done: () => void): Stop {
+  return playScore({ tempo: TEMPO, beats: BARS * 4, notes: score(), room: ROOM.hall, sweeps: [], kit: KIT.standard }, done)
 }

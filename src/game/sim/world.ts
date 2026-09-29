@@ -12,17 +12,9 @@ import {
 } from '../defs/items.ts'
 import { NECRO_RESEARCH } from '../defs/necronomicon.ts'
 import { RESEARCH, SKUS } from '../defs/research.ts'
-import {
-  betterGain
-} from '../defs/skills.ts'
-import {
-  WEATHER_THROUGH_DAY
-} from '../defs/weather.ts'
-import {
-  CROPS,
-  HAPPY_MAX,
-  HAPPY_START
-} from '../defs/crops.ts'
+import { betterGain } from '../defs/skills.ts'
+import { WEATHER_THROUGH_DAY } from '../defs/weather.ts'
+import { CROPS, HAPPY_MAX, HAPPY_START } from '../defs/crops.ts'
 import {
   familiarityMax,
   qualityGain,
@@ -88,9 +80,7 @@ import {
   type Well
 } from './building.ts'
 import { Clock, DAY_SECONDS } from './clock.ts'
-import {
-  type Drop
-} from './drop.ts'
+import type { Drop } from './drop.ts'
 import { generateChunk } from './gen.ts'
 import {
   crafted,
@@ -100,31 +90,16 @@ import {
   type Item,
 } from './item.ts'
 import * as machines from './feature-machines/machines.tick.ts'
-import {
-  CONTRACT_ACTIVE,
-  CONTRACT_OFFERS,
-  emptyContracts,
-} from './feature-contracts/market.ts'
-import type {
-  ContractId,
-  Contracts,
-  DemandChip,
-  SellAllQuote
-} from './feature-contracts/market.h.ts'
-import {
-  makeStall,
-  STALL_IDS,
-  type StallMap
-} from './stall.ts'
+import { CONTRACT_ACTIVE, CONTRACT_OFFERS, emptyContracts } from './feature-contracts/market.ts'
+import type { ContractId, Contracts, DemandChip, SellAllQuote } from './feature-contracts/market.h.ts'
+import { makeStall, STALL_IDS, type StallMap } from './stall.ts'
 import { statsOf, type Modifier, type Stats } from './modifiers.ts'
 import { Plant } from './plant.ts'
 import {
   isTilled,
   type Cell
 } from './plot.ts'
-import {
-  WEED_CHANCE
-} from './soil.ts'
+import { WEED_CHANCE } from './soil.ts'
 import {
   edgeKey,
   edgeOwned as pipeOwned,
@@ -2008,8 +1983,6 @@ export class World {
     return field.canGraft(this, at)
   }
 
-  
-
   padBuildings(): PadCell[] {
     return vehicles.padBuildings(this)
   }
@@ -2017,6 +1990,5 @@ export class World {
   canStation(at: Coord): boolean {
     return machines.canStation(this, at)
   }
-
 }
 

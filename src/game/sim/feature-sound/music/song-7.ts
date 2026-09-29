@@ -243,10 +243,10 @@ function bridge(): ScoreNote[] {
   return out
 }
 
-export function startSong7(): Stop {
-  return playScore({ tempo: TEMPO, beats: 67 * 4, notes: refrain(), room: ROOM.hall, sweeps: SWEEPS, kit: KIT.deep })
+export function startSong7(done: () => void): Stop {
+  return playScore({ tempo: TEMPO, beats: 67 * 4, notes: refrain(), room: ROOM.hall, sweeps: SWEEPS, kit: KIT.deep }, done)
 }
 
-export function startSong7b(): Stop {
-  return playScore({ tempo: TEMPO, beats: 67 * 4, notes: bridge(), room: ROOM.hall, sweeps: SWEEPS, kit: KIT.deep })
+export function startSong7b(done: () => void): Stop {
+  return playScore({ tempo: TEMPO, beats: 67 * 4, notes: bridge(), room: ROOM.hall, sweeps: SWEEPS, kit: KIT.deep }, done)
 }

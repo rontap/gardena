@@ -1194,6 +1194,7 @@ function recipeOpen(machine: MachineId, done: AlmanacDone): boolean {
       return done.fermentation
     case 'grinder':
     case 'compost-box':
+    case 'refuel':
       return false
     case 'furnace':
       return done.furnace

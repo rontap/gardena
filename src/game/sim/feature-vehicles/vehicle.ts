@@ -76,6 +76,7 @@ import type {
   Drive,
   PadCell,
   Route,
+  RouteId,
   RouteStop,
   Trailer,
   TrailerPose,
@@ -92,6 +93,7 @@ export type {
   PadCell,
   Route,
   RouteDeploy,
+  RouteEnd,
   RouteId,
   RouteStop,
   SeedHopper,
@@ -709,9 +711,8 @@ export function hasCargo(w: World): boolean {
 function padSideOfLocal(w: World): 'dropoff' | 'takeup' | undefined {
   const v = driverVehicle(w, w.local)
   if (v?.pose.kind !== 'field') return undefined
-  const hit = padHit(w, { col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) })
-  if (hit === undefined || hit.side === 'refuel') return undefined
-  return hit.side
+  const side = padHit(w, { col: Math.floor(v.pose.x), row: Math.floor(v.pose.y) })?.side
+  return side === 'refuel' ? undefined : side
 }
 
 export function onDropoffPad(w: World): boolean {

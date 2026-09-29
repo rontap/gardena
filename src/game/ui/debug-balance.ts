@@ -475,7 +475,7 @@ export function compute(state: BalanceState): { rows: Row[]; offDays: number; tr
       tree ? TREE_WATER_MAX : SOIL_WATER_MAX,
     )
     const fruitSale = c.sale * qMul * purposeMulAt(variety, 'produce', g) * c.saleMul
-    const fertL = tree ? (TREE_FERT_PER_DAY[c.id] / g.daySeconds) * growSeconds : g.fertDraw * c.fertUseMul * growSeconds
+    const fertL = isTreeId(c.id) ? (TREE_FERT_PER_DAY[c.id] / g.daySeconds) * growSeconds : g.fertDraw * c.fertUseMul * growSeconds
     const fertCost = (fertL / g.fertBagLiters) * g.fertCost
     const fertUnit = g.fertPaid ? fertCost : 0
     const costSeed = c.packPrice === null || c.packUnits === null ? null : c.packPrice / c.packUnits

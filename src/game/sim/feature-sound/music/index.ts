@@ -1,4 +1,4 @@
-import type { LoopFn, Stop } from '../sound.h.ts'
+import type { LoopFn, OnceFn, Stop } from '../sound.h.ts'
 import { startSong1 } from './song-1.ts'
 import { startSong2 } from './song-2.ts'
 import { startSong3 } from './song-3.ts'
@@ -7,7 +7,7 @@ import { startSong5 } from './song-5.ts'
 import { startSong6 } from './song-6.ts'
 import { startSong7, startSong7b } from './song-7.ts'
 
-export const songs: Record<string, () => Stop> = {
+export const songs: Record<string, OnceFn> = {
   'song-1': startSong1,
   'song-2': startSong2,
   'song-3': startSong3,
@@ -19,6 +19,7 @@ export const songs: Record<string, () => Stop> = {
 }
 
 const BY_HASH: Partial<Record<string, string>> = {
+  '#music=1': 'song-1',
   '#music=2': 'song-2',
   '#music=3': 'song-3',
   '#music=4': 'song-4',
@@ -28,7 +29,28 @@ const BY_HASH: Partial<Record<string, string>> = {
   '#music=7b': 'song-7b',
 }
 
+// `song-7b` is a version of song 7 and plays only from its hash.
+const ROTATION = Object.keys(songs).filter(id => id !== 'song-7b')
+
+function another(id: string): string {
+  const rest = ROTATION.filter(s => s !== id)
+  return rest[Math.floor(Math.random() * rest.length)]
+}
+
+// A hash names one song, which repeats until stopped. Without one, song 1 plays first, then a random song other
+// than the one that just ended, and so on until stopped.
 export function farmMusic(): LoopFn {
-  const id = BY_HASH[window.location.hash] ?? 'song-1'
-  return () => songs[id]()
+  const pinned = BY_HASH[window.location.hash]
+  if (pinned !== undefined) return () => songs[pinned](() => {})
+  return () => {
+    let stop: Stop
+    const play = (id: string): void => {
+      stop = songs[id](() => {
+        stop()
+        play(another(id))
+      })
+    }
+    play('song-1')
+    return () => stop()
+  }
 }

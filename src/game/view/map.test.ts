@@ -15,6 +15,14 @@ vi.hoisted(() => {
   }))
 })
 
+// `sound.ts` builds an `AudioContext` when it is imported, and node has none. `BootOverlay` plays no sound.
+vi.mock('../sim/feature-sound/sound.ts', () => ({
+  bindSound() {},
+  unbindSound() {},
+  tickSound() {},
+  hearNotices() {},
+}))
+
 import { m } from '../../paraglide/messages.js'
 import { BootOverlay } from './map.tsx'
 

@@ -43,7 +43,22 @@ export function note(bar: number, quarters: number, notes: string[], len: Length
   return { time: `${whole}:${beat}:${six}`, notes, dur: DUR[len], vel }
 }
 
-export function playSong(song: Song): Stop {
+// Runs `done` once the transport reaches `at`, on a timer of its own so `done` may stop the song. The returned
+// function cancels it.
+function endAt(at: string | number, done: () => void): Stop {
+  const transport = getTransport()
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const id = transport.scheduleOnce(() => {
+    timer = setTimeout(done)
+  }, at)
+  return () => {
+    transport.clear(id)
+    clearTimeout(timer)
+  }
+}
+
+// A song plays its notes once through `bars` bars, then `done` runs; until it is stopped the notes go on repeating.
+export function playSong(song: Song, done: () => void): Stop {
   const synth = new PolySynth(Synth, {
     oscillator: { type: 'triangle' },
     envelope: { attack: 0.05, decay: 0.6, sustain: 0.3, release: 1.4 },
@@ -52,7 +67,7 @@ export function playSong(song: Song): Stop {
   synth.maxPolyphony = 48
   const { mix } = bus()
   const send = new Gain(0.6)
-  const space = ROOM.hall(song.bpm)
+  const space = ROOM.hall()
   synth.fan(mix, send)
   send.connect(space[0])
   space[0].connect(mix)
@@ -61,12 +76,14 @@ export function playSong(song: Song): Stop {
   }, song.notes)
   part.loop = true
   part.loopEnd = `${song.bars}m`
+  const over = endAt(`${song.bars}m`, done)
   const transport = getTransport()
   transport.bpm.value = song.bpm
   transport.position = 0
   part.start(0)
   transport.start()
   return () => {
+    over()
     part.dispose()
     synth.releaseAll()
     synth.dispose()
@@ -554,7 +571,7 @@ export type Sweep = { beat: number; len: number; from: number; to: number }
 export type Score = { tempo: Tempo; beats: number; notes: ScoreNote[]; room: Room; sweeps: Sweep[]; kit: Kit }
 type Ramp = { sec: number; dur: number; from: number; to: number }
 
-export function playScore(song: Score): Stop {
+export function playScore(song: Score, done: () => void): Stop {
   const sec = clock(song.tempo)
   const notes = song.notes.map(n => ({
     sec: sec(n.beat),
@@ -566,15 +583,16 @@ export function playScore(song: Score): Stop {
   }))
   const ramps = song.sweeps.map(s => ({ sec: sec(s.beat), dur: sec(s.beat + s.len) - sec(s.beat), from: s.from, to: s.to }))
   const bars = Array.from({ length: song.beats / 4 }, (_, i) => sec(i * 4))
-  return playNotes(notes, ramps, bars, sec(song.beats), song.tempo.bpm, song.room, patchSend, song.kit)
+  return playNotes(notes, ramps, bars, sec(song.beats), song.tempo.bpm, song.room, patchSend, song.kit, done)
 }
 
-export function playMidi(bytes: Uint8Array, bpm: number): Stop {
+export function playMidi(bytes: Uint8Array, bpm: number, done: () => void): Stop {
   const { notes, end } = readMidi(bytes, bpm)
-  return playNotes(notes, [], [], end, bpm, ROOM.hall, () => 0.6, KIT.standard)
+  return playNotes(notes, [], [], end, bpm, ROOM.hall, () => 0.6, KIT.standard, done)
 }
 
-// `bars` are the start of each 4/4 bar in seconds; each one logs `[music] bar N` when it is heard.
+// `bars` are the start of each 4/4 bar in seconds; each one logs `[music] bar N` when it is heard. `done` runs when
+// the transport reaches `end`; the notes repeat from there until the returned function is called.
 function playNotes(
   notes: MidiNote[],
   ramps: Ramp[],
@@ -584,6 +602,7 @@ function playNotes(
   room: Room,
   sendFor: (program: number) => number,
   drums: Kit,
+  done: () => void,
 ): Stop {
   const { mix } = bus()
   const space = room(bpm)
@@ -625,12 +644,14 @@ function playNotes(
   )
   part.loop = true
   part.loopEnd = end
+  const over = endAt(end, done)
   const transport = getTransport()
   transport.bpm.value = bpm
   transport.position = 0
   part.start(0)
   transport.start()
   return () => {
+    over()
     part.dispose()
     sweep.dispose()
     counter.dispose()

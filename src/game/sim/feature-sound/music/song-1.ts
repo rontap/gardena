@@ -73,6 +73,6 @@ function score(): Note[] {
   return out
 }
 
-export function startSong1(): () => void {
-  return playSong({ bpm: 63, bars: 24, notes: score() })
+export function startSong1(done: () => void): () => void {
+  return playSong({ bpm: 63, bars: 24, notes: score() }, done)
 }

@@ -278,6 +278,6 @@ function score(): ScoreNote[] {
   return out
 }
 
-export function startSong5(): Stop {
-  return playScore({ tempo: TEMPO, beats: BARS * 4, notes: score(), room: ROOM.hall, sweeps: SWEEPS, kit: KIT.standard })
+export function startSong5(done: () => void): Stop {
+  return playScore({ tempo: TEMPO, beats: BARS * 4, notes: score(), room: ROOM.hall, sweeps: SWEEPS, kit: KIT.standard }, done)
 }

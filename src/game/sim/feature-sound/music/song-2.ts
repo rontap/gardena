@@ -13,12 +13,12 @@ function midi(): Promise<Uint8Array> {
   return file
 }
 
-export function startSong2(): Stop {
+export function startSong2(done: () => void): Stop {
   let stop: Stop = () => {}
   let gone = false
   void midi().then(bytes => {
     if (gone) return
-    stop = playMidi(bytes, MIDI_BPM)
+    stop = playMidi(bytes, MIDI_BPM, done)
   })
   return () => {
     gone = true

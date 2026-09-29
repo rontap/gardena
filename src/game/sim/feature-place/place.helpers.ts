@@ -508,7 +508,8 @@ export function confirmPlace(w: World, at: Coord): void {
     made.kind === 'vehicle-detector' ||
     made.kind === 'traffic-light' ||
     made.kind === 'dispatch' ||
-    made.kind === 'water'
+    made.kind === 'water' ||
+    made.kind === 'fuel'
   ) {
     return
   }

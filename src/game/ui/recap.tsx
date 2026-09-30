@@ -1,8 +1,10 @@
 import { m } from '../../paraglide/messages.js'
 import * as Dialog from '@radix-ui/react-dialog'
 import { COMPANIES } from '../defs/companies.ts'
+import { LOAN_PACK, LOAN_PACKS } from '../defs/loan.ts'
 import { RESEARCH } from '../defs/research.ts'
 import type { HistoryEntry } from '../sim/feature-contracts/market.h.ts'
+import { skuLabel } from '../sim/item.ts'
 import type { Recap as RecapData } from '../sim/world.ts'
 import { UI_RECAP_NIGHT } from '../view/svgs.ts'
 import { Difficulty, OutcomePay, RepChange } from './feature-contracts/contracts.tsx'
@@ -69,6 +71,16 @@ export function Recap({
                 )}
                 <Line label={m.recap_tax()} sign="−" n={recap.tax} />
                 <Line label={m.names_face_water()} sign="−" n={recap.water} />
+                {recap.payback > 0 && <Line label={m.recap_payback()} sign="−" n={recap.payback} />}
+                {recap.loan > 0 && (
+                  <>
+                    <Line label={m.recap_loan()} sign="+" n={recap.loan} />
+                    <div className="text-sm text-ink/60">
+                      {m.recap_loan_seeds({ packs: LOAN_PACKS, seeds: skuLabel(LOAN_PACK), silo: m.names_building_seed_silo() })}
+                    </div>
+                  </>
+                )}
+                {recap.loanDays > 0 && <Row label={m.recap_payback_days()} value={`${recap.loanDays}`} />}
               </div>
               <div className="mt-2 flex items-center justify-between border-t border-ink/20 pt-2">
                 <span className="text-base text-ink">{m.recap_balance()}</span>

@@ -18,6 +18,7 @@ import * as queue from './queue.ts'
 import * as nets from './nets.ts'
 import { addRep, applyDayDemand, recover, tickContracts, REP_IDLE } from './feature-contracts/market.ts'
 import { tutorialTick } from './tutorial.ts'
+import { settleLoan } from './loan.ts'
 import { STALL_IDS } from './stall.ts'
 import type { FruitStack, Item, Slot } from './item.ts'
 import { POINTS_PER_DAY, stipendOf, type World } from './world.ts'
@@ -164,6 +165,7 @@ export function tickWorld(world: World, dt: number): void {
     burrow.mintSeam(world)
     field.tickTreesSeam(world)
     advanceGrandma(world, world.clock.day - 1)
+    const { loan, payback } = settleLoan(world)
     const recap = {
       day: world.clock.day - 1,
       money: world.money,
@@ -173,6 +175,9 @@ export function tickWorld(world: World, dt: number): void {
       research: world.tally.research,
       tax,
       water: bill,
+      loan,
+      payback,
+      loanDays: world.loanDays,
       contracts: world.tally.contracts,
     }
     world.recaps.push(recap)

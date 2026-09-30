@@ -195,7 +195,7 @@ test('Crop Variety Station ghost is the station', async ({ page }) => {
     w.setCell(at, { kind: 'untilled', ground: 'soft', hardness: 0, cover: { kind: 'bare' } })
     w.setCell({ col: at.col + 1, row: at.row }, { kind: 'untilled', ground: 'soft', hardness: 0, cover: { kind: 'bare' } })
   }, STATION)
-  await armSku(page, 'Crop Variety Station 65', 'Automation')
+  await armSku(page, 'Crop Variety Station 45', 'Automation')
   await hoverWorld(page, STATION.col + 0.5, STATION.row + 0.5)
   await expect(page.locator('[data-action]')).toContainText('Place Crop Variety Station')
   const art = await page.evaluate(() => {

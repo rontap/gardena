@@ -47,6 +47,6 @@ A shovel at 0 uses is removed from the hand.
 
 ## Sound
 
-Each dig plays a hit every stretch of work, brighter on harder ground and lower on a burrow, and a turn of soil at the end. The Rotary shovel plays the same hits ([[systems/sound]]).
+Each dig plays a hit every stretch of work, brighter on harder ground and lower on a burrow, and a turn of soil at the end. Digging out a burrow adds a short rising chime to the turn of soil. The Rotary shovel plays the same hits ([[systems/sound]]).
 
 

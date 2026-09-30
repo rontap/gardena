@@ -1,4 +1,5 @@
-import { SUGAR_BAG } from '../../defs/items.ts'
+import { STATION_PRICE_STEP, SUGAR_BAG } from '../../defs/items.ts'
+import { SKUS } from '../../defs/research.ts'
 import {
   ADDITIVE_BAG,
   CHUNK,
@@ -304,6 +305,13 @@ export function buyPacksBody(w: World, id: SkuId, at: Coord): void {
   w.money -= packsPrice(w, id)
   seedStoreAt(w, at).put(made.crop, 'base', boughtSeedQuality(w, made.crop), 5 * made.count)
   w.ping()
+}
+
+export function skuPrice(w: World, id: SkuId): number {
+  const { price, tab } = SKUS[id]
+  const stations = id === 'buy-research-station' ? [...w.machines.values()].filter(at => w.cell(at).kind === 'station').length : 0
+  const p = price + STATION_PRICE_STEP * stations
+  return w.weather(w.clock.day) === 'drought' && (tab === 'seeds' || tab === 'utility') ? p * 2 : p
 }
 
 export function packsPrice(w: World, id: SkuId): number {

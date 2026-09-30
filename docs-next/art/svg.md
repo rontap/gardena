@@ -85,6 +85,7 @@ The variety groups follow [[art/variants]]. A file carries exactly the groups th
 | gardener | `actor.svg`, one pose, straw hat, `roof` shirt, `water` overalls; the `hat` group is tinted per player (`HAT` in `atlas.ts`): seat 0 straw gold, seats 1 to 3 pink, cyan and violet, off the palette on purpose so players tell each other apart on grass |
 | company marks | `0 0 24 24` pixel marks in two or three palette tokens |
 | HUD glyphs | weather and phase glyphs `0 0 16 16`, readable at 20 px on `house` |
+| browser icon | `public/favicon.svg`, `0 0 16 16`: a tomato in `fruit-red` with an `ink` outline, `roof` shade on the lower right, a `house` glint, and a `leaf` and `grass-dark` calyx and stem. `apple-touch-icon.png` (180 px, on `house`) and `icon-512.png` (512 px, transparent) are its rects drawn at 10 and 30 px per unit; redraw them when the SVG changes |
 
 Pad marks on the map (vehicle load and unload, refuel, hangar return) are drawn without opacity; the view sets it.
 

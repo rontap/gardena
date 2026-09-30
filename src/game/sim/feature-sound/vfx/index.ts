@@ -123,6 +123,23 @@ const lidShut = (): Layer[] => [
   { kind: 'noise', at: 0, len: 0.03, rise: 0.002, vol: 0.2, band: 'bandpass', hz: 2000, to: 2000, q: 2 },
 ]
 
+const thump = (): Layer[] => [
+  { kind: 'noise', at: 0, len: 0.14, rise: 0.004, vol: 0.35, band: 'lowpass', hz: vary(420, 0.1), to: 140, q: 0.8 },
+  { kind: 'tone', at: 0, len: 0.1, rise: 0.004, vol: 0.18, wave: 'sine', hz: vary(95, 0.08), to: 55 },
+]
+
+const chime = (): Layer[] => [
+  { kind: 'tone', at: 0.12, len: 0.3, rise: 0.004, vol: 0.12, wave: 'sine', hz: 784, to: 784 },
+  { kind: 'tone', at: 0.19, len: 0.3, rise: 0.004, vol: 0.12, wave: 'sine', hz: 988, to: 988 },
+  { kind: 'tone', at: 0.26, len: 0.45, rise: 0.004, vol: 0.14, wave: 'sine', hz: 1175, to: 1175 },
+  { kind: 'tone', at: 0.26, len: 0.2, rise: 0.004, vol: 0.03, wave: 'triangle', hz: 2350, to: 2350 },
+]
+
+const click = (): Layer[] => [
+  { kind: 'noise', at: 0, len: 0.03, rise: 0.001, vol: 0.22, band: 'bandpass', hz: vary(3200, 0.05), to: 2600, q: 4 },
+  { kind: 'tone', at: 0, len: 0.025, rise: 0.001, vol: 0.06, wave: 'triangle', hz: 1400, to: 900 },
+]
+
 const LOAD: Hit = { every: Infinity, play: () => sfx(load) }
 
 const HITS: Partial<Record<Intent['act'], Hit>> = {
@@ -150,10 +167,21 @@ const DONE: Partial<Record<Intent['act'], OnceFn>> = {
   chop: sfx(trunkFall),
   water: sfx(soak),
   harvest: sfx(pluck),
+  drop: sfx(thump),
 }
 
 const OPEN = sfx(lidOpen)
 const SHUT = sfx(lidShut)
+const CHIME = sfx(chime)
+const CLICK = sfx(click)
+
+export function burrowOnce(): OnceFn {
+  return CHIME
+}
+
+export function clickOnce(): OnceFn {
+  return CLICK
+}
 
 export function actHit(act: Intent['act']): Hit | undefined {
   return HITS[act]

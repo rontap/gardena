@@ -18,6 +18,7 @@ The farm's store for seeds and the place to buy seed packs.
 - Taking a stack puts all of it in the hand. If the hand holds seeds of the same crop and variety, the counts merge and quality is averaged.
 - Buying a pack (`pack-{crop}`) adds 5 Plain seeds to the silo (the count in `skuItem`). Buying five packs at once adds 25 and costs 5 × the pack price × 0.95 (`packsPrice`). Bought seed quality is `seedBankQuality` of the `seed-bank` skill plus `FAMILIARITY_SEED_QUALITY` × the crop's familiarity, at most 1.
 - A purchase that does not fit is refused with **Seed silo full**.
+- When a day ends with money below `LOAN_BELOW` and this silo empty, the loan puts `LOAN_PACKS` packs of `LOAN_PACK` into it ([[features/weather-day]]).
 
 The Seeding silo (`buy-silo-seed`) is a separate building for vehicles with the same store rules ([[features/vehicles]]).
 
@@ -32,3 +33,7 @@ Prompt **Open Seed silo** (`prompt_open`). Panel: `store.tsx`.
 ## Art
 
 `prop-seed-silo.svg`.
+
+## Sound
+
+Opening and closing the panel play the chest's open and close sounds ([[systems/sound]]).

@@ -9,14 +9,14 @@ Music plays while a farm is on screen. It has to be steady enough to leave on fo
 | song | score | built from |
 |---|---|---|
 | 1 | G minor, quarter = 63, one triangle voice, an eighth-note figure, `ROOM.hall` | 8-bit themes |
-| 2 | `track-2.mid`, E♭ major waltz, quarter = 115, `ROOM.hall` | an orchestral MIDI file |
-| 3 | F major, quarter = 72, `ROOM.echo` | Chrono Trigger, Schala's Theme |
-| 4 | G major, quarter = 106, `ROOM.hall` | Minecraft (C418), The Sims build mode; "busywork". **The reference** |
-| 5 | E♭ major, quarter = 140 with the drums in half time, filter sweeps, bends | the buildup and wordless "OHH" line of a live DJ cover of "Car Radio", from an audio analysis |
-| 6 | C major, quarter = 90, `ROOM.echo`, song 4's bar map with a new line | cottagecore, 8/16-bit themes |
-| 7 | B minor, quarter = 95, `ROOM.hall`, `KIT.deep`; `#music=7b` is a second version | a track the developer supplied, from its analysis in `music-analysis/music-palace/`, repeats cut to about 3 minutes |
+| 2 | `track-2.mid`, E♭ major waltz, quarter = 110.21, `ROOM.hall` | an orchestral MIDI file |
+| 3 | F major, quarter = 43.2, `ROOM.echo` | Chrono Trigger, Schala's Theme |
+| 4 | G major, quarter = 93.63, `ROOM.hall` | Minecraft (C418), The Sims build mode; "busywork". **The reference** |
+| 5 | E♭ major, quarter = 163.33 with the drums in half time, filter sweeps, bends | the buildup and wordless "OHH" line of a live DJ cover of "Car Radio", from an audio analysis |
+| 6 | C major, quarter = 67.5, `ROOM.echo`, song 4's bar map with a new line | cottagecore, 8/16-bit themes |
+| 7 | B minor, quarter = 75.21, `ROOM.hall`, `KIT.deep`; `#music=7b` is a second version | a track the developer supplied, from its analysis in `music-analysis/music-palace/`, repeats cut to about 3 minutes |
 
-`#music=N` plays one song on repeat. Without it, song 1 plays first, then a random song other than the one that just ended; 7b is never drawn. Score details per song are in [[systems/sound]].
+Each tempo is the speed the developer heard and approved that song at, played alone. `#music=N` plays one song on repeat. Without it, song 1 plays first, then, `GAP` seconds after a song ends, a random song other than that one; 7b is never drawn. Score details per song are in [[systems/sound]].
 
 ## Song 4 is the reference
 
@@ -36,13 +36,13 @@ What makes it work:
 
 - **Question and answer.** The theme climbs the chord for two bars, then falls by step for two and stops on D over the D chord, a half cadence. The fall is the best part of the song.
 - **The answer is the way home.** Each refrain ends on `ANSWER_HOME`, that same fall note for note, over C then G. The phrase that left the theme open closes the refrain.
-- **Slow down on the returning phrase only.** `TEMPO` eases from 106 to 80 across the first bar of `ANSWER_HOME` and is back at 106 on the G. Both numbers were set by ear.
+- **Slow down on the returning phrase only.** `TEMPO` eases from 93.63 to 70.67 across the first bar of `ANSWER_HOME` and is back at 93.63 on the G. Both numbers were set by ear.
 - **The busy layer never stops,** except in `home`: there woodblock, piano eighths and pizzicato fall silent, the piano takes the woodblock's ti-ti ta inside the melody, lands on a rolled low G chord, and a quiet arpeggio restarts the motion.
 - **Build by density.** The woodblock goes tick, ti-ti ta, straight eighths; each section adds one part.
 - **The piano's left hand alternates root and fifth** on the beat, with the chord on beats 2½ and 4½.
 - **The refrain repeats once,** identical, ending included.
 
-Song 6 follows the same map in C major: a ti-ti, ti-ti, triplet phrase, the woodblock louder than every other part, `home` over F then C with the quarter easing from 90 to 68, recorder theme, ocarina refrain, harp through to `home`, cello holding the root under the refrain and in octaves through the bridge.
+Song 6 follows the same map in C major: a ti-ti, ti-ti, triplet phrase, the woodblock louder than every other part, `home` over F then C with the quarter easing from 67.5 to 51, recorder theme, ocarina refrain, harp through to `home`, cello holding the root under the refrain and in octaves through the bridge.
 
 ## Preferences
 

@@ -255,6 +255,7 @@ export function doShovel(w: World, at: Coord): boolean {
   if (c.kind === 'untilled' && c.cover.kind === 'burrow') {
     extractBurrow(w, at)
     w.burst('burrow-pop', at)
+    w.cue({ kind: 'burrow' })
     return true
   }
   if (c.kind === 'growing' || c.kind === 'ripe') {

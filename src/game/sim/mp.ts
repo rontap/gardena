@@ -314,6 +314,7 @@ export function digestParts(world: World): Record<string, unknown> {
   }))
   return {
     money: world.money,
+    loanDays: world.loanDays,
     day: world.clock.day,
     t: q(world.clock.t),
     weather: world.weather(world.clock.day),

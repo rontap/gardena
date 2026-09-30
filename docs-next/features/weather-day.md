@@ -1,6 +1,6 @@
 # Weather and day
 
-Code: `clock.ts` (day, phases), `weather.ts` and `defs/weather.ts` (weather table and effects), the end-of-day branch of `tickWorld` in `tick.ts`, `stipendOf` and `STIPEND` in `world.ts`, `ui/recap.tsx` (end-of-day summary); see [[code-map]].
+Code: `clock.ts` (day, phases), `weather.ts` and `defs/weather.ts` (weather table and effects), the end-of-day branch of `tickWorld` in `tick.ts`, `stipendOf` and `STIPEND` in `world.ts`, `settleLoan` in `loan.ts` and `defs/loan.ts` (loan), `ui/recap.tsx` (end-of-day summary); see [[code-map]].
 Unlocked: from the start. Tomorrow's weather with `unlock-weather-station` (**Weather Forecast**, [[features/research]]).
 
 ## Purpose
@@ -24,7 +24,7 @@ The phase is read by the Day sensor ([[items/buildings/sensors-environment]]) an
 
 When `t` reaches `DAY_SECONDS`, the day number goes up and the end of day runs before anything else happens on the new day ([[systems/tick]] lists every step). What the player sees from it:
 
-- money: + grandma's support, − land tax ([[features/expansion]]), − the water bill ([[features/water]]); money may go below zero;
+- money: + grandma's support, − land tax ([[features/expansion]]), − the water bill ([[features/water]]), − the loan payback, + a new loan (below); money may go below zero;
 - rotten produce left on the ground for `ROTTEN_GROUND_DAYS` is cleared, and weeds full-grown for `WEED_GONE_DAYS` turn to grass ([[features/weeds]]);
 - new burrows, trees move through their seasons, grandma's story moves on ([[features/burrow]], [[features/trees]], [[features/necronomicon]]);
 - contracts past their deadline are settled, the contract board changes, and reputation drops by `REP_IDLE` if no contract was accepted that day ([[features/contracts]]); Market demand is set for the new day ([[features/market]]);
@@ -37,11 +37,20 @@ The farm does not pause at the end of the day, and open panels stay open. Work i
 
 `stipendOf(endedDay)` pays money for the first days, from the `STIPEND` bands: a fixed amount through day 3, a smaller one through day 6, a smaller one through day 10, then nothing.
 
+### Loan
+
+The loan gives a farm with little money and an empty Seed silo seeds to plant and money to start with. `settleLoan` runs at the end of the day, after the support, tax, water bill, burrows, trees and grandma's story, before the summary is written:
+
+1. Payback: while `World.loanDays` is above 0, `LOAN_PAYBACK` is taken from money and `loanDays` goes down by 1.
+2. Loan: if money is then below `LOAN_BELOW` and the Seed silo (`World.silo`) holds no seeds, `LOAN_PACKS` packs of `LOAN_PACK` go into the Seed silo at the quality a bought pack has (`boughtSeedQuality`), `LOAN_CASH` is added to money, and `loanDays` goes up by `LOAN_DAYS`.
+
+Only the Seed silo counts: seeds in a hand, an inventory or a Seeding silo, and plants in the ground, do not stop a loan. A loan while one is being paid back adds `LOAN_DAYS` more days; the payback per day stays `LOAN_PAYBACK`. Payback can take money below zero.
+
 ### End-of-day summary
 
 Each ended day adds a `Recap` to `World.recaps` and its day to `recapUnseen`. The Command Center shows **Day {n} Finished** for each unread summary; clicking it opens the summary, which pauses a solo game while open ([[shell]]). Closing it (**Close**, Escape or the backdrop) marks it read (`seeRecap`); the skill point was already granted at the end of the day.
 
-The summary shows: **Day {n}**, **Harvested** and **Lost** plant counts, research finished that day, each contract settled (**Completed**, **Missed**, **Cancelled**) and **A new board is up.**, then the money lines **Support from grandma** (only when not 0), **Tax**, **Water**, and **Balance**.
+The summary shows: **Day {n}**, **Harvested** and **Lost** plant counts, research finished that day, each contract settled (**Completed**, **Missed**, **Cancelled**) and **A new board is up.**, then the money lines **Support from grandma** (only when not 0), **Tax**, **Water**, **Loan payback** (only on a payback day), **Loan** with **{packs} packs of {seeds} went into the {silo}.** under it (only on a loan day), **Days of payback left** (only while `loanDays` is above 0), and **Balance**. `Recap.loan`, `Recap.payback` and `Recap.loanDays` hold those numbers for the ended day.
 
 A large **Day {n}** banner shows over the map for `clock.banner` seconds after a new day starts.
 
@@ -92,7 +101,7 @@ A guest sees the same days, weather and end-of-day summaries.
 
 ## Save and sync
 
-Saved: `clock` (`day`, `t`), `recaps` and `recapUnseen`, the day's `tally`. Not saved: the weather table (rebuilt from the seed) and `pumpLiters` (0 on load). The digest carries today's weather.
+Saved: `clock` (`day`, `t`), `recaps` and `recapUnseen`, the day's `tally`, `loanDays`. Not saved: the weather table (rebuilt from the seed) and `pumpLiters` (0 on load). The digest carries today's weather and `loanDays`.
 
 ## Art
 
@@ -112,6 +121,7 @@ Weather glyphs `ui/ui-weather-{clear,rain,dry,flood,drought}.svg`, `0 0 16 16`; 
 | `weather.shop` | on Drought, `seeds` and `utility` prices double; other tabs do not change | `weather.test.ts` |
 | `weather.forecast` | tomorrow's weather shows only after `unlock-weather-station` | `weather.test.ts` |
 | `day.stipend`, `day.recap` | support follows the `STIPEND` bands; a summary is kept per ended day and closing it grants nothing | `day.test.ts` |
+| `day.loan` | after the day's money changes and payback, money below `LOAN_BELOW` with an empty Seed silo gives `LOAN_PACKS` packs of `LOAN_PACK`, `LOAN_CASH` and `LOAN_DAYS` more payback days of `LOAN_PAYBACK` each | `day.test.ts` |
 
 ## When you change this
 

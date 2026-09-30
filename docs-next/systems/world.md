@@ -62,7 +62,7 @@ Changes that are not player actions (growth, water, machines, vehicles on routes
 
 The starting buildings are fields: `house`, `warehouse`, `postbox`, `silo`, `additives`, `pumps`. Placed buildings that other code looks up by type are also kept in lists: `taps`, `stills`, `wells`, `waterSystems`, `hangars`, and the three field silo types. Pipes (`segments`), sprinklers, wires, fences and paving are stored outside the tile grid, keyed by edge, corner or tile. Items on the ground are in `drops`.
 
-`money`, `clock`, `done` and `job` (research), `family` and `points` (skills), `contracts`, `stall` (Market), `recaps` and `recapUnseen` (end-of-day summaries), `grandma` and `grandmaUnseen`, `tutorial`, `familiarity`, `vehicles`, `trailers` and `routes` are fields on `World`.
+`money`, `loanDays` (loan payback days left, [[features/weather-day]]), `clock`, `done` and `job` (research), `family` and `points` (skills), `contracts`, `stall` (Market), `recaps` and `recapUnseen` (end-of-day summaries), `grandma` and `grandmaUnseen`, `tutorial`, `familiarity`, `vehicles`, `trailers` and `routes` are fields on `World`.
 
 Whether an end-of-day summary is unread is stored in `recapUnseen`.
 

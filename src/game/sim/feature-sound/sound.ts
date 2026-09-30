@@ -10,7 +10,7 @@ import { farmMusic } from './music/index.ts'
 import { soundKey, type OnceFn, type SoundCue } from './sound.h.ts'
 import { VOLUME_DEFAULT } from '../settings.ts'
 import { armAudio, holdAudio, musicGain } from './sound.utils.ts'
-import { actHit, actOnce, closeOnce, noticeOnce, openOnce } from './vfx/index.ts'
+import { actHit, actOnce, burrowOnce, clickOnce, closeOnce, noticeOnce, openOnce } from './vfx/index.ts'
 import { armEffects, effectsGain, holdEffects } from './vfx/sfx.ts'
 
 type Count = { n: number }
@@ -69,6 +69,7 @@ function keep(key: string, n: number, play: ReturnType<typeof farmMusic> | undef
 
 function onceOf(c: SoundCue) {
   if (c.kind === 'act') return actOnce(c.act)
+  if (c.kind === 'burrow') return burrowOnce()
   if (c.kind === 'open') return openOnce(c.building)
   if (c.kind === 'close') return closeOnce(c.building)
   if (c.kind === 'machine') return machineOnce(c.machine)
@@ -144,11 +145,15 @@ export function volumeSound(music: number, effects: number): void {
   effectsGain(effects / VOLUME_DEFAULT)
 }
 
-export function holdSound(paused: boolean): void {
-  held = paused
+export function clickSound(): void {
+  shoot('click', clickOnce())
+}
+
+export function holdSound(away: boolean): void {
+  held = away
   if (!armed) return
-  holdAudio(paused)
-  holdEffects(paused)
+  holdAudio(away)
+  holdEffects(away)
 }
 
 export function bindSound(world: World): void {
@@ -182,7 +187,11 @@ export function hearNotices(world: World): void {
 }
 
 export function tickSound(world: World): void {
-  if (live !== world || held) return
+  if (live !== world) return
+  if (held) {
+    world.drainCues()
+    return
+  }
   sync(world)
   const seen = new Set<string>()
   world.drainCues().forEach(c => {

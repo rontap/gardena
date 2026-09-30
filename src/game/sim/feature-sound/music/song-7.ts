@@ -2,7 +2,7 @@ import type { Stop } from '../sound.h.ts'
 import { DRUM, GM, KIT, ROOM, playScore, type ScoreNote, type Sweep, type Tempo } from '../sound.utils.ts'
 import { grid, line } from './score.ts'
 
-const TEMPO: Tempo = { bpm: 95, slow: [] }
+const TEMPO: Tempo = { bpm: 75.21, slow: [] }
 
 const SWEEPS: Sweep[] = [
   { beat: 0, len: 108, from: 205, to: 1755 },

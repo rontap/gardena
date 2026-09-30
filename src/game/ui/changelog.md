@@ -1,3 +1,21 @@
+# 2.10.2 QoL VII
+
+More sound effects, music fixes, Settings on the main menu, a loan for a farm with no money and no seeds, and a tomato icon.
+
+- ✨ Added sound effects.
+  - The buttons on the left and top edges of the screen click when pressed.
+  - Digging out a Burrow plays a short chime.
+  - Putting an item down on the ground makes a low thump.
+  - The Seed silo, Additive store, Seeding silo and Additive silo make the chest's sounds when they open and close.
+- ✨ Added a loan. When a day ends with less than $10 and no seeds in the Seed silo, 2 packs of Carrot seeds go into the Seed silo and you get $4. You pay back $2 at the end of each of the next 5 days. A second loan while you are still paying adds 5 more days of payback. The end-of-day summary shows the loan, the payback and the days of payback left.
+- ✨ Added Settings to the main menu.
+- ✨ Added a tomato icon for the browser tab and for shortcuts on a phone's home screen.
+- 🔧 Changed pausing. Pause no longer stops the music or the sound effects. With Pause when this tab is not in front on, music and sound effects stop while you are in another window or tab.
+- 🔧 Changed the music. After a song ends, 30 seconds pass before the next one starts.
+- 🔧 Changed the Crop Variety Station price. The first one costs $45, and each station already on the farm adds $15.
+- 🔧 Changed the inspect panel. Its bars and numbers for the tile under the pointer update while you hover.
+- 🐛 Fixed songs playing faster or slower depending on the song that played before them. Each song plays at the speed it has when it plays on its own.
+
 # 2.10.0 Sound
 
 Gardena has music and sound effects, each with its own volume in Settings.

@@ -274,6 +274,7 @@ export class World {
   readonly family: Family
   points = 0
   clearance = 0
+  loanDays = 0
   readonly seats: Seat[]
   local: SeatId = 0
   act: Seat
@@ -374,6 +375,7 @@ export class World {
       this.family = h.family
       this.points = h.points
       this.clearance = h.clearance
+      this.loanDays = h.loanDays
       this.seats = h.seats
       this.act = this.seats[0]
       this.owned.length = 0
@@ -833,10 +835,7 @@ export class World {
   }
 
   skuPrice(id: SkuId): number {
-    let p = SKUS[id].price
-    const tab = SKUS[id].tab
-    if (this.weather(this.clock.day) === 'drought' && (tab === 'seeds' || tab === 'utility')) p *= 2
-    return p
+    return place.skuPrice(this, id)
   }
 
   marketOpen(): boolean {

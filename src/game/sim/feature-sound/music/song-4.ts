@@ -5,10 +5,10 @@ import { line } from './score.ts'
 const BARS = 48
 // Each refrain slows across the first bar of `ANSWER_HOME`, so the phrase that returns is the one that slows, into the G.
 const TEMPO: Tempo = {
-  bpm: 106,
+  bpm: 93.63,
   slow: [
-    { from: 25 * 4, to: 26 * 4, bpm: 80 },
-    { from: 41 * 4, to: 42 * 4, bpm: 80 },
+    { from: 25 * 4, to: 26 * 4, bpm: 70.67 },
+    { from: 41 * 4, to: 42 * 4, bpm: 70.67 },
   ],
 }
 

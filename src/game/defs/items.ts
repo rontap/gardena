@@ -105,6 +105,7 @@ export const FUEL_WORTH = {
 
 export const STATION_SECONDS_BASE = 30
 export const STATION_SECONDS_STEP = 3
+export const STATION_PRICE_STEP = 15
 export const FAMILIARITY_GAIN: { readonly [K in VarietyTier]: number } = { base: 1, variant: 2, heirloom: 3 }
 
 export function stationSeconds(level: number): number {

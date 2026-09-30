@@ -116,6 +116,7 @@ Every major concept, one row. The **term** is the word `docs-next/`, commits and
 | phase | Sunrise, Midday, Sunset, Twilight | a share of the day | `DayPhase`, `Clock.phase()` | [[features/weather-day]] |
 | end of day | → end of day | the step that crosses `DAY_SECONDS`: income, costs, summary | `Clock.advance` returning `'seam'` | [[systems/tick]] |
 | end-of-day summary | Day {n} turned in → End of day {n} | the record of one ended day | `Recap`, `World.recaps` | [[features/weather-day]] |
+| loan | Loan, Loan payback | seeds and money given at the end of a day with money below `LOAN_BELOW` and an empty Seed silo, paid back over the next days | `settleLoan`, `World.loanDays` | [[features/weather-day]] |
 | weather | Clear, Rain, Dry, Flood, Drought | the day's type, from the seed | `WeatherKind`, `World.weather(day)` | [[features/weather-day]] |
 
 ## Story

@@ -26,3 +26,7 @@ Vehicle loading spots above and below; signal output, on when full ([[systems/bu
 ## Art
 
 `prop-additive-store.svg`.
+
+## Sound
+
+Opening and closing the panel play the chest's open and close sounds ([[systems/sound]]).

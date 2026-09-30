@@ -2,7 +2,7 @@ import trackUrl from './track-2.mid?url'
 import type { Stop } from '../sound.h.ts'
 import { playMidi } from '../sound.utils.ts'
 
-const MIDI_BPM = 115
+const MIDI_BPM = 110.21
 
 let file: Promise<Uint8Array> | undefined
 

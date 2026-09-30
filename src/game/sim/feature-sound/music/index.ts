@@ -1,4 +1,5 @@
 import type { LoopFn, OnceFn, Stop } from '../sound.h.ts'
+import { wait } from '../sound.utils.ts'
 import { startSong1 } from './song-1.ts'
 import { startSong2 } from './song-2.ts'
 import { startSong3 } from './song-3.ts'
@@ -37,8 +38,10 @@ function another(id: string): string {
   return rest[Math.floor(Math.random() * rest.length)]
 }
 
-// A hash names one song, which repeats until stopped. Without one, song 1 plays first, then a random song other
-// than the one that just ended, and so on until stopped.
+const GAP = 30
+
+// A hash names one song, which repeats until stopped. Without one, song 1 plays first, then, `GAP` seconds after a
+// song ends, a random song other than that one, and so on until stopped.
 export function farmMusic(): LoopFn {
   const pinned = BY_HASH[window.location.hash]
   if (pinned !== undefined) return () => songs[pinned](() => {})
@@ -47,7 +50,7 @@ export function farmMusic(): LoopFn {
     const play = (id: string): void => {
       stop = songs[id](() => {
         stop()
-        play(another(id))
+        stop = wait(GAP, () => play(another(id)))
       })
     }
     play('song-1')

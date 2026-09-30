@@ -31,7 +31,7 @@ Pausing on open only applies to solo play (`overlayPause` checks `role === 'off'
 
 Panels opened by walking up to a building (`cued`) clear the seat's walk-up state (`ackCue`) when closed.
 
-With **Pause when this tab is not in front** on ([[menu]]), losing window focus or hiding the tab pauses a solo game, and returning resumes it if the pause came from that.
+With **Pause when this tab is not in front** on ([[menu]]), losing window focus or hiding the tab sets `away` in `App.tsx`: music and sound effects hold, and a solo game that was running pauses. Returning clears `away` and resumes the game if the pause came from that.
 
 ## Command Center
 
@@ -43,7 +43,7 @@ Hovering a row outlines its tiles on the map. Left click runs the row's action (
 
 ## Inspect and hover
 
-`Status` shows, for the hovered tile: the name line from `lookText` (crop and variety, building name and state, sensor on or off, what the plot is waiting for), and bars from `status.tsx` (Growth, Happiness, Water, Fertilizer for a growing plant; Quality and Freshness for a ripe plot or fruit; Weed resistance for an empty plot). The hover line uses the same `readPrompt` result as a click ([[systems/commands]]). Hovering a Build card or a disabled control shows its detail in the right-hand callout (`callout-hover.tsx`).
+`Status` shows, for the hovered tile: the name line from `lookText` (crop and variety, building name and state, sensor on or off, what the plot is waiting for), and bars from `status.tsx` (Growth, Happiness, Water, Fertilizer for a growing plant; Quality and Freshness for a ripe plot or fruit; Weed resistance for an empty plot). The hover line uses the same `readPrompt` result as a click ([[systems/commands]]). `Status` repaints every `REFRESH_MS` (`useRefresh`), so its name line and bars follow the tile while the pointer rests on it. Hovering a Build card or a disabled control shows its detail in the right-hand callout (`callout-hover.tsx`).
 
 ## Lens
 
@@ -62,7 +62,7 @@ The main menu, the Gear menu, Settings and the version history are on [[menu]].
 
 ## Sound
 
-A new Command Center row pushes a `notice` cue, once per row `id`. Pause suspends music and sound effects; the volumes are in Settings ([[systems/sound]], [[menu]]).
+A new Command Center row pushes a `notice` cue, once per row `id`. Every rail button, and the × that clears a locked lens, plays a click when pressed (`clickSound`). **Pause** does not stop music or sound effects; leaving the window with **Pause when this tab is not in front** on holds both. The volumes are in Settings ([[systems/sound]], [[menu]]).
 
 ## Type and colour
 

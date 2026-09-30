@@ -16,8 +16,9 @@ The column, top to bottom: the `ui-menu.svg` picture, **Gardena**, the version n
 | **Load Save** / **Load Save ({stamp})** | loads the save slot; greyed when the slot is empty; `{stamp}` is the slot's save time |
 | **Upload Save…** | opens a file picker for a `.json` file, loads it, and writes it to the slot |
 | **Join Multiplayer** | opens the join fields in the same column ([[features/multiplayer]]) |
+| **Settings** | opens Settings |
 
-All four start sound (`armSound`, [[systems/sound]]). A load that fails leaves the menu up with one red line under the buttons, by `LoadFailReason`: **The file is in an unknown format.**, **The file is not a gardena format**, **This savefile is from an older Gardena version and could not be loaded**, **The savefile could not be loaded**. A cancelled file picker is not a failure. After a multiplayer session ends, its reason is shown in the same place.
+**New Game**, **Load Save**, **Upload Save…** and the join start sound (`armSound`, [[systems/sound]]). A load that fails leaves the menu up with one red line under the buttons, by `LoadFailReason`: **The file is in an unknown format.**, **The file is not a gardena format**, **This savefile is from an older Gardena version and could not be loaded**, **The savefile could not be loaded**. A cancelled file picker is not a failure. After a multiplayer session ends, its reason is shown in the same place.
 
 The URL `#start_now` or `?start=now` skips this menu and starts a new farm with the tutorial off; the e2e tests start this way.
 
@@ -39,20 +40,20 @@ While a multiplayer session is open, **Load Save** and **Upload Save…** are gr
 
 ## Settings
 
-Reached only from the Gear menu. Settings belong to the browser, not to a farm: `sim/settings.ts` keeps them in local storage under `gardena.settings`, and every farm, new, loaded or uploaded, reads the same values. They are not in `Save`, not in `World`, and not sent to other players.
+Reached from the main menu and the Gear menu. On the main menu sound has not started, so a volume moved there is not heard. Settings belong to the browser, not to a farm: `sim/settings.ts` keeps them in local storage under `gardena.settings`, and every farm, new, loaded or uploaded, reads the same values. They are not in `Save`, not in `World`, and not sent to other players.
 
 | row | stored as | default | does |
 |---|---|---|---|
 | **Music** | `music`, 0 to 100 | `VOLUME_DEFAULT` | volume of the songs |
 | **Sound effects** | `effects`, 0 to 100 | `VOLUME_DEFAULT` | volume of every sound effect |
 | **Reduced motion** | `reducedMotion` | off | picture effects and the menu farm hold still (`data-reduced-motion` on the page, `vfxReduced()`); the system's reduced-motion setting does the same |
-| **Pause when this tab is not in front** | `pauseWhenHidden` | off | a solo farm pauses when the window loses focus or the tab is hidden, and resumes on return if this setting paused it |
+| **Pause when this tab is not in front** | `pauseWhenHidden` | off | while the window has lost focus or the tab is hidden, music and sound effects hold; a solo farm also pauses, and resumes on return if this setting paused it |
 
 A volume row is 20 bars in steps of 5, with a mark at `VOLUME_DEFAULT`; pointer and arrow keys set it, Home is 0 and End is 100. The gain is value ÷ `VOLUME_DEFAULT`, so the default plays at the level each song and sound was made at ([[systems/sound]]).
 
 The page edits a draft. Moving a volume plays the draft volume at once, so the player hears it while choosing. **Save** writes the draft and returns to the menu. **Revert to default** sets the draft to `SETTINGS_DEFAULT` and writes nothing. ← (**Back**), × and closing the menu discard the draft and restore the saved volumes.
 
-**Pause when this tab is not in front** acts only in a solo game; in a multiplayer session pause belongs to the host. It does not resume a farm the player paused themselves.
+**Pause when this tab is not in front** pauses the farm only in a solo game; in a multiplayer session pause belongs to the host. It holds music and sound effects on the player's own client in every game, including a farm that was already paused. It does not resume a farm the player paused themselves.
 
 ## Changelog
 
@@ -91,7 +92,7 @@ Every error throws `ChangelogParseError` when the module loads, so a malformed f
 | `settings.store` | settings live in local storage, never in `Save`, `World` or the wire | none |
 | `settings.draft` | only **Save** writes; **Revert to default**, **Back** and × do not | none |
 | `settings.hear` | a draft volume is heard while the page is open; leaving without **Save** restores the saved volumes | none |
-| `settings.solo` | **Pause when this tab is not in front** acts only in a solo game | none |
+| `settings.solo` | **Pause when this tab is not in front** pauses the farm only in a solo game; it holds sound in every game | none |
 | `changelog.parse` | a malformed `changelog.md` throws `ChangelogParseError`; a well-formed one parses to `RELEASES` in file order | `changelog.test.ts` |
 
 ## When you change this

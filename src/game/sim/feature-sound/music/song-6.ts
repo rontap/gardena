@@ -4,10 +4,10 @@ import { line } from './score.ts'
 
 const BARS = 48
 const TEMPO: Tempo = {
-  bpm: 90,
+  bpm: 67.5,
   slow: [
-    { from: 25 * 4, to: 26 * 4, bpm: 68 },
-    { from: 41 * 4, to: 42 * 4, bpm: 68 },
+    { from: 25 * 4, to: 26 * 4, bpm: 51 },
+    { from: 41 * 4, to: 42 * 4, bpm: 51 },
   ],
 }
 

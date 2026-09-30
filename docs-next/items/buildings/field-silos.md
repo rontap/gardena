@@ -35,4 +35,4 @@ Vehicle loading spots above and below ([[systems/building-io]]). No signal ports
 
 ## Sound
 
-Opening and closing the Produce silo play the chest's lid sounds ([[systems/sound]]).
+Opening and closing any of the three silos play the chest's lid sounds ([[systems/sound]]).

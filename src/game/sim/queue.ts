@@ -266,6 +266,7 @@ export function begin(world: World, i: Intent): void {
       }
       store.depositSilo(world, i.at)
       world.act.cue = { kind: 'silo', at: { ...i.at } }
+      world.cue({ kind: 'open', building: c.kind })
       shiftHead(world)
       return
     }
@@ -277,6 +278,7 @@ export function begin(world: World, i: Intent): void {
       }
       store.depositAdditives(world, i.at)
       world.act.cue = { kind: 'additives', at: { ...i.at } }
+      world.cue({ kind: 'open', building: c.kind })
       shiftHead(world)
       return
     }
@@ -448,11 +450,23 @@ export function begin(world: World, i: Intent): void {
   }
 }
 
-// Closing the panel the `chest` walk-up opened: the sound of that building shutting.
+// Closing the panel a `chest`, `silo` or `additives` walk-up opened: the sound of that building shutting.
 export function cueClose(world: World): void {
-  if (world.act.cue.kind !== 'chest') return
-  const c = world.cell(world.act.cue.at)
-  if (c.kind !== 'chest' && c.kind !== 'freezer' && c.kind !== 'silo-produce' && c.kind !== 'postbox') return
+  const cue = world.act.cue
+  if (cue.kind !== 'chest' && cue.kind !== 'silo' && cue.kind !== 'additives') return
+  const c = world.cell(cue.at)
+  if (
+    c.kind !== 'chest' &&
+    c.kind !== 'freezer' &&
+    c.kind !== 'silo-produce' &&
+    c.kind !== 'postbox' &&
+    c.kind !== 'seed-silo' &&
+    c.kind !== 'silo-seed' &&
+    c.kind !== 'additive-store' &&
+    c.kind !== 'silo-spray'
+  ) {
+    return
+  }
   world.cue({ kind: 'close', building: c.kind })
 }
 
@@ -724,6 +738,7 @@ export function doDrop(world: World, at: Coord): void {
   if (!isPlot(world.cell(at))) return
   world.drops.push({ at: { ...at }, item: world.act.hand.item })
   world.act.hand = { kind: 'empty' }
+  world.cue({ kind: 'act', act: 'drop' })
 }
 
 export function canFill(world: World, at: Coord): boolean {

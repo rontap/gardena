@@ -17,7 +17,6 @@ import {
   Vibrato,
   Volume,
   getContext,
-  getDraw,
   getDestination,
   getTransport,
   setContext,
@@ -54,6 +53,14 @@ function endAt(at: string | number, done: () => void): Stop {
   return () => {
     transport.clear(id)
     clearTimeout(timer)
+  }
+}
+
+export function wait(seconds: number, done: () => void): Stop {
+  const context = getContext()
+  const id = context.setTimeout(done, seconds)
+  return () => {
+    context.clearTimeout(id)
   }
 }
 
@@ -582,21 +589,18 @@ export function playScore(song: Score, done: () => void): Stop {
     bend: n.bend,
   }))
   const ramps = song.sweeps.map(s => ({ sec: sec(s.beat), dur: sec(s.beat + s.len) - sec(s.beat), from: s.from, to: s.to }))
-  const bars = Array.from({ length: song.beats / 4 }, (_, i) => sec(i * 4))
-  return playNotes(notes, ramps, bars, sec(song.beats), song.tempo.bpm, song.room, patchSend, song.kit, done)
+  return playNotes(notes, ramps, sec(song.beats), song.tempo.bpm, song.room, patchSend, song.kit, done)
 }
 
 export function playMidi(bytes: Uint8Array, bpm: number, done: () => void): Stop {
   const { notes, end } = readMidi(bytes, bpm)
-  return playNotes(notes, [], [], end, bpm, ROOM.hall, () => 0.6, KIT.standard, done)
+  return playNotes(notes, [], end, bpm, ROOM.hall, () => 0.6, KIT.standard, done)
 }
 
-// `bars` are the start of each 4/4 bar in seconds; each one logs `[music] bar N` when it is heard. `done` runs when
-// the transport reaches `end`; the notes repeat from there until the returned function is called.
+// `done` runs when the transport reaches `end`; the notes repeat from there until the returned function is called.
 function playNotes(
   notes: MidiNote[],
   ramps: Ramp[],
-  bars: number[],
   end: number,
   bpm: number,
   room: Room,
@@ -604,6 +608,9 @@ function playNotes(
   drums: Kit,
   done: () => void,
 ): Stop {
+  const transport = getTransport()
+  transport.bpm.value = bpm
+  transport.position = 0
   const { mix } = bus()
   const space = room(bpm)
   space[0].chain(...space.slice(1), mix)
@@ -628,13 +635,6 @@ function playNotes(
   sweep.loop = true
   sweep.loopEnd = end
   sweep.start(0)
-  const counter = new Part<{ time: number; bar: number }>(
-    (time, b) => getDraw().schedule(() => console.log(`[music] bar ${b.bar}`), time),
-    bars.map((time, i) => ({ time, bar: i + 1 })),
-  )
-  counter.loop = true
-  counter.loopEnd = end
-  counter.start(0)
   const part = new Part<MidiNote & { time: number }>(
     (time, ev) => {
       if (ev.bend !== undefined) sing(sung[`${ev.program}:${ev.bend.part}`].voice, ev, ev.bend, time)
@@ -645,16 +645,12 @@ function playNotes(
   part.loop = true
   part.loopEnd = end
   const over = endAt(end, done)
-  const transport = getTransport()
-  transport.bpm.value = bpm
-  transport.position = 0
   part.start(0)
   transport.start()
   return () => {
     over()
     part.dispose()
     sweep.dispose()
-    counter.dispose()
     Object.values(played).forEach(p => {
       p.voice.releaseAll()
       p.voice.dispose()

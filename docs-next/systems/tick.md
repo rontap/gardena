@@ -56,8 +56,9 @@ When `Clock.advance` crosses `DAY_SECONDS`, the day number increases, `t` become
 3. Grandma's support for the ended day (`stipendOf`) is added to money; `tax()` is subtracted; the water bill (`pumpBill` of today's pump litres, times the ended day's weather price) is subtracted; `pumpLiters` is reset.
 4. `clearOldRotten` removes Rotten produce that has been on the ground for `ROTTEN_GROUND_DAYS`; `clearRipeWeeds` replaces weeds full-grown for `WEED_GONE_DAYS` with grass.
 5. `mintSeam` adds burrows; `tickTreesSeam` advances each tree's in-season and out-of-season count; `advanceGrandma` advances the grandma story.
-6. A `Recap` for the ended day is added to `recaps` and its day to `recapUnseen`; `POINTS_PER_DAY` skill points are granted; `clock.banner` is set.
-7. `tally` is reset. If contracts are unlocked and no contract was accepted that day, reputation is reduced by `REP_IDLE`. `takenToday` is cleared, `repDay` is set to the current reputation, and `applyDayDemand` sets the Market demand for the new day.
+6. `settleLoan` takes the day's loan payback and gives a loan when money is below `LOAN_BELOW` and the Seed silo is empty ([[features/weather-day]]).
+7. A `Recap` for the ended day, with the loan and payback of step 6 and the payback days left, is added to `recaps` and its day to `recapUnseen`; `POINTS_PER_DAY` skill points are granted; `clock.banner` is set.
+8. `tally` is reset. If contracts are unlocked and no contract was accepted that day, reputation is reduced by `REP_IDLE`. `takenToday` is cleared, `repDay` is set to the current reputation, and `applyDayDemand` sets the Market demand for the new day.
 
 The game keeps running after the end of the day. The end-of-day summary is listed in the Command Center until the player opens it.
 
@@ -65,20 +66,21 @@ The game keeps running after the end of the day. The end-of-day summary is liste
 
 - `World.tick(dt)`, `tickWorld(world, dt)`.
 - In `tick.ts`: `tickBig`, `tickFreshness`, `tickJob`, `tickSpeech`, `tickButtons`, `clearOldRotten`.
-- Feature tick functions called from `tickWorld`: `tickField`, `tickTreesSeam`, `clearRipeWeeds`, `tickMachines`, `pullMachineStores`, `tickVehicles`, `tickDispatch`, `gatherWater`, `tickWater`, `evalSensors`, `tickContracts`, `applyDayDemand`, `mintSeam`, `advanceGrandma`, `tutorialTick`.
+- Feature tick functions called from `tickWorld`: `tickField`, `tickTreesSeam`, `clearRipeWeeds`, `tickMachines`, `pullMachineStores`, `tickVehicles`, `tickDispatch`, `gatherWater`, `tickWater`, `evalSensors`, `tickContracts`, `applyDayDemand`, `mintSeam`, `advanceGrandma`, `settleLoan`, `tutorialTick`.
 - `Clock.advance(dt)` returns `'seam'` when the day ends.
 - `endDay()` (cheat) sets `clock.t` to `DAY_SECONDS`; the next call ends the day.
 
 ## Data
 
-Saved: `clock` (`day`, `t`), `bigTicks`, `tally`. Not saved and zeroed by `rebase()`: `bigAcc`, `pumpLiters`.
+Saved: `clock` (`day`, `t`), `bigTicks`, `tally`, `loanDays`. Not saved and zeroed by `rebase()`: `bigAcc`, `pumpLiters`.
 
 ## Invariants
 
 | id | rule | test |
 |---|---|---|
-| `day.seam` | end of day: support, tax, water bill, burrows, trees, then the summary, unread mark and skill point, then the tally reset | `day.test.ts` |
+| `day.seam` | end of day: support, tax, water bill, burrows, trees, loan, then the summary, unread mark and skill point, then the tally reset | `day.test.ts` |
 | `day.stipend` | grandma's support by ended day follows the `STIPEND` bands, then 0 | `day.test.ts` |
+| `day.loan` | the loan is checked after every other money change of the end of day, payback first | `day.test.ts` |
 | `day.end-day` | the End day cheat sets `t` to `DAY_SECONDS`; the next call ends the day | `day.test.ts` |
 | `world.cheatSpeed` | `cheatSpeed` is 1 or 3 and multiplies real time in the frame loop, not `dt` | `day.test.ts` |
 | — | no plant changes on the call that ends the day | `world.test.ts`, `day.test.ts` |

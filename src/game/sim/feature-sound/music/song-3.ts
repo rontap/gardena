@@ -4,7 +4,7 @@ import { line } from './score.ts'
 
 const BARS = 36
 // The return slows across the bar of `HOME` that carries the answer, into the F.
-const TEMPO: Tempo = { bpm: 72, slow: [{ from: 34 * 4, to: 35 * 4, bpm: 56 }] }
+const TEMPO: Tempo = { bpm: 43.2, slow: [{ from: 34 * 4, to: 35 * 4, bpm: 33.6 }] }
 
 // Voicings from the bass up. Index 0 is the bass, 2 to 4 are the upper chord, kept between F3 and F4.
 const CHORD = {

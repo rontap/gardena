@@ -2,6 +2,7 @@ import { m } from '../../paraglide/messages.js'
 import { memo, useState } from 'react'
 import { WEATHER_NAME } from '../defs/weather.ts'
 import { PHASE_NAME } from '../sim/clock.ts'
+import { clickSound } from '../sim/feature-sound/sound.ts'
 import type { WeatherKind } from '../sim/weather.ts'
 import type { World } from '../sim/world.ts'
 import type { Lens } from '../view/map.tsx'
@@ -203,7 +204,10 @@ export function Hud({
                 type="button"
                 aria-label={m.hud_clear_lens()}
                 className="pointer-events-auto absolute top-1 right-1 cursor-pointer bg-ink/10 px-1 text-xs leading-none text-ink/70 hover:bg-ink/25"
-                onClick={onLensClear}
+                onClick={() => {
+                  clickSound()
+                  onLensClear()
+                }}
               >
                 ×
               </button>
@@ -272,7 +276,10 @@ const IconButton = memo(function IconButton({
       type="button"
       aria-label={label}
       className={`pointer-events-auto flex h-11 w-11 shrink-0 items-center justify-center ${hot ? 'bg-ink/5' : ''} cursor-pointer`}
-      onClick={onClick}
+      onClick={() => {
+        clickSound()
+        onClick()
+      }}
       onPointerEnter={() => setHot(true)}
       onPointerLeave={() => setHot(false)}
     >
@@ -329,7 +336,10 @@ const FaceBtn = memo(function FaceBtn({
       type="button"
       disabled={off}
       className={`pointer-events-auto flex w-full flex-col items-center gap-0.5 px-1 py-1 ${off ? 'cursor-default' : 'cursor-pointer'} ${hot && !off ? 'bg-ink/5' : ''}`}
-      onClick={onClick}
+      onClick={() => {
+        clickSound()
+        onClick()
+      }}
       onPointerEnter={() => setHot(true)}
       onPointerLeave={() => setHot(false)}
     >

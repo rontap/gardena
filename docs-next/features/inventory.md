@@ -89,7 +89,7 @@ Item faces are in `src/assets/items/` and `src/assets/fruits/`; `held.tsx` draws
 
 ## Sound
 
-Opening a chest, freezer, Produce silo or postbox plays a lid opening; closing its panel plays the lid shutting ([[systems/sound]]).
+Opening a chest, freezer, postbox, Seed silo, Additive store, Seeding silo, Additive silo or Produce silo plays a lid opening; closing its panel plays the lid shutting. Putting an item down on a plot (`doDrop`) plays a low thump ([[systems/sound]]).
 
 ## Invariants
 

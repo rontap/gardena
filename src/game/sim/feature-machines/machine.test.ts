@@ -29,11 +29,13 @@ import {
   stationSeconds,
   STATION_SECONDS_BASE,
   STATION_SECONDS_STEP,
+  STATION_PRICE_STEP,
   GRAFT_WORK,
   SUGAR_BAG,
   SUGAR_MILL,
   SUGAR_SHOP,
 } from '../../defs/items.ts'
+import { SKUS } from '../../defs/research.ts'
 import { caskGroup, FAMILIARITY_PER_VARIETY, FAMILIARITY_SEED_QUALITY, familiarityMax, purposeMul, PURPOSE_MUL, qualityMul, VARIETIES } from '../../defs/varieties.ts'
 import { boughtSeedQuality } from '../store.ts'
 import { SAT_IMPACT_FRUIT, SAT_STEP_FRUIT, saleUnits } from '../feature-contracts/market.ts'
@@ -1249,6 +1251,16 @@ describe('machines.tick-self', () => {
     w.setCell(at, mill)
     expect(mill.tick(w, at, DT_MAX)).toBe(false)
     expect(mill.progress).toBeCloseTo((DT_MAX * w.machineMul()) / MILL_WORK)
+  })
+
+  test('`buy-research-station` costs its SKU price plus `STATION_PRICE_STEP` for each Crop Variety Station on the farm.', () => {
+    const w = new World(1)
+    const base = SKUS['buy-research-station'].price
+    expect(w.skuPrice('buy-research-station')).toBe(base)
+    w.setCell(AT, new ResearchStation({ shape: 'rect', col: AT.col, row: AT.row, w: 1, h: 1 }))
+    expect(w.skuPrice('buy-research-station')).toBe(base + STATION_PRICE_STEP)
+    w.setCell({ col: AT.col + 3, row: AT.row }, new ResearchStation({ shape: 'rect', col: AT.col + 3, row: AT.row, w: 1, h: 1 }))
+    expect(w.skuPrice('buy-research-station')).toBe(base + 2 * STATION_PRICE_STEP)
   })
 })
 

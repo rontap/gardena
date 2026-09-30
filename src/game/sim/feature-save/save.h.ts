@@ -206,6 +206,9 @@ export type SaveRecap = {
   research: ResearchId[]
   tax: number
   water: number
+  loan: number
+  payback: number
+  loanDays: number
   contracts: HistoryEntry[]
 }
 
@@ -230,6 +233,7 @@ export type Save = {
   prizeFreezers: number
   points: number
   clearance: number
+  loanDays: number
   bigTicks: number
   seats: SaveSeat[]
   vehicles: SaveVehicle[]

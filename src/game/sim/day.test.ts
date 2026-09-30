@@ -1,6 +1,8 @@
 // COMMANDMENT: never test specifically for versions, ever. expect(GAME_VERSION).toBe is disallowed.
 import {describe, expect, test} from 'vitest'
+import {LOAN_BELOW, LOAN_CASH, LOAN_DAYS, LOAN_PACK, LOAN_PACKS, LOAN_PAYBACK} from '../defs/loan.ts'
 import {RESEARCH} from '../defs/research.ts'
+import {skuItem} from './item.ts'
 import {Plant} from './plant.ts'
 import {Act} from './log.ts'
 import {DAY_SECONDS} from './clock.ts'
@@ -70,6 +72,43 @@ describe('day.stipend', () => {
             expect(w.recapAt(d).stipend).toBe(stipendOf(d))
         }
         expect(w.recapAt(11).stipend).toBe(0)
+    })
+})
+
+describe('day.loan', () => {
+    test('End of day, after support, tax, water bill and payback: money under `LOAN_BELOW` with an empty Seed silo puts `LOAN_PACKS` packs of `LOAN_PACK` in the Seed silo, adds `LOAN_CASH` and `LOAN_DAYS` payback days. Each payback day takes `LOAN_PAYBACK`. A second loan adds days, not payback per day.', () => {
+        const pack = skuItem(LOAN_PACK)
+        if (pack.kind !== 'seeds') throw new Error('pack')
+        const w = new World(1)
+        w.clock.day = 20
+        w.silo.seeds.length = 0
+        w.money = 0
+        w.clock.t = DAY_SECONDS - 0.001
+        w.tick(DT_MAX)
+        const first = w.recapAt(20)
+        expect(first.loan).toBe(LOAN_CASH)
+        expect(first.payback).toBe(0)
+        expect(first.loanDays).toBe(LOAN_DAYS)
+        expect(w.money).toBeCloseTo(LOAN_CASH - first.tax - first.water, 8)
+        expect(w.silo.baseCount(pack.crop)).toBe(LOAN_PACKS * pack.count)
+
+        w.money = LOAN_BELOW
+        w.clock.t = DAY_SECONDS - 0.001
+        w.tick(DT_MAX)
+        const second = w.recapAt(21)
+        expect(second.loan).toBe(0)
+        expect(second.payback).toBe(LOAN_PAYBACK)
+        expect(second.loanDays).toBe(LOAN_DAYS - 1)
+
+        w.silo.seeds.length = 0
+        w.money = 0
+        w.clock.t = DAY_SECONDS - 0.001
+        w.tick(DT_MAX)
+        const third = w.recapAt(22)
+        expect(third.loan).toBe(LOAN_CASH)
+        expect(third.payback).toBe(LOAN_PAYBACK)
+        expect(third.loanDays).toBe(2 * LOAN_DAYS - 2)
+        expect(w.money).toBeCloseTo(LOAN_CASH - LOAN_PAYBACK - third.tax - third.water, 8)
     })
 })
 

@@ -18,7 +18,11 @@ const FAIL: { readonly [K in LoadFailReason]: () => string } = {
 
 type MenuPage = { kind: 'home' } | { kind: 'changelog' } | { kind: 'settings' }
 
-type MenuProps =
+type MenuProps = {
+  settings: Settings
+  onSettings: (next: Settings) => void
+  onVolume: (music: number, effects: number) => void
+} & (
   | {
       mode: 'boot'
       fail: LoadFailReason | undefined
@@ -44,11 +48,9 @@ type MenuProps =
       onSave: () => void
       onDownload: () => void
       onMainMenu: () => void
-      settings: Settings
-      onSettings: (next: Settings) => void
-      onVolume: (music: number, effects: number) => void
       onClose: () => void
     }
+)
 
 export function Menu(props: MenuProps) {
   const { mode, fail, onLoad, onUpload } = props
@@ -68,7 +70,7 @@ export function Menu(props: MenuProps) {
   const config = !joining && page.kind === 'settings'
   const mpLocked = mode === 'play' && props.connected
   const guest = mode === 'play' && props.guest
-  const showX = mode === 'play' || joining || changelog
+  const showX = mode === 'play' || joining || changelog || config
   const pick = () => {
     const el = input.current
     if (el === null) return
@@ -89,7 +91,7 @@ export function Menu(props: MenuProps) {
         setPage(page.kind === 'changelog' ? { kind: 'home' } : { kind: 'changelog' })
       }}
     >
-      2.9.4
+      2.10.2
     </button>
   )
   return (
@@ -135,7 +137,7 @@ export function Menu(props: MenuProps) {
             />
           ) : changelog ? (
             <Changelog />
-          ) : config && mode === 'play' ? (
+          ) : config ? (
             <SettingsPage
               value={props.settings}
               onSave={next => {
@@ -187,6 +189,9 @@ export function Menu(props: MenuProps) {
                   </Btn>
                   <Btn className="w-full" onClick={props.onJoinOpen}>
                     {m.menu_join_multiplayer()}
+                  </Btn>
+                  <Btn className="w-full" onClick={() => setPage({ kind: 'settings' })}>
+                    {m.menu_settings()}
                   </Btn>
                 </>
               )}

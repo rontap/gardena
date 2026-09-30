@@ -2,10 +2,10 @@ import type { Stop } from '../sound.h.ts'
 import { DRUM, GM, KIT, ROOM, playScore, type ScoreNote, type Sweep, type Tempo } from '../sound.utils.ts'
 import { grid, line, sing } from './score.ts'
 
-// Built on the buildup of a live DJ cover, recreated from its analysis: 140 bpm with the drums in half time.
+// Built on the buildup of a live DJ cover, recreated from its analysis, with the drums in half time.
 // Intro, two piano verses, the "OHH" refrain, a drop, a piano breakdown, the refrain, a shorter drop, an outro.
 const BARS = 80
-const TEMPO: Tempo = { bpm: 140, slow: [] }
+const TEMPO: Tempo = { bpm: 163.33, slow: [] }
 
 // Index 0 is the bass, 1 its fifth, 2 to 4 the upper chord.
 const CHORD = {

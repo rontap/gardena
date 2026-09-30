@@ -130,7 +130,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
   const [paused, setPaused] = useState(false)
   const [prefs, setPrefs] = useState<Settings>(() => settings())
   const pausedRef = useRef(false)
-  const hiddenHeld = useRef(false)
+  const [away, setAway] = useState(false)
   const aiHoldRef = useRef(false)
   pausedRef.current = paused
   const catchingRef = useRef(false)
@@ -263,35 +263,30 @@ export default function App({ sink }: { sink: WorkerSink }) {
   }, [hudN, world])
 
   useEffect(() => {
-    if (world === undefined || !prefs.pauseWhenHidden) return
-    const away = () => {
-      if (pausedRef.current) return
-      hiddenHeld.current = true
-      soloPause(true)
-    }
-    const back = () => {
-      if (!hiddenHeld.current) return
-      hiddenHeld.current = false
-      soloPause(false)
-    }
-    const onVisibility = () => {
-      if (document.hidden) away()
-      else back()
-    }
-    window.addEventListener('blur', away)
+    if (!prefs.pauseWhenHidden) return
+    const leave = () => setAway(true)
+    const back = () => setAway(false)
+    const onVisibility = () => setAway(document.hidden)
+    window.addEventListener('blur', leave)
     window.addEventListener('focus', back)
     document.addEventListener('visibilitychange', onVisibility)
     return () => {
-      window.removeEventListener('blur', away)
+      window.removeEventListener('blur', leave)
       window.removeEventListener('focus', back)
       document.removeEventListener('visibilitychange', onVisibility)
-      back()
+      setAway(false)
     }
-  }, [world, prefs.pauseWhenHidden])
+  }, [prefs.pauseWhenHidden])
 
   useEffect(() => {
-    holdSound(paused)
-  }, [paused])
+    if (world === undefined || !away || pausedRef.current) return
+    soloPause(true)
+    return () => soloPause(false)
+  }, [world, away])
+
+  useEffect(() => {
+    holdSound(away)
+  }, [away])
 
   useEffect(() => {
     if (world === undefined) return
@@ -1011,6 +1006,9 @@ export default function App({ sink }: { sink: WorkerSink }) {
             }}
             onJoin={onJoin}
             onJoinClose={() => setJoining(false)}
+            settings={prefs}
+            onSettings={applySettings}
+            onVolume={volumeSound}
           />
         </div>
       </Tooltip.Provider>

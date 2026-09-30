@@ -57,6 +57,7 @@ export function dump(world: World): Save {
     prizeFreezers: world.prizeFreezers,
     points: world.points,
     clearance: world.clearance,
+    loanDays: world.loanDays,
     bigTicks: world.bigTicks,
     seats: world.seats.map(s => ({
       playerId: s.playerId,
@@ -99,6 +100,9 @@ export function dump(world: World): Save {
       research: r.research.slice(),
       tax: r.tax,
       water: r.water,
+      loan: r.loan,
+      payback: r.payback,
+      loanDays: r.loanDays,
       contracts: r.contracts.slice(),
     })),
     recapUnseen: world.recapUnseen.slice(),

@@ -30,6 +30,7 @@ Game state and game rules. No React or Pixi imports.
 - `water.ts`, `nets.ts`, `pipe.ts` — sources, pipe networks, sprinklers, valves.
 - `sensor.ts` — sensors, wires, signal evaluation.
 - `weather.ts` — daily weather and its effects.
+- `loan.ts` — the loan and its payback at the end of the day.
 - `family.ts` — skills.
 - `stall.ts` — Market goods.
 - `store.ts` — Seed silo and Additive store.
@@ -40,7 +41,7 @@ Game state and game rules. No React or Pixi imports.
 
 **Feature folders**
 - `feature-field/` — plants, trees, weeds, grass, and every hand tool used on a plot.
-- `feature-place/` — placing, demolishing, the Build tool on the map.
+- `feature-place/` — placing, demolishing, the Build tool on the map, and SKU prices (`skuPrice`).
 - `feature-machines/` — machines, recipes, sorter.
 - `feature-vehicles/` — vehicles, trailers, routes, fuel.
 - `feature-contracts/` — contract board, and Market saturation.
@@ -50,7 +51,7 @@ Game state and game rules. No React or Pixi imports.
 
 ## Tuning — `src/game/defs/`
 
-Numbers and tables: crops, varieties, trees, items, research and SKUs, catalog, shelves, skills, companies, weather, burrow loot, Necronomicon pages, tutorial text. Some constants are defined in the sim file that uses them, mainly `soil.ts`, `water.ts` and `feature-contracts/market.ts`; grep both.
+Numbers and tables: crops, varieties, trees, items, research and SKUs, catalog, shelves, skills, companies, weather, the loan, burrow loot, Necronomicon pages, tutorial text. Some constants are defined in the sim file that uses them, mainly `soil.ts`, `water.ts` and `feature-contracts/market.ts`; grep both.
 
 ## Screen — `src/game/ui/`
 
@@ -71,5 +72,6 @@ Picture effects stay here: `vfx.ts`, `layers/vfx.ts`. Sound is `sim/feature-soun
 - `src/game/net/peer.ts` — the peer connection under multiplayer.
 - `messages/en/*.json` — every player string, one file per area. Compiled into `src/paraglide/`, which is not in git.
 - `src/assets/` — SVGs, in folders by kind: `crops`, `fruits`, `items`, `props`, `tiles`, `ui`, `vfx`, `skills`, `market`, `joints`.
+- `public/` — the browser icons, linked from `index.html`: `favicon.svg`, and `apple-touch-icon.png` and `icon-512.png` rendered from it ([[art/svg]]).
 - Tests: unit tests sit next to the code as `*.test.ts`; e2e tests are `e2e/*.spec.ts`, one per feature.
 - `scripts/no-defensive.mjs` runs before dev, test and build and rejects defensive code.

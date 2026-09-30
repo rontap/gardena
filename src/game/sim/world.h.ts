@@ -197,6 +197,9 @@ export type Recap = {
   research: ResearchId[]
   tax: number
   water: number
+  loan: number
+  payback: number
+  loanDays: number
   contracts: HistoryEntry[]
 }
 
@@ -270,4 +273,5 @@ export type Hydrate = {
   paving: PavedCell[]
   drops: Drop[]
   clearance: number
+  loanDays: number
 }

@@ -18,6 +18,7 @@ import { caskAgeMul, meanQuality } from '../sim/feature-machines/machine.ts'
 import { BARREL_AGE, BARREL_MATURE } from '../defs/items.ts'
 import { bindCraft } from '../view/motion.ts'
 import { Recipes } from './recipe.tsx'
+import { useRefresh } from './cycle.ts'
 
 type Segment = { from: number; to: number; color: 'green' | 'orange' | 'red' }
 
@@ -381,6 +382,7 @@ export function Status({
   hover: PromptHit | undefined
   addHint?: string
 }) {
+  useRefresh()
   const seat = world.seats[world.local]
   const prompt = world.promptHit(hover)
   const action = actionText(world, prompt)

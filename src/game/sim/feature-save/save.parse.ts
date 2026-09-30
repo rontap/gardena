@@ -162,6 +162,7 @@ function worldFromSave(save: Save, sink: LogSink): World {
     prizeFreezers: save.prizeFreezers,
     points: save.points,
     clearance: save.clearance,
+    loanDays: save.loanDays,
     bigTicks: save.bigTicks,
     done: save.done,
     job: save.job,

@@ -5,13 +5,13 @@ Unlocked: from the start. Some skills also need a research row.
 
 ## Purpose
 
-The family is the farm's skill tree. Each day earns a skill point, and points buy lasting bonuses: the gardener walks faster and grows better crops, the husband runs machines faster and gets land and vehicles further, the daughter sells for more and gets more contracts. Ranks cost more points each, so the player spreads points or specialises. Skills never unlock content; research and contracts do that.
+The family is the farm's skill tree. Odd ended days earn a skill point, and points buy lasting bonuses: the gardener walks faster and grows better crops, the husband runs machines faster and gets land and vehicles further, the daughter sells for more and gets more contracts. Ranks cost more points each, so the player spreads points or specialises. Skills never unlock content; research and contracts do that.
 
 ## Rules
 
 ### Points
 
-`World.points` is one bank for the whole farm. It grows by `POINTS_PER_DAY` at each day change ([[features/weather-day]]) and by skill-point prizes from contracts ([[features/contracts]]). Rank *n* of any skill costs *n* points.
+`World.points` is one bank for the whole farm. It grows by `pointsForEndedDay`: `POINTS_PER_DAY` at the end of an odd day (ended days 1, 3, 5, …) and 0 at the end of an even day ([[features/weather-day]]). It also grows by `FAMILIARITY_POINT` when a crop's familiarity reaches `familiarityMax` ([[features/machines]]) by skill-point prizes from contracts ([[features/contracts]]), and by `SKILL_POINT_LOOT` from an Uncommon burrow ([[features/burrow]]). Rank *n* of any skill costs *n* points.
 
 ### The tree
 
@@ -46,7 +46,7 @@ Percentages add per rank; they do not compound.
 | `seed-bank` | **Trusted seed bank** | 1 | | bought seeds come with quality `SEED_BANK_QUALITY` ([[features/inventory]]) |
 | `better-{crop}` | **Experienced {crop} grower** | 1 | `unlock-crop-variants` (wheat, potato), `unlock-advanced-plants` (tomato, grape), `unlock-raspberry` | that crop ripens with up to `BETTER_QUALITY` more quality, scaled by happiness (`betterGain`), and a higher chance of the next variety (`EXPERIENCED_VAR_BONUS`) ([[features/plants]]) |
 | `grafting` | **Tree Grafting** | 1 | | chopping a tree also drops `CHOP_GRAFTS` grafts of its species and variety ([[features/trees]]) |
-| `lucky` | **Lucky** | 3 | | Luck: new burrows hold more treasure money and more often a seed of a variety not sold as a pack ([[features/burrow]]) |
+| `lucky` | **Lucky** | 3 | | none; the rank shows as **Luck** in the panel header, and burrows do not read it ([[features/burrow]]) |
 | `bulk-up` | **Bulk up** | 3 | | hand and slot stack limits + `BULK_UP_STEP` raw, + `BULK_UP_CRAFTED_STEP` processed, per rank ([[features/inventory]]) |
 | `machinery` | **Machinery** | 3 | `unlock-grinder` | machines that run on time work + `MACHINE_PCT` % faster per rank (`machineMul`, [[features/machines]]) |
 | `driving-classes` | **Driving classes** | 3 | `unlock-vehicles` | vehicles + `DRIVE_PCT` % top speed and acceleration, − 5% fuel use per rank ([[features/vehicles]]) |
@@ -86,7 +86,7 @@ Skill icons `src/assets/skills/skill-{id}.svg`, one per skill for every rank; `s
 | id | rule | test |
 |---|---|---|
 | `family.pick` | rank *n* costs *n* points; a pick needs known, open, research done, below `maxTier`; only the host picks | `family.test.ts` |
-| `family.cost` | `POINTS_PER_DAY` points at each day change | `family.test.ts` |
+| `family.cost` | an odd ended day grants `POINTS_PER_DAY`; an even ended day grants 0; ended days 1 through 80 grant 40 | `day.test.ts` |
 | `family.jam-rot` | `jam` slows the loss of freshness below `JAM_ROT_FRESH` by `JAM_ROT` × rank | `family.test.ts` |
 | `family.grafting` | chopping drops `CHOP_GRAFTS` grafts only with `grafting`; wood always | `family.test.ts` |
 | `family.specialty` | `specialty` raises Named and Heirloom jam, spirit, wine and cider | `family.test.ts` |

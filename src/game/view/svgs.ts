@@ -49,6 +49,8 @@ import itemElectricChainsaw from '../../assets/items/item-electric-chainsaw.svg?
 import itemWood from '../../assets/items/item-wood.svg?raw'
 import itemAsh from '../../assets/items/item-ash.svg?raw'
 import itemFlyAgaric from '../../assets/items/item-fly-agaric.svg?raw'
+import itemTruffle from '../../assets/items/item-truffle.svg?raw'
+import itemTruffleExtract from '../../assets/items/item-truffle-extract.svg?raw'
 import itemTreasure from '../../assets/items/item-treasure.svg?raw'
 import itemSpiritVodka from '../../assets/items/item-spirit-vodka.svg?raw'
 import itemSpiritBeer from '../../assets/items/item-spirit-beer.svg?raw'
@@ -497,9 +499,10 @@ export function itemInner(item: Face): string {
   if (item.kind === 'oil') return withInfused(item, svgInner(itemOil))
   if (item.kind === 'flour') return svgInner(itemFlour)
   if (item.kind === 'bread') return svgInner(itemBread)
-  if (item.kind === 'extract') return svgInner(itemExtract)
+  if (item.kind === 'extract') return withInfused(item, svgInner(itemExtract))
   if (item.kind === 'flakes') return svgInner(itemFlakes)
   if (item.kind === 'vanilla-extract') return svgInner(itemVanillaExtract)
+  if (item.kind === 'truffle-extract') return svgInner(itemTruffleExtract)
   if (item.kind === 'infuser') return stageOnly(itemInfuser, 'off')
   if (item.kind === 'necronomicon') return svgInner(itemNecronomicon)
   if (item.kind === 'sorter') return svgInner(itemSorter)
@@ -508,6 +511,7 @@ export function itemInner(item: Face): string {
   if (item.kind === 'wood') return svgInner(itemWood)
   if (item.kind === 'ash') return svgInner(itemAsh)
   if (item.kind === 'fly-agaric') return svgInner(itemFlyAgaric)
+  if (item.kind === 'truffle') return svgInner(itemTruffle)
   if (item.kind === 'treasure') return svgInner(itemTreasure)
   const _x: never = item
   return _x
@@ -854,7 +858,10 @@ export const OVERLAY_WATER = svgInner(overlayWater)
 export const OVERLAY_INFUSED = svgInner(overlayInfused)
 
 export function faceInfused(item: Face): boolean {
-  return (item.kind === 'jam' || item.kind === 'cask' || item.kind === 'spirit' || item.kind === 'oil') && item.infused
+  return (
+    (item.kind === 'jam' || item.kind === 'cask' || item.kind === 'spirit' || item.kind === 'oil' || item.kind === 'extract') &&
+    item.infused
+  )
 }
 
 function withInfused(item: Face, inner: string): string {

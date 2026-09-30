@@ -32,6 +32,7 @@ It refuses flour while burning and burnable items while baking, until it is empt
 | [[items/produce/spirit]] | `spirit` |
 | [[items/other/wood]] | `wood` |
 | [[items/other/fly-agaric]] | `fly-agaric` |
+| [[items/other/truffle]] | `truffle` |
 
 `FURNACE_NEED` points → `FURNACE_ASH` [[items/other/ash]]. `FURNACE_BREAD_IN` [[items/produce/flour]] → 1 [[items/produce/bread]].
 

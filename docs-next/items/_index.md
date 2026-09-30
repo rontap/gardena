@@ -8,7 +8,7 @@ An item page says what the thing is, how the player gets it, how it sells, and w
 |---|---|---|
 | `crops/` | annual crops and tree species | [[items/crops/_template]] |
 | `buildings/` | everything placed on the map, including the starting buildings | [[items/buildings/_template]] |
-| `produce/` | goods sold at the Market that are not raw fruit, plus the two machine products used only for infusion | [[items/produce/_template]] |
+| `produce/` | goods sold at the Market that are not raw fruit, plus the machine products that are not sold: the three infusion reagents and Extract | [[items/produce/_template]] |
 | `other/` | tools, bags, containers, vehicles, and items picked up or dropped on the farm | [[items/other/_template]] |
 
 ## Crops
@@ -28,12 +28,12 @@ An item page says what the thing is, how the player gets it, how it sells, and w
 
 ## Produce
 
-[[items/produce/jam]], [[items/produce/sugar]], [[items/produce/oil]], [[items/produce/flour]], [[items/produce/bread]], [[items/produce/extract]], [[items/produce/spirit]], [[items/produce/cask]], [[items/produce/rotten-produce]], [[items/produce/flakes]], [[items/produce/vanilla-extract]]
+[[items/produce/jam]], [[items/produce/sugar]], [[items/produce/oil]], [[items/produce/flour]], [[items/produce/bread]], [[items/produce/extract]], [[items/produce/spirit]], [[items/produce/cask]], [[items/produce/rotten-produce]], [[items/produce/flakes]], [[items/produce/vanilla-extract]], [[items/produce/truffle-extract]]
 
 ## Other
 
 - Tools: [[items/other/shovel]], [[items/other/pickaxe]], [[items/other/axe]], [[items/other/bucket]]
 - Bags: [[items/other/fertilizer]], [[items/other/compost]], [[items/other/weed-spray]]
-- Picked up and dropped: [[items/other/cut-grass]], [[items/other/pulled-weed]], [[items/other/dead-plant]], [[items/other/wood]], [[items/other/ash]], [[items/other/fly-agaric]], [[items/other/treasure]]
+- Picked up and dropped: [[items/other/cut-grass]], [[items/other/pulled-weed]], [[items/other/dead-plant]], [[items/other/wood]], [[items/other/ash]], [[items/other/fly-agaric]], [[items/other/truffle]], [[items/other/treasure]]
 - Planting: [[items/other/tree-seed]], [[items/other/graft]]
 - Vehicles: [[items/other/vehicles]], [[items/other/trailers]]

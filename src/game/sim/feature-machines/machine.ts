@@ -2,7 +2,6 @@ import {
   BARREL_AGE,
   BARREL_MATURE,
   BREAD,
-  EXTRACT,
   FLOUR,
   FURNACE_BREAD_IN,
   FURNACE_NEED,
@@ -10,9 +9,9 @@ import {
   FURNACE_HASTE,
   FURNACE_VALUE,
   FUEL_WORTH,
-  INFUSE_EXTRACT,
-  INFUSE_FLAKES,
   INFUSE_IN,
+  INFUSE_REAGENT,
+  INFUSE_REAGENTS,
   JAM_IN,
   JAM_SUGAR,
   JAM_SALE,
@@ -21,6 +20,8 @@ import {
   MILL_IN,
   MILL_CHILLI_IN,
   MILL_CHILLI_OUT,
+  MILL_TRUFFLE_IN,
+  MILL_TRUFFLE_OUT,
   MILL_VANILLA_IN,
   MILL_VANILLA_OUT,
   MIXED_MUL,
@@ -35,7 +36,7 @@ import {
 } from '../../defs/items.ts'
 import { familiarityMax, purposeMul, qualityMul, tierOf, type VarietyId } from '../../defs/varieties.ts'
 import { FAMILIARITY_GAIN } from '../../defs/items.ts'
-import type { BarrelCrop, CaskId, GrownCrop, Infusable, JamCrop, MillRecipe, SkuId, SpiritKind, StillCrop } from '../ids.ts'
+import type { BarrelCrop, CaskId, GrownCrop, Infusable, JamCrop, MillRecipe, Reagent, SkuId, SpiritKind, StillCrop } from '../ids.ts'
 import { isAnnualId, SPIRIT_OF } from '../ids.ts'
 import type {
   Barrel,
@@ -52,7 +53,7 @@ import type {
   RectBase,
   ResearchStation,
 } from '../building.ts'
-import { furnaceValue, type Item } from '../item.ts'
+import { furnaceValue, makeExtract, type Item } from '../item.ts'
 
 export type IoCell = Mill | JamMachine | PotStill | CompostBox | Grinder | Furnace | ResearchStation | Infuser | Necronomicon | Refuel
 
@@ -98,6 +99,7 @@ export function millNeed(recipe: MillRecipe): number {
   if (recipe === 'grass') return MILL_GRASS
   if (recipe === 'vanilla') return MILL_VANILLA_IN
   if (recipe === 'chilli') return MILL_CHILLI_IN
+  if (recipe === 'truffle') return MILL_TRUFFLE_IN
   return MILL_IN
 }
 
@@ -106,8 +108,7 @@ export function barrelNeed(crop: BarrelCrop): number {
 }
 
 export function millProduct(recipe: MillRecipe, variety: VarietyId, quality: number): Item {
-  const rate = recipe === 'grass' ? 1 : purposeMul(variety, 'processed')
-  const mul = rate * qualityMul(quality)
+  const mul = purposeMul(variety, 'processed') * qualityMul(quality)
   if (recipe === 'sugar-cane') {
     return { kind: 'sugar', liters: SUGAR_BAG, capacityLiters: SUGAR_BAG, unitSale: SUGAR_MILL * mul, quality }
   }
@@ -115,7 +116,8 @@ export function millProduct(recipe: MillRecipe, variety: VarietyId, quality: num
   if (recipe === 'wheat') return { kind: 'flour', count: 1, unitSale: FLOUR * mul, quality }
   if (recipe === 'vanilla') return { kind: 'vanilla-extract', quality, count: MILL_VANILLA_OUT }
   if (recipe === 'chilli') return { kind: 'flakes', quality, count: MILL_CHILLI_OUT }
-  return { kind: 'extract', count: 1, unitSale: EXTRACT * mul, quality }
+  if (recipe === 'truffle') return { kind: 'truffle-extract', count: MILL_TRUFFLE_OUT }
+  return makeExtract(false)
 }
 
 export function fruitCrop(item: Item): GrownCrop | undefined {
@@ -141,6 +143,7 @@ export function fruitQuality(item: Item): number {
 
 export function millRecipeOf(item: Item): MillRecipe | undefined {
   if (item.kind === 'grass') return 'grass'
+  if (item.kind === 'truffle') return 'truffle'
   const crop = fruitCrop(item)
   if (crop === 'sugar-cane' || crop === 'olive' || crop === 'wheat' || crop === 'vanilla' || crop === 'chilli') return crop
   return undefined
@@ -148,6 +151,7 @@ export function millRecipeOf(item: Item): MillRecipe | undefined {
 
 export function millDumpUnits(item: Item, recipe: MillRecipe): number {
   if (recipe === 'grass') return item.kind === 'grass' ? item.count : 0
+  if (recipe === 'truffle') return item.kind === 'truffle' ? item.count : 0
   const crop = fruitCrop(item)
   if (crop === undefined) return 0
   if (recipe === 'sugar-cane' && crop === 'sugar-cane') return fruitCount(item)
@@ -393,6 +397,7 @@ export function infusableOf(item: Item): Infusable | undefined {
   if (item.kind === 'jam' && !item.infused) return { kind: 'jam', crop: item.crop, variety: item.variety }
   if (item.kind === 'cask' && !item.infused) return { kind: 'cask', cask: item.cask, variety: item.variety }
   if (item.kind === 'oil' && !item.infused) return { kind: 'oil' }
+  if (item.kind === 'extract') return !item.infused && item.liters === item.capacityLiters ? { kind: 'extract' } : undefined
   if (item.kind !== 'spirit' || item.infused) return undefined
   if (item.spirit === 'mixed') return { kind: 'spirit', spirit: 'mixed' }
   return { kind: 'spirit', spirit: item.spirit, variety: item.variety }
@@ -402,6 +407,7 @@ export function sameInfusable(a: Infusable, b: Infusable): boolean {
   if (a.kind === 'jam' && b.kind === 'jam') return a.crop === b.crop && a.variety === b.variety
   if (a.kind === 'cask' && b.kind === 'cask') return a.cask === b.cask && a.variety === b.variety
   if (a.kind === 'oil' && b.kind === 'oil') return true
+  if (a.kind === 'extract' && b.kind === 'extract') return true
   if (a.kind === 'spirit' && b.kind === 'spirit') {
     if (a.spirit === 'mixed' || b.spirit === 'mixed') return a.spirit === b.spirit
     return a.spirit === b.spirit && a.variety === b.variety
@@ -409,13 +415,20 @@ export function sameInfusable(a: Infusable, b: Infusable): boolean {
   return false
 }
 
+export function infuseReagent(c: Infuser): Reagent | undefined {
+  const lock = c.lock
+  if (lock === 'none') return undefined
+  return INFUSE_REAGENTS[lock.kind].find(r => c.reagents[r] >= INFUSE_REAGENT)
+}
+
 export function infuserWorking(c: Infuser): boolean {
-  return c.inn !== 1 && c.lock !== 'none' && c.units >= INFUSE_IN && (c.flakes >= INFUSE_FLAKES || c.extract >= INFUSE_EXTRACT)
+  return c.inn !== 1 && c.lock !== 'none' && c.units >= INFUSE_IN && infuseReagent(c) !== undefined
 }
 
 export function infusedProduct(c: Infuser): Item {
   const lock = c.lock
   if (lock === 'none') throw new Error('infuse')
+  if (lock.kind === 'extract') return makeExtract(true)
   if (lock.kind === 'jam') {
     return {
       kind: 'jam',

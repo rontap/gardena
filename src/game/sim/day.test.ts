@@ -7,7 +7,7 @@ import {Plant} from './plant.ts'
 import {Act} from './log.ts'
 import {DAY_SECONDS} from './clock.ts'
 import {Soil, SOIL_WATER_MID, WEED_CHANCE} from './soil.ts'
-import {DT_MAX, POINTS_PER_DAY, STIPEND, stipendOf, World} from './world.ts'
+import {DT_MAX, POINTS_PER_DAY, pointsForEndedDay, STIPEND, stipendOf, World} from './world.ts'
 
 const AT = {col: 10, row: 12}
 
@@ -38,7 +38,7 @@ describe('day.seam', () => {
         expect(recap.water).toBe(0)
         expect(w.recaps).toHaveLength(1)
         expect(w.recapUnseen).toEqual([1])
-        expect(w.points).toBe(POINTS_PER_DAY)
+        expect(w.points).toBe(pointsForEndedDay(1))
         expect(w.clock.banner).toBe(4)
         expect(w.tally).toEqual({died: 0, harvests: 0, research: [], contracts: []})
         expect(p.maturity).toBe(0.4)
@@ -48,6 +48,21 @@ describe('day.seam', () => {
         expect(w.now).toBe(n + 1)
         expect(p.maturity).toBeGreaterThan(0.4)
         expect(w.seam.kind).toBe('play')
+    })
+})
+
+describe('day.points', () => {
+    test('An odd ended day grants `POINTS_PER_DAY`. An even ended day grants 0. Ended days 1 through 80 grant 40.', () => {
+        expect(pointsForEndedDay(1)).toBe(POINTS_PER_DAY)
+        expect(pointsForEndedDay(2)).toBe(0)
+        expect(pointsForEndedDay(80)).toBe(0)
+        const w = new World(1)
+        for (let d = 1; d <= 80; d++) {
+            w.clock.t = DAY_SECONDS - 0.001
+            w.tick(DT_MAX)
+            expect(w.points).toBe(Math.ceil(d / 2))
+        }
+        expect(w.points).toBe(40)
     })
 })
 

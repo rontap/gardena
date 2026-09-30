@@ -348,7 +348,7 @@ describe('research.hardened', () => {
     expect(RESEARCH['unlock-hardened-tools']).toMatchObject({
       parent: 'unlock-better-tools',
       cost: 100,
-      seconds: 20,
+      seconds: 45,
       effect: { kind: 'unlock-sku', sku: 'buy-better-shovel' },
     })
     expect(SKUS['buy-better-shovel']).toMatchObject({

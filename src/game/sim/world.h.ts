@@ -80,6 +80,7 @@ export type Intent =
   | { act: 'toggle'; at: Coord }
   | { act: 'tend'; at: Coord }
   | { act: 'weed-spray'; at: Coord }
+  | { act: 'extract'; at: Coord }
   | { act: 'chop'; at: Coord }
   | { act: 'graft'; at: Coord }
 
@@ -255,6 +256,7 @@ export type Hydrate = {
   purchases: number
   prizeSlots: number
   prizeFreezers: number
+  sinceRare: number
   bigTicks: number
   done: ResearchId[]
   job: Job

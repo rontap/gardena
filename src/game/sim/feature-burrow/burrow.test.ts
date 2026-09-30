@@ -2,42 +2,39 @@ import { describe, expect, test } from 'vitest'
 import { m } from '../../../paraglide/messages.js'
 import {
   BURROW_DAY_CHANCE,
-  BURROW_LUCK_CHANCE,
+  BURROW_ENTRIES,
+  BURROW_MUL,
+  BURROW_RARE_MAX,
+  BURROW_RARITIES,
+  BURROW_SPECIAL_SHARE,
   BURROW_START_N,
   BURROW_START_R,
-  BURROW_MUL,
-  LOOT_GATE_AGARIC,
-  LOOT_GATE_BASE,
-  LOOT_GATE_FERT,
-  LOOT_GATE_HEIRLOOM,
-  LOOT_GATE_TOOL,
-  LOOT_GATE_VARIANT,
-  LOOT_GATE_WEED,
-  LOOT_LUCK_DIV,
-  LOOT_ROLL_BASE,
-  LOOT_ROLL_DAY,
-  LOOT_ROLL_DAY_SPAN,
-  LOOT_ROLL_DIST,
-  LOOT_ROLL_DIST_R,
-  LOOT_U_OFF,
-  LOOT_U_SPAN,
+  BURROW_TREASURE_MAX,
+  BURROW_TREASURE_MIN,
+  AGARIC_LOOT_COUNT,
+  BURROW_TREASURE_UNCOMMON_MAX,
+  BURROW_TREASURE_UNCOMMON_MIN,
   LUCK_CAP,
+  SKILL_POINT_LOOT,
+  TRUFFLE_LOOT_COUNT,
+  type BurrowRarity,
 } from '../../defs/burrow.ts'
-import { AXES, COMPOST_VALUE, FERT_BAG_LITERS, FURNACE_VALUE, PICKAXES, SHOVELS } from '../../defs/items.ts'
+import { AXES, COMPOST_VALUE, FURNACE_VALUE, PICKAXES, SHOVELS } from '../../defs/items.ts'
 import { catalogEntries } from '../../defs/catalog.ts'
-import { chunkOf, chunkRect, frontOf, isReserved } from '../building.ts'
+import { tierOf } from '../../defs/varieties.ts'
+import { chunkOf, chunkRect, frontOf, isReserved, type Coord } from '../building.ts'
 import { onCell } from '../drop.ts'
 import { luckOf } from '../family.ts'
-import { BURROW_DAY_SALT } from './burrow.ts'
 import { dump, parse } from '../feature-save/save.ts'
 import { seedPair } from '../feature-field/field.helpers.ts'
-import { compostValue, furnaceValue, makePickaxe, makeShovel, toolName } from '../item.ts'
+import { compostValue, furnaceValue, makePickaxe, makeShovel, type Item } from '../item.ts'
 import { lookText } from '../look.ts'
 import { isFenceSite, isSolid, isPavingSite } from '../plot.ts'
 import { placeSolidOk, readPrompt } from '../prompt.ts'
 import { Rng } from '../rng.ts'
 import { DT_MAX, World } from '../world.ts'
-import { burrowDayChance, doorR, keptRows, lootRoll, rollLoot, type LootRowId } from './burrow.ts'
+import { BURROW_DAY_SALT, burrowOdds, digBurrow, doorR, extractBurrow, rarityOf } from './burrow.ts'
+import type { BurrowDig } from './burrow.h.ts'
 
 const AT = { col: 10, row: 12 }
 
@@ -45,8 +42,67 @@ function firstBurrow(w: World) {
   return [...w.burrows.values()][0]
 }
 
+function digger(seed: number): World {
+  const w = new World(seed)
+  w.act = w.seats[0]
+  w.seats[0].hand = { kind: 'hold', item: makeShovel('rotary-shovel') }
+  return w
+}
+
+function grid(from: number, n: number): Coord[] {
+  return Array.from({ length: n * n }, (_, i) => ({ col: from + (i % n), row: from + Math.floor(i / n) }))
+}
+
+function findTile(w: World, sinceRare: number, want: (d: BurrowDig) => boolean): Coord {
+  const at = grid(0, 32).find(p => {
+    const c = w.cell(p)
+    return c.kind === 'untilled' && !isReserved(p) && want(digBurrow(w.rng, p, w.clock.day, sinceRare))
+  })
+  if (at === undefined) throw new Error('tile')
+  return at
+}
+
+function digAt(w: World, at: Coord): void {
+  w.setCell(at, { kind: 'untilled', ground: 'soft', hardness: 0, cover: { kind: 'burrow' } })
+  extractBurrow(w, at)
+}
+
+function toolUses(item: Item): number {
+  if (item.kind === 'shovel') return SHOVELS[item.id].uses
+  if (item.kind === 'pickaxe') return PICKAXES[item.id].uses
+  if (item.kind === 'axe') return AXES[item.id].uses
+  throw new Error(item.kind)
+}
+
+function fits(rarity: BurrowRarity, d: BurrowDig): boolean {
+  const f = d.find
+  if (f.kind === 'permit') return rarity === 'rare'
+  if (f.kind === 'skill-point') return rarity === 'uncommon'
+  const it = f.item
+  switch (rarity) {
+    case 'common':
+      if (it.kind === 'seeds' || it.kind === 'tree-seed') return tierOf(it.variety) === 'base'
+      if (it.kind === 'shovel' || it.kind === 'pickaxe' || it.kind === 'axe') {
+        const uses = toolUses(it)
+        return ['better-shovel', 'better-pickaxe', 'axe'].includes(it.id) && (it.usesLeft === uses || it.usesLeft === Math.floor(uses / 2))
+      }
+      if (it.kind === 'treasure') return it.coins >= BURROW_TREASURE_MIN && it.coins <= BURROW_TREASURE_MAX
+      return it.kind === 'weed'
+    case 'uncommon':
+      if (it.kind === 'seeds' || it.kind === 'tree-seed') return tierOf(it.variety) === 'variant'
+      if (it.kind === 'treasure') return it.coins >= BURROW_TREASURE_UNCOMMON_MIN && it.coins <= BURROW_TREASURE_UNCOMMON_MAX
+      return it.kind === 'fly-agaric' && it.count === AGARIC_LOOT_COUNT
+    case 'rare':
+      if (it.kind === 'seeds' || it.kind === 'tree-seed') return tierOf(it.variety) === 'heirloom'
+      if (it.kind === 'shovel' || it.kind === 'pickaxe' || it.kind === 'axe') {
+        return ['rotary-shovel', 'diamond-pickaxe', 'electric-chainsaw'].includes(it.id) && it.usesLeft === Math.round(toolUses(it) * BURROW_SPECIAL_SHARE)
+      }
+      return it.kind === 'truffle' && it.count === TRUFFLE_LOOT_COUNT
+  }
+}
+
 describe('burrow.start', () => {
-  test('Chunk `(0,0)` generate mints `BURROW_START_N` with Euclidean `r` from door `> 8` (same `r` as `clearBase`). None on reserved / rock / tree / very-hard. Day-1 generate does not also seam-spawn. Expand generate mints 0.', () => {
+  test('Generating chunk (0, 0) places `BURROW_START_N` burrows more than `BURROW_START_R` tiles from the door; none on reserved, rock, tree or very hard tiles; no other chunk gets burrows when generated.', () => {
     const w = new World(1)
     expect(w.clock.day).toBe(1)
     expect(w.seam.kind).toBe('play')
@@ -58,8 +114,7 @@ describe('burrow.start', () => {
       expect(c.kind).toBe('untilled')
       if (c.kind !== 'untilled') return
       expect(c.ground).not.toBe('very-hard')
-      expect(c.cover.kind).toBe('burrow')
-      if (c.cover.kind === 'burrow') expect(c.cover.loot).toBeDefined()
+      expect(c.cover).toEqual({ kind: 'burrow' })
       expect(chunkOf(at)).toEqual({ cx: 0, cy: 0 })
     })
     const cols = [...w.burrows.values()].map(a => `${a.col},${a.row}`)
@@ -81,7 +136,7 @@ describe('burrow.start', () => {
 })
 
 describe('burrow.day', () => {
-  test('Seam, after stipend and tax, before field tick: `+1` per owned chunk on an eligible cell, or skip if none. Eligible: owned, untilled, not very-hard, cover bare or grass, not reserved, no drop. Grass cover is replaced.', () => {
+  test('At the end of each day each owned chunk draws once against `BURROW_DAY_CHANCE` and gets at most one burrow, on an untilled, not very hard, bare or grass tile that is not reserved, paved or under an item.', () => {
     const w = new World(2)
     const n0 = w.burrows.size
     w.endDay()
@@ -111,7 +166,7 @@ describe('burrow.day', () => {
     expect(skip.burrows.size).toBe(nSkip)
 
     const grass = new World(2)
-    let keep: { col: number; row: number } | undefined
+    let keep: Coord | undefined
     grass.forEachCell((at, c) => {
       if (keep !== undefined) return
       if (isReserved(at)) return
@@ -137,197 +192,15 @@ describe('burrow.day', () => {
     })
     grass.endDay()
     grass.tick(DT_MAX)
-    const grew = grass.cell(keep)
-    expect(grew.kind === 'untilled' && grew.cover.kind === 'burrow').toBe(true)
-  })
-})
-
-describe('burrow.block', () => {
-  test("Burrow is untilled cover `{ kind: 'burrow'; loot }`, loot required. Not solid. Walk ok. Place / tile / fence / tree-seed refuse.", () => {
-    const w = new World(1)
-    const at = firstBurrow(w)
-    const c = w.cell(at)
-    expect(c.kind).toBe('untilled')
-    if (c.kind !== 'untilled') return
-    expect(c.cover.kind).toBe('burrow')
-    if (c.cover.kind !== 'burrow') return
-    expect(c.cover.loot.kind).toBeDefined()
-    expect(isSolid(c)).toBe(false)
-    expect(placeSolidOk(w, at)).toBe(false)
-    expect(isPavingSite(c)).toBe(false)
-    expect(isFenceSite(c)).toBe(false)
-    expect(seedPair(w, at)).toBeUndefined()
-    w.seats[0].hand = { kind: 'empty' }
-    w.act = w.seats[0]
-    const p = readPrompt(w, at)
-    expect(p.kind).toBe('intent')
-    if (p.kind === 'intent') expect(p.intent).toEqual({ act: 'walk', at })
-    const saved = dump(w)
-    const loaded = parse(JSON.stringify(saved))
-    expect(loaded.ok).toBe(true)
-    if (!loaded.ok) return
-    const again = loaded.world.cell(at)
-    expect(again.kind === 'untilled' && again.cover.kind === 'burrow').toBe(true)
-    if (again.kind === 'untilled' && again.cover.kind === 'burrow') {
-      expect(again.cover.loot).toEqual(c.cover.loot)
-    }
-  })
-})
-
-describe('burrow.dig', () => {
-  test('Shovel extract: work `workSeconds × BURROW_MUL`, not hardness, 1 use, any shovel id, does not till. Cover → bare, same `ground` / `hardness`. Drop stored item on the cell. Prompt **Dig**. Pickaxe no-op. Inspect does not name loot.', () => {
-    const w = new World(1)
-    const loot = { kind: 'treasure' as const, coins: 9 }
-    const named = {
-      kind: 'seeds' as const,
-      crop: 'tomato' as const,
-      variety: 'base' as const,
-      quality: 0,
-      count: 3,
-    }
-    w.setCell(AT, { kind: 'untilled', ground: 'hard', hardness: 0.8, cover: { kind: 'burrow', loot: named } })
-    w.seats[0].hand = { kind: 'hold', item: makeShovel('shovel') }
-    w.seats[0].actor.x = AT.col + 0.5
-    w.seats[0].actor.y = AT.row + 0.5
-    w.act = w.seats[0]
-    const prompt = readPrompt(w, AT)
-    expect(prompt.kind).toBe('intent')
-    if (prompt.kind === 'intent') {
-      expect(prompt.text).toBe(m.prompt_dig())
-      expect(prompt.intent).toEqual({ act: 'shovel', at: AT })
-    }
-    const look = lookText(w, { kind: 'cell', at: AT }, false)
-    expect(look).toContain(m.names_ground_burrow())
-    expect(look).not.toContain(m.names_crop_tomato())
-    expect(look).not.toContain(toolName({ kind: 'hold', item: named }))
-    w.setCell(AT, { kind: 'untilled', ground: 'hard', hardness: 0.8, cover: { kind: 'burrow', loot } })
-    w.click(AT)
-    w.tick(DT_MAX)
-    expect(w.seats[0].workTotal).toBe(SHOVELS.shovel.workSeconds * BURROW_MUL)
-    expect(w.seats[0].workTotal).not.toBe(SHOVELS.shovel.workSeconds)
-    for (let i = 0; i < 50; i++) w.tick(DT_MAX)
-    const after = w.cell(AT)
-    expect(after).toEqual({ kind: 'untilled', ground: 'hard', hardness: 0.8, cover: { kind: 'bare' } })
-    expect(onCell(w.drops, AT).some(d => d.item.kind === 'treasure')).toBe(false)
-    expect(frontOf(AT).some(p => onCell(w.drops, p).some(d => d.item.kind === 'treasure' && d.item.coins === 9))).toBe(
-      true,
-    )
-    expect(w.seats[0].hand.kind === 'hold' && w.seats[0].hand.item.kind === 'shovel' && w.seats[0].hand.item.usesLeft).toBe(
-      SHOVELS.shovel.uses - 1,
-    )
-
-    const one = new World(1)
-    one.setCell(AT, { kind: 'untilled', ground: 'hard', hardness: 1, cover: { kind: 'burrow', loot } })
-    one.seats[0].hand = { kind: 'hold', item: { kind: 'shovel', id: 'rotary-shovel', usesLeft: 1, workSeconds: SHOVELS['rotary-shovel'].workSeconds } }
-    one.seats[0].actor.x = AT.col + 0.5
-    one.seats[0].actor.y = AT.row + 0.5
-    one.click(AT)
-    for (let i = 0; i < 50; i++) one.tick(DT_MAX)
-    expect(one.cell(AT).kind).toBe('untilled')
-    expect(one.seats[0].hand.kind).toBe('empty')
-
-    const pick = new World(1)
-    pick.setCell(AT, { kind: 'untilled', ground: 'soft', hardness: 0, cover: { kind: 'burrow', loot } })
-    pick.seats[0].hand = { kind: 'hold', item: makePickaxe('pickaxe') }
-    pick.seats[0].actor.x = AT.col + 0.5
-    pick.seats[0].actor.y = AT.row + 0.5
-    pick.act = pick.seats[0]
-    const blocked = readPrompt(pick, AT)
-    expect(blocked.kind).toBe('blocked')
-    expect(blocked.text).toBe(m.names_ground_burrow())
-    pick.click(AT)
-    expect(pick.seats[0].queue).toHaveLength(0)
-    const still = pick.cell(AT)
-    expect(still.kind === 'untilled' && still.cover.kind === 'burrow').toBe(true)
-  })
-})
-
-describe('burrow.loot', () => {
-  test('`lootRoll` as `defs/burrow.ts`. Nine rows, filter by gate + non-empty pool, then equal chance. Treasure always. Second roll uniform in that row\'s listed pool. Quality 0. Spatial `burrow.at(col, row, salt)`. Stored at spawn.', () => {
-    const u = 0.5
-    const r = 8
-    const day = 1
-    const luck = 0
-    expect(lootRoll(u, r, day, luck)).toBe(
-      LOOT_ROLL_BASE +
-        LOOT_ROLL_DIST * Math.min(1, r / LOOT_ROLL_DIST_R) +
-        LOOT_ROLL_DAY * Math.min(1, (day - 1) / LOOT_ROLL_DAY_SPAN) +
-        luck / LOOT_LUCK_DIV +
-        u * LOOT_U_SPAN -
-        LOOT_U_OFF,
-    )
-    const w = new World(1)
-    const at = firstBurrow(w)
-    const c = w.cell(at)
-    expect(c.kind === 'untilled' && c.cover.kind === 'burrow').toBe(true)
-    if (c.kind !== 'untilled' || c.cover.kind !== 'burrow') return
-    expect(rollLoot(new Rng(1), at.col, at.row, 1, 0)).toEqual(c.cover.loot)
-    if (c.cover.loot.kind === 'seeds' || c.cover.loot.kind === 'tree-seed') expect(c.cover.loot.quality).toBe(0)
-    if (c.cover.loot.kind === 'shovel') {
-      expect(c.cover.loot.id).toBe('better-shovel')
-      expect(c.cover.loot.workSeconds).toBe(SHOVELS['better-shovel'].workSeconds)
-    }
-    if (c.cover.loot.kind === 'pickaxe') {
-      expect(c.cover.loot.id).toBe('better-pickaxe')
-      expect(c.cover.loot.workSeconds).toBe(PICKAXES['better-pickaxe'].workSeconds)
-    }
-    if (c.cover.loot.kind === 'axe') expect(c.cover.loot.workSeconds).toBe(AXES.axe.workSeconds)
-    if (c.cover.loot.kind === 'fertilizer') expect(c.cover.loot.liters).toBe(FERT_BAG_LITERS)
-    w.family.owned.set('lucky', LUCK_CAP)
-    const later = w.cell(at)
-    expect(later.kind === 'untilled' && later.cover.kind === 'burrow' && later.cover.loot).toEqual(c.cover.loot)
-
-    const far = rollLoot(new Rng(2), 30, 30, 40, LUCK_CAP)
-    const farU = new Rng(2).stream('burrow').at(30, 30, 0)
-    const farRoll = lootRoll(farU, doorR(30, 30), 40, LUCK_CAP)
-    expect(farRoll).toBeGreaterThan(LOOT_GATE_HEIRLOOM)
-    if (far.kind === 'seeds' || far.kind === 'tree-seed') expect(far.quality).toBe(0)
-
-    const near = lootRoll(0, BURROW_START_R + 0.1, 1, 0)
-    expect(near).toBeLessThan(LOOT_GATE_BASE)
-    expect(LOOT_GATE_WEED).toBeLessThanOrEqual(LOOT_GATE_FERT)
-    expect(LOOT_GATE_FERT).toBeLessThan(LOOT_GATE_TOOL)
-    expect(LOOT_GATE_TOOL).toBeLessThan(LOOT_GATE_VARIANT)
-    expect(LOOT_GATE_VARIANT).toBeLessThan(LOOT_GATE_BASE)
-    expect(LOOT_GATE_HEIRLOOM).toBe(LOOT_GATE_BASE)
-    expect(LOOT_GATE_AGARIC).toBe(LOOT_GATE_HEIRLOOM)
+    expect(grass.cell(keep)).toEqual({ kind: 'untilled', ground: 'soft', hardness: 0, cover: { kind: 'burrow' } })
   })
 
-  test('burrow.bands - Five bands. Treasure in every one. Fertilizer and Pulled weed at the bottom, tool above them, base rows until the heirloom gate, variant rows from the variant gate, heirloom rows and Fly agaric from the top gate. Vanilla is not a burrow seed.', () => {
-    const bands: [number, LootRowId[]][] = [
-      [1, ['treasure', 'tree-seed-base', 'fertilizer', 'tool', 'weed', 'seeds-base']],
-      [2, ['treasure', 'tree-seed-base', 'tool', 'seeds-base']],
-      [3, ['treasure', 'tree-seed-base', 'seeds-base']],
-      [4, ['treasure', 'tree-seed-base', 'tree-seed-variant', 'seeds-base', 'seeds-variant']],
-      [5, ['treasure', 'tree-seed-variant', 'tree-seed-heirloom', 'fly-agaric', 'seeds-variant', 'seeds-heirloom']],
-      [9, ['treasure', 'tree-seed-variant', 'tree-seed-heirloom', 'fly-agaric', 'seeds-variant', 'seeds-heirloom']],
-    ]
-    bands.forEach(([roll, rows]) => {
-      expect([roll, keptRows(roll).slice().sort()]).toEqual([roll, rows.slice().sort()])
-    })
-    for (let roll = 0; roll <= 10; roll += 0.25) expect(keptRows(roll)).toContain('treasure')
-    const seen = new Set<string>()
-    for (let col = 0; col < 60; col++) {
-      for (let row = 0; row < 60; row++) {
-        const loot = rollLoot(new Rng(3), col, row, 20, 3)
-        if (loot.kind === 'seeds') seen.add(loot.crop)
-      }
-    }
-    expect(seen.has('tomato') || seen.has('raspberry') || seen.has('grape')).toBe(true)
-    expect([...seen].every(c => c === 'tomato' || c === 'raspberry' || c === 'grape')).toBe(true)
-  })
-
-  test('burrow.day-chance - Each owned chunk mints on a `BURROW_DAY_CHANCE + luck x BURROW_LUCK_CHANCE` roll, so a day can pass with no new burrow. Luck raises the chance and caps below certainty.', () => {
-    expect(burrowDayChance(0)).toBe(BURROW_DAY_CHANCE)
-    expect(burrowDayChance(3)).toBeCloseTo(BURROW_DAY_CHANCE + 3 * BURROW_LUCK_CHANCE, 10)
-    expect(burrowDayChance(3)).toBeGreaterThan(burrowDayChance(0))
-    expect(burrowDayChance(LUCK_CAP)).toBeLessThan(1)
-
+  test('A day can pass with no new burrow: the chunk draw is compared with `BURROW_DAY_CHANCE`.', () => {
     const rolls = Array.from({ length: 60 }, (_, i) => {
       const seed = i + 1
       const w = new World(seed)
       const id = w.owned[0]
-      return { seed, mints: w.rng.stream('burrow').at(id.cx, id.cy, 2, BURROW_DAY_SALT) < burrowDayChance(0) }
+      return { seed, mints: w.rng.stream('burrow').at(id.cx, id.cy, 2, BURROW_DAY_SALT) < BURROW_DAY_CHANCE }
     })
     const mints = rolls.find(r => r.mints)
     const skips = rolls.find(r => !r.mints)
@@ -344,19 +217,218 @@ describe('burrow.loot', () => {
   })
 })
 
-describe('burrow.agaric', () => {
-  test("burrow.agaric - `{ kind: 'fly-agaric'; count }`. Countable, stacks like Ash, composts and burns, no store takes it. Top band only. Has a name and an Almanac entry.", () => {
+describe('burrow.block', () => {
+  test('A burrow is untilled cover and holds no item; it is walkable; placing, paving, fencing and planting a tree seed on it are refused.', () => {
     const w = new World(1)
-    const item = { kind: 'fly-agaric' as const, count: 1 }
+    const at = firstBurrow(w)
+    const c = w.cell(at)
+    expect(c.kind).toBe('untilled')
+    if (c.kind !== 'untilled') return
+    expect(c.cover).toEqual({ kind: 'burrow' })
+    expect(isSolid(c)).toBe(false)
+    expect(placeSolidOk(w, at)).toBe(false)
+    expect(isPavingSite(c)).toBe(false)
+    expect(isFenceSite(c)).toBe(false)
+    expect(seedPair(w, at)).toBeUndefined()
+    w.seats[0].hand = { kind: 'empty' }
+    w.act = w.seats[0]
+    const p = readPrompt(w, at)
+    expect(p.kind).toBe('intent')
+    if (p.kind === 'intent') expect(p.intent).toEqual({ act: 'walk', at })
+    const loaded = parse(JSON.stringify(dump(w)))
+    expect(loaded.ok).toBe(true)
+    if (!loaded.ok) return
+    expect(loaded.world.cell(at)).toEqual(c)
+  })
+})
+
+describe('burrow.dig', () => {
+  test('Any shovel digs it in work seconds × `BURROW_MUL`, one use, hardness ignored; the tile becomes bare untilled ground with the same ground and hardness; the item drops beside it; a pickaxe does nothing; the hover line does not name an item.', () => {
+    const w = new World(1)
+    w.setCell(AT, { kind: 'untilled', ground: 'hard', hardness: 0.8, cover: { kind: 'burrow' } })
+    w.seats[0].hand = { kind: 'hold', item: makeShovel('shovel') }
+    w.seats[0].actor.x = AT.col + 0.5
+    w.seats[0].actor.y = AT.row + 0.5
+    w.act = w.seats[0]
+    const prompt = readPrompt(w, AT)
+    expect(prompt.kind).toBe('intent')
+    if (prompt.kind === 'intent') {
+      expect(prompt.text).toBe(m.prompt_dig())
+      expect(prompt.intent).toEqual({ act: 'shovel', at: AT })
+    }
+    expect(lookText(w, { kind: 'cell', at: AT }, false)).toContain(m.names_ground_burrow())
+    const predicted = digBurrow(w.rng, AT, w.clock.day, w.sinceRare)
+    const slots = w.prizeSlots
+    w.click(AT)
+    w.tick(DT_MAX)
+    expect(w.seats[0].workTotal).toBe(SHOVELS.shovel.workSeconds * BURROW_MUL)
+    for (let i = 0; i < 50; i++) w.tick(DT_MAX)
+    expect(w.cell(AT)).toEqual({ kind: 'untilled', ground: 'hard', hardness: 0.8, cover: { kind: 'bare' } })
+    expect(onCell(w.drops, AT)).toHaveLength(0)
+    const found = predicted.find
+    if (found.kind === 'item') {
+      expect(frontOf(AT).some(p => onCell(w.drops, p).some(d => JSON.stringify(d.item) === JSON.stringify(found.item)))).toBe(true)
+    } else {
+      expect(w.prizeSlots).toBe(slots + 1)
+    }
+    expect(w.seats[0].hand.kind === 'hold' && w.seats[0].hand.item.kind === 'shovel' && w.seats[0].hand.item.usesLeft).toBe(
+      SHOVELS.shovel.uses - 1,
+    )
+
+    const one = new World(1)
+    one.setCell(AT, { kind: 'untilled', ground: 'hard', hardness: 1, cover: { kind: 'burrow' } })
+    one.seats[0].hand = { kind: 'hold', item: { kind: 'shovel', id: 'rotary-shovel', usesLeft: 1, workSeconds: SHOVELS['rotary-shovel'].workSeconds } }
+    one.seats[0].actor.x = AT.col + 0.5
+    one.seats[0].actor.y = AT.row + 0.5
+    one.click(AT)
+    for (let i = 0; i < 50; i++) one.tick(DT_MAX)
+    expect(one.cell(AT).kind).toBe('untilled')
+    expect(one.seats[0].hand.kind).toBe('empty')
+
+    const pick = new World(1)
+    pick.setCell(AT, { kind: 'untilled', ground: 'soft', hardness: 0, cover: { kind: 'burrow' } })
+    pick.seats[0].hand = { kind: 'hold', item: makePickaxe('pickaxe') }
+    pick.seats[0].actor.x = AT.col + 0.5
+    pick.seats[0].actor.y = AT.row + 0.5
+    pick.act = pick.seats[0]
+    const blocked = readPrompt(pick, AT)
+    expect(blocked.kind).toBe('blocked')
+    expect(blocked.text).toBe(m.names_ground_burrow())
+    pick.click(AT)
+    expect(pick.seats[0].queue).toHaveLength(0)
+    expect(pick.cell(AT)).toEqual({ kind: 'untilled', ground: 'soft', hardness: 0, cover: { kind: 'burrow' } })
+  })
+})
+
+describe('burrow.rarity', () => {
+  test('Uncommon = 10 + 20 × distance share + 20 × days share (32 tiles, 32 days); Rare = 1 + 5 × count + 10 × distance share + 10 × days share (32 tiles, 64 days), at most 50; Common is the rest.', () => {
+    expect(burrowOdds(0, 1, 0)).toEqual({ uncommon: 10, rare: 1 })
+    expect(burrowOdds(32, 33, 3)).toEqual({ uncommon: 50, rare: 31 })
+    expect(burrowOdds(32, 65, 0)).toEqual({ uncommon: 50, rare: 21 })
+    expect(burrowOdds(32, 65, 6)).toEqual({ uncommon: 50, rare: BURROW_RARE_MAX })
+    expect(burrowOdds(80, 200, 0)).toEqual(burrowOdds(32, 65, 0))
+    expect(burrowOdds(16, 17, 0)).toEqual({ uncommon: 30, rare: 8.5 })
+    const max = burrowOdds(1000, 1000, 1000)
+    expect(100 - max.uncommon - max.rare).toBeGreaterThanOrEqual(0)
+
+    const odds = { uncommon: 10, rare: 1 }
+    expect(rarityOf(0, odds)).toBe('rare')
+    expect(rarityOf(0.0099, odds)).toBe('rare')
+    expect(rarityOf(0.01, odds)).toBe('uncommon')
+    expect(rarityOf(0.1099, odds)).toBe('uncommon')
+    expect(rarityOf(0.11, odds)).toBe('common')
+    expect(rarityOf(0.9999, { uncommon: 50, rare: 50 })).toBe('uncommon')
+  })
+})
+
+describe('burrow.count', () => {
+  test('A Rare dig sets the farm count to 0; a Common or Uncommon dig adds 1; the count is saved.', () => {
+    const w = digger(3)
+    expect(w.sinceRare).toBe(0)
+    digAt(w, findTile(w, 0, d => d.rarity !== 'rare'))
+    expect(w.sinceRare).toBe(1)
+    digAt(w, findTile(w, 1, d => d.rarity !== 'rare'))
+    expect(w.sinceRare).toBe(2)
+    const loaded = parse(JSON.stringify(dump(w)))
+    expect(loaded.ok).toBe(true)
+    if (!loaded.ok) return
+    expect(loaded.world.sinceRare).toBe(2)
+    digAt(w, findTile(w, 2, d => d.rarity === 'rare'))
+    expect(w.sinceRare).toBe(0)
+  })
+})
+
+describe('burrow.items', () => {
+  test("Each rarity gives only its own entries; each entry's items are the listed ones; seeds and tree seeds have quality 0; the special tool has 20% of its uses; Common Treasure is 10 to 150, Uncommon 70 to 140.", () => {
+    const rng = new Rng(4)
+    const seen: Record<BurrowRarity, Set<string>> = { common: new Set(), uncommon: new Set(), rare: new Set() }
+    ;[1, 33, 65].forEach(day =>
+      [0, 10].forEach(since =>
+        grid(-16, 64).forEach(at => {
+          const d = digBurrow(rng, at, day, since)
+          expect([d.rarity, fits(d.rarity, d)]).toEqual([d.rarity, true])
+          const f = d.find
+          if (f.kind === 'item' && (f.item.kind === 'seeds' || f.item.kind === 'tree-seed')) expect(f.item.quality).toBe(0)
+          seen[d.rarity].add(f.kind === 'item' ? f.item.kind : f.kind)
+        }),
+      ),
+    )
+    expect([...seen.common].sort()).toEqual(['axe', 'pickaxe', 'seeds', 'shovel', 'treasure', 'tree-seed', 'weed'])
+    expect([...seen.uncommon].sort()).toEqual(['fly-agaric', 'seeds', 'skill-point', 'treasure', 'tree-seed'])
+    expect([...seen.rare].sort()).toEqual(['axe', 'permit', 'pickaxe', 'seeds', 'shovel', 'tree-seed', 'truffle'])
+  })
+})
+
+describe('burrow.permit', () => {
+  test('A Rare expansion permit adds one permit to the farm and drops nothing.', () => {
+    const w = digger(5)
+    w.clock.day = 65
+    const at = findTile(w, 10, d => d.find.kind === 'permit')
+    w.sinceRare = 10
+    const slots = w.prizeSlots
+    const left = w.expandLeft()
+    const drops = w.drops.length
+    digAt(w, at)
+    expect(w.prizeSlots).toBe(slots + 1)
+    expect(w.expandLeft()).toBe(left + 1)
+    expect(w.drops).toHaveLength(drops)
+    expect(w.sinceRare).toBe(0)
+  })
+})
+
+describe('burrow.point', () => {
+  test('An Uncommon skill point adds `SKILL_POINT_LOOT` skill points to the farm and drops nothing.', () => {
+    const w = digger(5)
+    w.clock.day = 33
+    const at = findTile(w, 0, d => d.find.kind === 'skill-point')
+    const points = w.points
+    const drops = w.drops.length
+    digAt(w, at)
+    expect(w.points).toBe(points + SKILL_POINT_LOOT)
+    expect(w.drops).toHaveLength(drops)
+    expect(w.sinceRare).toBe(1)
+  })
+})
+
+describe('burrow.luck', () => {
+  test('Lucky changes neither the daily chance nor the rarity nor the item.', () => {
+    const plain = new World(6)
+    const lucky = new World(6)
+    lucky.family.owned.set('lucky', 3)
+    ;[plain, lucky].forEach(w => {
+      for (let i = 0; i < 5; i++) {
+        w.endDay()
+        w.tick(DT_MAX)
+      }
+    })
+    expect(plain.clock.day).toBe(6)
+    expect(plain.burrows.size).toBeGreaterThan(BURROW_START_N)
+    expect([...lucky.burrows.keys()].sort()).toEqual([...plain.burrows.keys()].sort())
+    const a = digger(7)
+    const b = digger(7)
+    b.family.owned.set('lucky', 3)
+    const at = findTile(a, 0, () => true)
+    digAt(a, at)
+    digAt(b, at)
+    expect(b.drops).toEqual(a.drops)
+    expect(b.prizeSlots).toBe(a.prizeSlots)
+  })
+})
+
+describe('burrow.truffle', () => {
+  test("`{ kind: 'truffle'; count }`. Countable, composts and burns like Fly agaric, no store takes it. Only Rare burrows give it; only Uncommon burrows give Fly agaric. Each rarity has five entries. Has a name and an Almanac entry.", () => {
+    const w = new World(1)
+    const item = { kind: 'truffle' as const, count: 1 }
     expect('count' in item).toBe(true)
     expect(compostValue(item)).toBe(COMPOST_VALUE['fly-agaric'])
     expect(furnaceValue(item)).toBe(FURNACE_VALUE['fly-agaric'])
     expect(w.silo.accept(item)).toBe(0)
     expect(w.additives.accept(item)).toBe(0)
-    expect(m.names_item_fly_agaric().length).toBeGreaterThan(0)
-    expect(catalogEntries().some(e => e.id === 'fly-agaric')).toBe(true)
-    expect(keptRows(LOOT_GATE_AGARIC)).toContain('fly-agaric')
-    expect(keptRows(LOOT_GATE_AGARIC - 0.01)).not.toContain('fly-agaric')
+    expect(m.names_item_truffle().length).toBeGreaterThan(0)
+    expect(catalogEntries().some(e => e.id === 'truffle')).toBe(true)
+    expect(BURROW_RARITIES.filter(r => BURROW_ENTRIES[r].some(e => e.kind === 'truffle'))).toEqual(['rare'])
+    expect(BURROW_RARITIES.filter(r => BURROW_ENTRIES[r].some(e => e.kind === 'fly-agaric'))).toEqual(['uncommon'])
+    expect(BURROW_RARITIES.map(r => BURROW_ENTRIES[r].length)).toEqual([5, 5, 5])
   })
 })
 
@@ -405,8 +477,7 @@ describe('burrow.treasure', () => {
     const lying = new World(1)
     lying.setCell(AT, { kind: 'untilled', ground: 'soft', hardness: 0, cover: { kind: 'bare' } })
     lying.drops.push({ at: { ...AT }, item: { kind: 'treasure', coins: 4 } })
-    const snap = dump(lying)
-    const loaded = parse(JSON.stringify(snap))
+    const loaded = parse(JSON.stringify(dump(lying)))
     expect(loaded.ok).toBe(true)
     if (!loaded.ok) return
     expect(onCell(loaded.world.drops, AT)).toEqual([{ at: AT, item: { kind: 'treasure', coins: 4 } }])
@@ -414,7 +485,7 @@ describe('burrow.treasure', () => {
 })
 
 describe('family.lucky', () => {
-  test("`lucky` one id, maxTier 3, parent `boots`, gate none, effect `{ kind: 'lucky' }`; luck is `min(LUCK_CAP, skillTier('lucky'))`; not a World field; no HUD chip; icon is the `stat-luck` clover — [[art/skills]] [[mechanics/burrow]].", () => {
+  test("`lucky` one id, maxTier 3; luck is `min(LUCK_CAP, skillTier('lucky'))`; not a World field.", () => {
     const w = new World(1)
     expect('luck' in w).toBe(false)
     expect(luckOf(w)).toBe(0)

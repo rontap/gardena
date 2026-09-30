@@ -26,7 +26,6 @@ export const STALL_IDS: StallGoodId[] = [
   ...JAM_IDS,
   'oil',
   'flour',
-  'extract',
   'bread',
 ]
 
@@ -41,7 +40,7 @@ export function isCropStall(id: StallGoodId): id is GrownCrop {
 }
 
 export function isBakedStall(id: StallGoodId): boolean {
-  return id === 'sugar' || id === 'flour' || id === 'extract' || id === 'bread'
+  return id === 'sugar' || id === 'flour' || id === 'bread'
 }
 
 export function isInfusedStall(id: StallGoodId): boolean {
@@ -57,7 +56,6 @@ export function stallGoodName(id: StallGoodId, variety: VarietyId): string {
   if (id === 'wine' || id === 'cider') return caskName(id, variety)
   if (id === 'oil') return m.names_item_oil()
   if (id === 'flour') return m.names_item_flour()
-  if (id === 'extract') return m.names_item_extract()
   if (id === 'bread') return m.names_item_bread()
   if (id === 'vodka' || id === 'beer' || id === 'brandy' || id === 'mixed') return SPIRIT_NAME[id]()
   if (id.startsWith('jam-')) return jamJarName(id.slice(4) as JamCrop, variety)

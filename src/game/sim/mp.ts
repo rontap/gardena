@@ -364,6 +364,7 @@ export function digestParts(world: World): Record<string, unknown> {
     pumpLiters: q(world.pumpLiters),
     job: world.job,
     points: world.points,
+    sinceRare: world.sinceRare,
     nextVehicleId: world.nextVehicleId,
     nextTrailerId: world.nextTrailerId,
   }

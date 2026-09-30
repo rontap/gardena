@@ -32,7 +32,14 @@ import {
   HANGAR_H,
   HANGAR_W,
   INFUSE_SECONDS,
+  EXTRACT_BAG_LITERS,
+  EXTRACT_GROWTH,
+  EXTRACT_INFUSED_SECONDS,
+  EXTRACT_POUR,
+  EXTRACT_SEASON,
+  EXTRACT_SECONDS,
   MILL_IN,
+  MILL_TRUFFLE_OUT,
   MILL_VANILLA_IN,
   MILL_WORK,
   JAM_IN,
@@ -47,8 +54,8 @@ import {
 import { SOURCE, TAP_RATE } from '../sim/water.ts'
 import { FERT_PLOT_MAX, SOIL_WATER_MAX, SOIL_WATER_MID, WEED_GROW } from '../sim/soil.ts'
 import { DAY_SECONDS } from '../sim/clock.ts'
-import type { GrownCrop, TileId } from '../sim/ids.ts'
-import type { Face } from '../sim/item.ts'
+import { INFUSABLE_KINDS, type GrownCrop, type TileId } from '../sim/ids.ts'
+import { goodsTaking, infuseGoodsText, makeExtract, type Face } from '../sim/item.ts'
 
 export type CatalogEntry = {
   id: string
@@ -338,7 +345,7 @@ export function catalogEntries(): CatalogEntry[] {
       id: 'infuser',
       title: m.names_building_infuser(),
       icon: { kind: 'infuser' },
-      blurb: m.catalog_infuser({ seconds: INFUSE_SECONDS }),
+      blurb: m.catalog_infuser({ goods: infuseGoodsText(INFUSABLE_KINDS, 'disjunction'), seconds: INFUSE_SECONDS }),
     },
     {
       id: 'necronomicon',
@@ -356,13 +363,32 @@ export function catalogEntries(): CatalogEntry[] {
       id: 'flakes',
       title: m.names_item_flakes(),
       icon: { kind: 'flakes', quality: 0, count: 1 },
-      blurb: m.catalog_flakes(),
+      blurb: m.catalog_flakes({ goods: goodsTaking('flakes') }),
     },
     {
       id: 'vanilla-extract',
       title: m.names_item_vanilla_extract(),
       icon: { kind: 'vanilla-extract', quality: 0, count: 1 },
-      blurb: m.catalog_vanilla_extract(),
+      blurb: m.catalog_vanilla_extract({ goods: goodsTaking('vanilla-extract') }),
+    },
+    {
+      id: 'truffle-extract',
+      title: m.names_item_truffle_extract(),
+      icon: { kind: 'truffle-extract', count: 1 },
+      blurb: m.catalog_truffle_extract({ goods: goodsTaking('truffle-extract') }),
+    },
+    {
+      id: 'extract',
+      title: m.names_item_extract(),
+      icon: makeExtract(false),
+      blurb: m.catalog_extract({
+        liters: EXTRACT_BAG_LITERS,
+        pour: EXTRACT_POUR,
+        seconds: EXTRACT_SECONDS,
+        pct: Math.round(EXTRACT_GROWTH * 100),
+        season: Math.round(EXTRACT_SEASON * 100),
+        infused: EXTRACT_INFUSED_SECONDS,
+      }),
     },
     {
       id: 'still',
@@ -421,7 +447,13 @@ export function catalogEntries(): CatalogEntry[] {
       id: 'fly-agaric',
       title: m.names_item_fly_agaric(),
       icon: { kind: 'fly-agaric', count: 1 },
-      blurb: m.catalog_fly_agaric(),
+      blurb: m.catalog_fly_agaric({ goods: goodsTaking('fly-agaric') }),
+    },
+    {
+      id: 'truffle',
+      title: m.names_item_truffle(),
+      icon: { kind: 'truffle', count: 1 },
+      blurb: m.catalog_truffle({ n: MILL_TRUFFLE_OUT }),
     },
     {
       id: 'barrel',

@@ -3,7 +3,6 @@ import { CROPS } from '../../defs/crops.ts'
 import { SKUS } from '../../defs/research.ts'
 import {
   BREAD,
-  EXTRACT,
   FERT_BAG_LITERS,
   FLOUR,
   JAM_SALE,
@@ -85,7 +84,6 @@ export const SAT_RECOVER: { readonly [K in StallGoodId]: number } = {
   'jam-tomato': 0.3,
   oil: 0.3,
   flour: 0.3,
-  extract: 0.3,
   bread: 0.3,
   sugar: 0.3,
 }
@@ -331,7 +329,6 @@ export const GOOD_COST: { readonly [K in StallGoodId]: number } = {
   'jam-tomato': 6,
   oil: 5,
   flour: 4,
-  extract: 8,
   bread: 4,
   vodka: 8,
   beer: 7,
@@ -370,7 +367,6 @@ export const GOOD_TIER: { readonly [K in StallGoodId]: Stars } = {
   brandy: 2,
   mixed: 2,
   sugar: 1,
-  extract: 1,
 }
 
 export const GROUP_TIER: { readonly [K in GroupId]: Stars } = { jam: 3, spirit: 2 }
@@ -400,7 +396,6 @@ export const FEASIBLE_PER_DAY: { readonly [K in StallGoodId]: number } = {
   'jam-tomato': 12,
   oil: 80,
   flour: 80,
-  extract: 80,
   bread: 1,
   sugar: 160,
   wine: 1,
@@ -480,7 +475,6 @@ export function unitOf(good: StallGoodId): number {
   if (good === 'sugar') return SUGAR_MILL
   if (good === 'oil') return OIL
   if (good === 'flour') return FLOUR
-  if (good === 'extract') return EXTRACT
   if (good === 'bread') return BREAD
   if (isCaskClass(good)) return CASK_SALE[good]
   if (isSpiritClass(good)) return bakeSpiritSale(good, 'base', 0)
@@ -488,7 +482,7 @@ export function unitOf(good: StallGoodId): number {
 }
 
 export const CONTRACT_GOODS: readonly ContractGoodId[] = STALL_IDS.filter(
-  (g): g is ContractGoodId => g !== 'sugar' && g !== 'extract',
+  (g): g is ContractGoodId => g !== 'sugar',
 )
 
 export const REFERENCE_GOLD_PER_DAY = (() => {
@@ -734,6 +728,9 @@ function prizeFor(stream: Spatial, day: number, o: ContractOffer): Prize {
     const i = Math.floor(u * (xs.length + 1))
     if (i === xs.length) return { kind: 'seeds', crop: 'vanilla', variety: 'base', count: cell.vanilla }
     return takeAt(cell.pool, i, cell.count, o.reward)
+  }
+  if (cell.kind === 'trees') {
+    return { kind: 'tree-seed', tree: cell.trees[Math.floor(u * cell.trees.length)], variety: 'base' }
   }
   return cell
 }

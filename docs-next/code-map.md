@@ -45,13 +45,13 @@ Game state and game rules. No React or Pixi imports.
 - `feature-machines/` — machines, recipes, sorter.
 - `feature-vehicles/` — vehicles, trailers, routes, fuel.
 - `feature-contracts/` — contract board, and Market saturation.
-- `feature-burrow/`, `feature-enclosure/`, `feature-necronomicon/`.
+- `feature-burrow/`, `feature-mushroom/`, `feature-enclosure/`, `feature-necronomicon/`.
 - `feature-save/` — save file shape, write, parse.
 - `feature-sound/` — playback. `sound.ts` runs the cues. `sound.utils.ts` is the only `tone` import. `music/` is one file per song. `machines/` and `vfx/` are the other cues.
 
 ## Tuning — `src/game/defs/`
 
-Numbers and tables: crops, varieties, trees, items, research and SKUs, catalog, shelves, skills, companies, weather, the loan, burrow loot, Necronomicon pages, tutorial text. Some constants are defined in the sim file that uses them, mainly `soil.ts`, `water.ts` and `feature-contracts/market.ts`; grep both.
+Numbers and tables: crops, varieties, trees, items, research and SKUs, catalog, shelves, skills, companies, weather, the loan, burrow chances and items, mushroom chances, Necronomicon pages, tutorial text. Some constants are defined in the sim file that uses them, mainly `soil.ts`, `water.ts` and `feature-contracts/market.ts`; grep both.
 
 ## Screen — `src/game/ui/`
 

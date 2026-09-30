@@ -64,7 +64,7 @@ export type CompanyBook = { [K in CompanyId]: CompanyRecord }
 
 export type GroupId = 'jam' | 'spirit'
 
-export type ContractGoodId = Exclude<StallGoodId, 'sugar' | 'extract'>
+export type ContractGoodId = Exclude<StallGoodId, 'sugar'>
 
 export type PlainGoodId = StallGoodId
 
@@ -111,6 +111,7 @@ export type PrizeTemplate =
   | { kind: 'pool'; pool: PrizePool; count: number }
   | { kind: 'from-cash'; pool: PrizePool }
   | { kind: 'pool-or-vanilla'; pool: PrizePool; count: number; vanilla: number }
+  | { kind: 'trees'; trees: readonly [TreeId, TreeId] }
 
 export type PrizeBand = 0 | 1 | 2 | 3
 

@@ -3,9 +3,8 @@ import {
   BREAD,
   FURNACE_BREAD_IN,
   FURNACE_SECONDS,
-  INFUSE_EXTRACT,
-  INFUSE_FLAKES,
   INFUSE_IN,
+  INFUSE_REAGENT,
   INFUSE_SECONDS,
   MILL_CHILLI_IN,
   MILL_CHILLI_OUT,
@@ -242,7 +241,7 @@ test('vanilla mill 1 fruit to 4 vanilla-extract', async ({ page }) => {
   expect(MILL_VANILLA_OUT).toBe(4)
 })
 
-test('Infuser dump flakes or vanilla-extract; overlay on held and drop', async ({ page }) => {
+test('Infuser dump flakes on jam and truffle extract on oil; overlay on held and drop', async ({ page }) => {
   test.setTimeout(90_000)
   await gotoPlay(page)
   await viewReady(page)
@@ -292,7 +291,7 @@ test('Infuser dump flakes or vanilla-extract; overlay on held and drop', async (
       w.seats[0].hand = { kind: 'hold', item: { kind: 'flakes', quality: 1, count: flakesN } }
       w.enqueue({ act: 'infuse', at: infAt })
     },
-    { infAt: INF_AT, flakesN: INFUSE_FLAKES },
+    { infAt: INF_AT, flakesN: INFUSE_REAGENT },
   )
   await drain(page)
   await ticks(page, INFUSE_SECONDS)
@@ -333,10 +332,10 @@ test('Infuser dump flakes or vanilla-extract; overlay on held and drop', async (
         }
       ).__world
       if (w === undefined) throw new Error('no __world')
-      w.seats[0].hand = { kind: 'hold', item: { kind: 'vanilla-extract', quality: 1, count: extractN } }
+      w.seats[0].hand = { kind: 'hold', item: { kind: 'truffle-extract', count: extractN } }
       w.enqueue({ act: 'infuse', at: infAt })
     },
-    { infAt: INF_AT, extractN: INFUSE_EXTRACT },
+    { infAt: INF_AT, extractN: INFUSE_REAGENT },
   )
   await drain(page)
   await ticks(page, INFUSE_SECONDS)

@@ -5,7 +5,7 @@ Unlocked: from the start. Tomorrow's weather with `unlock-weather-station` (**We
 
 ## Purpose
 
-The day gives the game its rhythm: money comes and goes at the end of each day, a skill point arrives, and the end-of-day summary shows what the day earned and cost. The weather changes each day and asks the player to react: rain and floods add water, dry days and droughts take it away and make water and seeds dearer, and the extreme days make fruit sell for more. Because the whole weather table follows from the game's seed, the forecast is exact, and planning around it pays.
+The day gives the game its rhythm: money comes and goes at the end of each day, a skill point arrives on an odd day, and the end-of-day summary shows what the day earned and cost. The weather changes each day and asks the player to react: rain and floods add water, dry days and droughts take it away and make water and seeds dearer, and the extreme days make fruit sell for more. Because the whole weather table follows from the game's seed, the forecast is exact, and planning around it pays.
 
 ## Rules
 
@@ -26,9 +26,9 @@ When `t` reaches `DAY_SECONDS`, the day number goes up and the end of day runs b
 
 - money: + grandma's support, − land tax ([[features/expansion]]), − the water bill ([[features/water]]), − the loan payback, + a new loan (below); money may go below zero;
 - rotten produce left on the ground for `ROTTEN_GROUND_DAYS` is cleared, and weeds full-grown for `WEED_GONE_DAYS` turn to grass ([[features/weeds]]);
-- new burrows, trees move through their seasons, grandma's story moves on ([[features/burrow]], [[features/trees]], [[features/necronomicon]]);
+- new burrows, mushrooms around trees come up and old ones are gone, trees move through their seasons, grandma's story moves on ([[features/burrow]], [[features/mushrooms]], [[features/trees]], [[features/necronomicon]]);
 - contracts past their deadline are settled, the contract board changes, and reputation drops by `REP_IDLE` if no contract was accepted that day ([[features/contracts]]); Market demand is set for the new day ([[features/market]]);
-- `POINTS_PER_DAY` skill points ([[features/family]]);
+- `pointsForEndedDay`: `POINTS_PER_DAY` skill points when the ended day is odd, and none when it is even ([[features/family]]);
 - the end-of-day summary for the ended day.
 
 The farm does not pause at the end of the day, and open panels stay open. Work in progress is cancelled: every gardener's work timer and bucket filling are cleared.
@@ -48,7 +48,7 @@ Only the Seed silo counts: seeds in a hand, an inventory or a Seeding silo, and 
 
 ### End-of-day summary
 
-Each ended day adds a `Recap` to `World.recaps` and its day to `recapUnseen`. The Command Center shows **Day {n} Finished** for each unread summary; clicking it opens the summary, which pauses a solo game while open ([[shell]]). Closing it (**Close**, Escape or the backdrop) marks it read (`seeRecap`); the skill point was already granted at the end of the day.
+Each ended day adds a `Recap` to `World.recaps` and its day to `recapUnseen`. The Command Center shows **Day {n} Finished** for each unread summary; clicking it opens the summary, which pauses a solo game while open ([[shell]]). Closing it (**Close**, Escape or the backdrop) marks it read (`seeRecap`); the skill point, on an odd ended day, was already granted at the end of the day.
 
 The summary shows: **Day {n}**, **Harvested** and **Lost** plant counts, research finished that day, each contract settled (**Completed**, **Missed**, **Cancelled**) and **A new board is up.**, then the money lines **Support from grandma** (only when not 0), **Tax**, **Water**, **Loan payback** (only on a payback day), **Loan** with **{packs} packs of {seeds} went into the {silo}.** under it (only on a loan day), **Days of payback left** (only while `loanDays` is above 0), and **Balance**. `Recap.loan`, `Recap.payback` and `Recap.loanDays` hold those numbers for the ended day.
 
@@ -78,6 +78,7 @@ A chance of 0 or below never happens, so the first days are Clear, a Rain or Dry
 |---|---|---|---|---|---|
 | water on every tilled plot and tree, per day | — | + `RAIN_SOAK_DAY` | − `DRY_EVAP_DAY` | + `FLOOD_SOAK_DAY` | − `DROUGHT_EVAP_DAY` |
 | weed and grass chance | × 1 | × `WEATHER_WEED_MUL` | none | × `WEATHER_WEED_MUL` | none |
+| mushroom chance per grown tree, at the end of the day ([[features/mushrooms]]) | `MUSHROOM_CHANCE.clear` | `MUSHROOM_CHANCE.rain` | `MUSHROOM_CHANCE.dry` | `MUSHROOM_CHANCE.flood` | `MUSHROOM_CHANCE.drought` |
 | Well refill | × 1 | × 1 | × 1 | × 1 | × `WELL_DROUGHT` |
 | Pump water price | × 1 | × 1 | × `PUMP_COST_DRY` | × 1 | × `PUMP_COST_DROUGHT` |
 | fruit sale price | — | — | — | + `WEATHER_FRUIT_IMPACT` | + `WEATHER_FRUIT_IMPACT` |
@@ -125,7 +126,7 @@ Weather glyphs `ui/ui-weather-{clear,rain,dry,flood,drought}.svg`, `0 0 16 16`; 
 
 ## When you change this
 
-- A new weather kind: `WeatherKind`, the walk in `forecastWeather`, each effect function in `weather.ts` (`soakDelta`, `weedMul`, `sourceRateMul`, `pumpCostMul`), the drought price in `skuPrice`, the fruit price in the Market, a glyph, a name and a description, and the Weather sensor ([[items/buildings/sensors-environment]]).
+- A new weather kind: `WeatherKind`, the walk in `forecastWeather`, each effect function in `weather.ts` (`soakDelta`, `weedMul`, `sourceRateMul`, `pumpCostMul`), `MUSHROOM_CHANCE`, the drought price in `skuPrice`, the fruit price in the Market, a glyph, a name and a description, and the Weather sensor ([[items/buildings/sensors-environment]]).
 - A new end-of-day effect: [[systems/tick]]; add a summary line if the player should see it.
 - Phase shares: the Day sensor and the Necronomicon ritual read them.
 

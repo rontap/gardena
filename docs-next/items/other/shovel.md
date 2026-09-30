@@ -20,7 +20,7 @@ Values from `SHOVELS` in `defs/items.ts`.
 | uses | 60 | 120 | 480 |
 | work seconds | 1 | 0.7 | 0.3 |
 | shop | `buy-shovel`, from the start | `buy-better-shovel`, after `unlock-hardened-tools` | not sold |
-| other sources | every new seat's hand | burrow loot | contract prize (`tool` cell) |
+| other sources | every new seat's hand | a Common burrow | contract prize (`tool` cell); a Rare burrow, with 20% of its uses |
 
 All three grades do the same actions; they differ only in uses and work seconds.
 
@@ -35,7 +35,7 @@ All three grades do the same actions; they differ only in uses and work seconds.
 | dead plant, Rotten produce | plot empty | 1 |
 | weed | plot empty, weed chance −0.3 ([[features/weeds]]) | 1 |
 | tree | tree removed; its tree seed drops | 1 |
-| burrow | burrow dug ([[features/burrow]]) | 0 |
+| burrow | burrow dug; its item drops ([[features/burrow]]) | 1 |
 
 Time per action (`shovelTime`):
 

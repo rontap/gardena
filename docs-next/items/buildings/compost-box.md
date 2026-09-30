@@ -32,6 +32,7 @@ Takes any item with a compost value, a whole stack at a time. Each item adds poi
 | [[items/other/ash]] | `ash` |
 | [[items/other/wood]] | `wood` |
 | [[items/other/fly-agaric]] | `fly-agaric` |
+| [[items/other/truffle]] | `truffle` |
 
 ## Connections
 

@@ -13,7 +13,15 @@ import {
   TREE_HAPPY_STARVE_SECONDS,
   TREE_HAPPY_WILT_SECONDS,
 } from '../../defs/trees.ts'
-import { CHOP_GRAFTS, NEIGHBOUR_REACH } from '../../defs/items.ts'
+import {
+  CHOP_GRAFTS,
+  EXTRACT_GROWTH,
+  EXTRACT_INFUSED_SECONDS,
+  EXTRACT_POUR,
+  EXTRACT_SEASON,
+  EXTRACT_SECONDS,
+  NEIGHBOUR_REACH,
+} from '../../defs/items.ts'
 import { experiencedTier } from '../../defs/skills.ts'
 import {
   CROSSBREED_REACH,
@@ -236,6 +244,7 @@ export function canShovel(w: World, at: Coord): boolean {
   if (!isPlot(c)) return false
   if (c.kind === 'infertile') return false
   if (c.kind === 'untilled' && c.cover.kind === 'burrow') return true
+  if (c.kind === 'untilled' && c.cover.kind === 'mushroom') return false
   if (c.kind === 'untilled' && c.ground === 'very-hard') return false
   if (c.kind === 'untilled' && c.ground === 'hard') return w.act.hand.item.usesLeft >= 2
   return true
@@ -441,6 +450,45 @@ export function doChop(w: World, at: Coord): void {
   c.fruit = 0
   c.yield = { kind: 'pending' }
   c.tended = false
+  c.boost = 0
+  c.boosted = false
+}
+
+export function extractSeconds(infused: boolean): number {
+  return infused ? EXTRACT_INFUSED_SECONDS : EXTRACT_SECONDS
+}
+
+export function extractGain(dt: number, target: { boost: number }): number {
+  const on = dt < target.boost ? dt : target.boost
+  target.boost -= on
+  return (on * EXTRACT_GROWTH) / EXTRACT_SECONDS
+}
+
+export function canExtract(w: World, at: Coord): boolean {
+  if (w.act.hand.kind !== 'hold' || w.act.hand.item.kind !== 'extract') return false
+  if (w.act.hand.item.liters < EXTRACT_POUR) return false
+  const c = w.cell(at)
+  if (c.kind === 'growing') return !c.plant.boosted
+  if (c.kind !== 'tree' || c.boosted) return false
+  return c.juvenile < 1 || (!c.trunk && c.yield.kind === 'off')
+}
+
+export function doExtract(w: World, at: Coord): void {
+  if (!canExtract(w, at)) return
+  const bag = w.act.hand as { kind: 'hold'; item: Extract<Item, { kind: 'extract' }> }
+  const c = w.cell(at)
+  const seconds = extractSeconds(bag.item.infused)
+  if (c.kind === 'growing') {
+    c.plant.boost = seconds
+    c.plant.boosted = true
+  }
+  if (c.kind === 'tree') {
+    if (c.juvenile < 1) c.boost = seconds
+    else if (c.yield.kind === 'off') c.yield.chance += EXTRACT_SEASON
+    c.boosted = true
+  }
+  bag.item.liters -= EXTRACT_POUR
+  if (bag.item.liters < EXTRACT_POUR) w.act.hand = { kind: 'empty' }
 }
 
 export function canGraft(w: World, at: Coord): boolean {

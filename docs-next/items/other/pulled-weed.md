@@ -5,7 +5,7 @@
 | item kind | `'weed'` |
 | unit | count |
 | stack limit | `STACK_MAX` (+ `bulk-up`) |
-| obtained from | **Pick up** on a weed with an empty hand; the Harvester trailer; burrow loot |
+| obtained from | **Pick up** on a weed with an empty hand; the Harvester trailer; a Common burrow |
 | sold at | not sold |
 
 A weed pulled out of a plot. Pulling it sets the plot's weed chance to 0 ([[features/weeds]]). It does not lose freshness.

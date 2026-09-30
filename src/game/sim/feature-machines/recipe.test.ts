@@ -55,6 +55,7 @@ function millRecipeOf(r: Recipe): MillRecipe | undefined {
   const input = r.inputs[0]
   const face = input.kind === 'one' ? input.face : input.faces[0]
   if (face.kind === 'grass') return 'grass'
+  if (face.kind === 'truffle') return 'truffle'
   return face.kind === 'fruit' ? (face.crop as MillRecipe) : undefined
 }
 
@@ -69,9 +70,9 @@ describe('recipes.table', () => {
     expect(recipesOf('still').length).toBe(STILL_CROPS.length + 2)
     expect(recipesOf('barrel').length).toBe(BARREL_CROPS.length * 2)
     expect(recipesOf('grinder').length).toBe(2)
-    expect(recipesOf('compost-box').length).toBe(4)
+    expect(recipesOf('compost-box').length).toBe(5)
     expect(recipesOf('furnace').length).toBe(7)
-    expect(recipesOf('infuser').length).toBe(4)
+    expect(recipesOf('infuser').length).toBe(5)
     expect(recipesOf('refuel').length).toBe(4)
   })
 
@@ -187,16 +188,20 @@ describe('recipes.table', () => {
     expect(pIn.faces.some(f => f.kind === 'fruit' && TREE_IDS.some(t => t === f.crop))).toBe(true)
   })
 
-  test('Compost lists four recipes. Fruit: any `CropId`. Green: weed, grass. Rotten: `CropClass` faces, amount `COMPOST_NEED / COMPOST_VALUE.rotten` (10). Ash: `one`, amount `COMPOST_NEED / COMPOST_VALUE.ash`. Sim still counts `COMPOST_NEED` waste. Empty box cycles all list rows.', () => {
-    const [fruit, green, rotten, ash] = recipesOf('compost-box')
-    expect(recipesOf('compost-box').length).toBe(4)
+  test('Compost lists five recipes. Fruit: any `CropId`. Green: weed, grass. Rotten: `CropClass` faces, amount `COMPOST_NEED / COMPOST_VALUE.rotten` (10). Mushroom: Fly agaric, Truffle, amount `COMPOST_NEED / COMPOST_VALUE[\'fly-agaric\']`. Ash: `one`, amount `COMPOST_NEED / COMPOST_VALUE.ash`. Sim still counts `COMPOST_NEED` waste. Empty box cycles all list rows.', () => {
+    const [fruit, green, rotten, mushroom, ash] = recipesOf('compost-box')
+    expect(recipesOf('compost-box').length).toBe(5)
     expect(fruit.inputs[0].kind).toBe('any')
     expect(green.inputs[0].kind).toBe('any')
     expect(rotten.inputs[0].kind).toBe('any')
+    expect(mushroom.inputs[0].kind).toBe('any')
     expect(ash.inputs[0].kind).toBe('one')
     if (fruit.inputs[0].kind !== 'any' || green.inputs[0].kind !== 'any' || rotten.inputs[0].kind !== 'any') return
+    if (mushroom.inputs[0].kind !== 'any') return
     expect(fruit.inputs[0].faces.map(f => (f.kind === 'fruit' ? f.crop : ''))).toEqual([...PLANT_CROPS, ...TREE_IDS])
     expect(green.inputs[0].faces.map(f => f.kind)).toEqual(['weed', 'grass'])
+    expect(mushroom.inputs[0].faces.map(f => f.kind)).toEqual(['fly-agaric', 'truffle'])
+    expect(unitsOf(mushroom.inputs[0])).toBe(COMPOST_NEED / COMPOST_VALUE['fly-agaric'])
     expect(rotten.inputs[0].faces.map(f => (f.kind === 'rotten' ? f.cls : ''))).toEqual(['root', 'grain', 'fruit'])
     expect(ash.inputs[0].kind === 'one' && ash.inputs[0].face.kind).toBe('ash')
     expect(unitsOf(fruit.inputs[0])).toBe(COMPOST_NEED / COMPOST_VALUE.fruit)

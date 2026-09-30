@@ -18,6 +18,7 @@ import { ripeGroup, fruitGroup, jamArt, spiritArt, varietyGroup, graftSpecies, t
 import { EDGE_PAD } from './camera.ts'
 import type { Item } from '../sim/item.ts'
 import type { CropClass } from '../defs/crops.ts'
+import type { MushroomId } from '../defs/mushroom.ts'
 import { caskGroup, VARIETIES, type CaskGroup, type VarietyId } from '../defs/varieties.ts'
 import { counterDial } from '../sim/sensor.ts'
 
@@ -206,9 +207,13 @@ import itemElectricChainsaw from '../../assets/items/item-electric-chainsaw.svg?
 import itemWood from '../../assets/items/item-wood.svg?raw'
 import itemAsh from '../../assets/items/item-ash.svg?raw'
 import itemFlyAgaric from '../../assets/items/item-fly-agaric.svg?raw'
+import itemTruffle from '../../assets/items/item-truffle.svg?raw'
+import itemTruffleExtract from '../../assets/items/item-truffle-extract.svg?raw'
 import itemTreasure from '../../assets/items/item-treasure.svg?raw'
 import propBurrow from '../../assets/props/prop-burrow.svg?raw'
 import propBurrow1 from '../../assets/props/prop-burrow-1.svg?raw'
+import propFlyAgaric from '../../assets/props/prop-fly-agaric.svg?raw'
+import propTruffle from '../../assets/props/prop-truffle.svg?raw'
 import overlayInfused from '../../assets/overlay-infused.svg?raw'
 import spray from '../../assets/vfx/vfx-spray.svg?raw'
 import sprayLarge from '../../assets/vfx/vfx-spray-large.svg?raw'
@@ -248,6 +253,7 @@ export type AtlasKey =
   | `tuft-${0 | 1 | 2}`
   | 'burrow'
   | 'burrow-1'
+  | `mushroom-${MushroomId}`
   | 'rock'
   | 'rock-1'
   | 'rock-long'
@@ -370,6 +376,7 @@ export type AtlasKey =
   | 'wood'
   | 'ash'
   | 'fly-agaric'
+  | 'truffle'
   | 'treasure'
   | ContainerId
   | 'fertilizer'
@@ -387,6 +394,7 @@ export type AtlasKey =
   | 'extract'
   | 'vanilla-extract'
   | 'flakes'
+  | 'truffle-extract'
   | 'bread'
   | `vfx-${VfxId}:f${0 | 1 | 2 | 3}`
 
@@ -585,6 +593,8 @@ async function load(): Promise<void> {
   put('tuft-2', propGrass2)
   put('burrow', propBurrow)
   put('burrow-1', propBurrow1)
+  put('mushroom-fly-agaric', propFlyAgaric)
+  put('mushroom-truffle', propTruffle)
   put('rock', rock)
   put('rock-1', rock1)
   put('rock-long', rockLong)
@@ -767,6 +777,7 @@ async function load(): Promise<void> {
   put('extract', itemExtract)
   put('vanilla-extract', itemVanillaExtract)
   put('flakes', itemFlakes)
+  put('truffle-extract', itemTruffleExtract)
   put('bread', itemBread)
   put('axe', itemAxe)
   put('chainsaw', itemChainsaw)
@@ -774,6 +785,7 @@ async function load(): Promise<void> {
   put('wood', itemWood)
   put('ash', itemAsh)
   put('fly-agaric', itemFlyAgaric)
+  put('truffle', itemTruffle)
   put('treasure', itemTreasure)
   ;([
     ['sprinkler-spray', spray, 4],
@@ -943,10 +955,12 @@ export function faceKey(item: Item): AtlasKey {
   if (item.kind === 'extract') return 'extract'
   if (item.kind === 'flakes') return 'flakes'
   if (item.kind === 'vanilla-extract') return 'vanilla-extract'
+  if (item.kind === 'truffle-extract') return 'truffle-extract'
   if (item.kind === 'axe') return item.id
   if (item.kind === 'wood') return 'wood'
   if (item.kind === 'ash') return 'ash'
   if (item.kind === 'fly-agaric') return 'fly-agaric'
+  if (item.kind === 'truffle') return 'truffle'
   if (item.kind === 'treasure') return 'treasure'
   const _: never = item
   throw new Error(String(_))

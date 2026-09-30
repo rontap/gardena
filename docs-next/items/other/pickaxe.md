@@ -20,7 +20,7 @@ Values from `PICKAXES` in `defs/items.ts`.
 | uses | 25 | 40 | 120 |
 | work seconds | 4 | 2 | 0.4 |
 | shop | `buy-pickaxe`, after `unlock-better-tools` | `buy-better-pickaxe`, after `unlock-hardened-tools` | not sold |
-| other sources | — | burrow loot | contract prize (`tool` cell) |
+| other sources | — | a Common burrow | contract prize (`tool` cell); a Rare burrow, with 20% of its uses |
 
 All three grades do the same actions; they differ only in uses and work seconds.
 

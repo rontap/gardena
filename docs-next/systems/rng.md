@@ -12,7 +12,8 @@ Every random outcome in the simulation comes from the game's seed, so the same s
 - [[features/weeds]] — sprouting, weed look, wild grass.
 - [[features/plants]] — the variety roll at ripening.
 - [[features/trees]] — seasons and where dropped fruit lands.
-- [[features/burrow]] — where burrows appear and what they hold.
+- [[features/burrow]] — where burrows appear and what a dug burrow gives.
+- [[features/mushrooms]] — whether a tree gets a mushroom, where, and which kind.
 - [[features/contracts]] — the daily board.
 - [[features/market]] — daily demand.
 - [[features/machines]] — how many grinder units a batch gives.
@@ -41,7 +42,8 @@ Every random outcome in the simulation comes from the game's seed, so the same s
 | `fruit` | sequence | the tile a tree's dropped fruit lands on | one `next()` per fruit actually dropped |
 | `variety` | spatial | the variety roll when a plant ripens | col, row, day, quality × 10000 |
 | `grind` | spatial | the unit count of a grinder batch | col, row, day, batch number |
-| `burrow` | spatial | which chunks get a burrow today and where; the loot | chunk cx, cy, day, index or `BURROW_DAY_SALT`; col, row, 0 to 3 |
+| `burrow` | spatial | which chunks get a burrow today and where; at a dig, the rarity, the entry, the item, and the treasure coins or tool uses | chunk cx, cy, day, index or `BURROW_DAY_SALT`; col, row, dig day, `BURROW_DIG_SALT` + 0 to 3 |
+| `mushroom` | spatial | whether a grown tree gets a mushroom at the end of the day; which tile of its area; Fly agaric or Truffle | tree `base` col, row, ended day, and 0, 1 or 2 |
 | `contract` | spatial | the daily contract board | day, position, value index |
 | `market-demand` | spatial | the two goods whose demand moves today | day, 0 or 1 |
 | `weather` | spatial | the weather table, from a new `Rng(seed)` | day, 0 or 1 |
@@ -64,7 +66,7 @@ Saved: `seed` and the `fruit` count. Streams are made on first use. The digest d
 |---|---|---|
 | `rng.spatial` | `at` with the same integers gives the same value in any call order | `rng.test.ts` |
 | `rng.fail` | a failed tree drop consumes no `fruit` draw; a successful one consumes one | `plants.test.ts` |
-| `rng.burrow` | burrow sites and loot are spatial draws, not the sequence | `rng.test.ts` |
+| `rng.burrow` | burrow sites and what a dug burrow gives are spatial draws, not the sequence | `rng.test.ts` |
 | `weather.spatial` | weather reads its stream by day only | `weather.test.ts` |
 
 ## When you change this

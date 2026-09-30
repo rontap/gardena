@@ -11,6 +11,7 @@ import {
   COMPOST_VALUE,
   CONTAINERS,
   AXES,
+  EXTRACT_BAG_LITERS,
   FERT_BAG_LITERS,
   FURNACE_ASH,
   FURNACE_CAP,
@@ -45,15 +46,18 @@ import {
   SUGAR_BAG,
   SUGAR_MILL,
   STATION_SECONDS_BASE,
+  INFUSE_REAGENTS,
   INFUSE_SECONDS,
   SUGAR_SHOP,
   WEED_SPRAY_BAG,
 } from '../defs/items.ts'
+import type { MushroomId } from '../defs/mushroom.ts'
 import { DAY_SECONDS } from './clock.ts'
 import { CLASS_NAME, CROP_NAME, cropVariety, freshMul, type CropClass } from '../defs/crops.ts'
 import { caskGroup, purposeMul, qualityMul, type VarietyId, type VarietyTier } from '../defs/varieties.ts'
 import { SOURCE, TAP_RATE } from './water.ts'
 import { SOIL_WATER_MID } from './soil.ts'
+import { INFUSABLE_KINDS, REAGENTS } from './ids.ts'
 import type {
   AnnualId,
   AxeId,
@@ -61,8 +65,10 @@ import type {
   ContainerId,
   CropId,
   GrownCrop,
+  Infusable,
   JamCrop,
   PickaxeId,
+  Reagent,
   ShovelId,
   SkuId,
   SpiritKind,
@@ -98,9 +104,10 @@ export type Item =
   | { kind: 'jam'; crop: JamCrop; variety: VarietyId; quality: number; count: number; unitSale: number; infused: boolean }
   | { kind: 'oil'; quality: number; count: number; unitSale: number; infused: boolean }
   | { kind: 'flour'; quality: number; count: number; unitSale: number }
-  | { kind: 'extract'; quality: number; count: number; unitSale: number }
+  | { kind: 'extract'; liters: number; capacityLiters: number; infused: boolean }
   | { kind: 'flakes'; quality: number; count: number }
   | { kind: 'vanilla-extract'; quality: number; count: number }
+  | { kind: 'truffle-extract'; count: number }
   | { kind: 'bread'; quality: number; count: number; unitSale: number }
   | { kind: 'rotten'; cls: CropClass; count: number; createdAt: number }
   | { kind: 'dead'; cls: CropClass; count: number }
@@ -111,12 +118,19 @@ export type Item =
   | { kind: 'wood'; count: number }
   | { kind: 'ash'; count: number }
   | { kind: 'fly-agaric'; count: number }
+  | { kind: 'truffle'; count: number }
   | { kind: 'treasure'; coins: number }
 
 export type Hand = { kind: 'empty' } | { kind: 'hold'; item: Item }
 export type Slot = { kind: 'empty' } | { kind: 'hold'; item: Item }
 
 export type InfusedItem = Extract<Item, { infused: boolean }>
+
+export type ReagentItem = Extract<Item, { kind: Reagent }>
+
+export function isReagent(item: Item): item is ReagentItem {
+  return REAGENTS.some(r => r === item.kind)
+}
 
 export type Face =
   | Item
@@ -185,6 +199,7 @@ export function compostValue(item: Item): number {
   if (item.kind === 'ash') return COMPOST_VALUE.ash * item.count
   if (item.kind === 'wood') return COMPOST_VALUE.wood * item.count
   if (item.kind === 'fly-agaric') return COMPOST_VALUE['fly-agaric'] * item.count
+  if (item.kind === 'truffle') return COMPOST_VALUE.truffle * item.count
   return 0
 }
 
@@ -206,6 +221,7 @@ export function furnaceValue(item: Item): number {
   if (item.kind === 'spirit') return FURNACE_VALUE.spirit * item.count
   if (item.kind === 'wood') return FURNACE_VALUE.wood * item.count
   if (item.kind === 'fly-agaric') return FURNACE_VALUE['fly-agaric'] * item.count
+  if (item.kind === 'truffle') return FURNACE_VALUE.truffle * item.count
   return 0
 }
 
@@ -229,6 +245,41 @@ export const AXE_NAME: { readonly [K in AxeId]: () => string } = {
   axe: () => m.names_item_axe(),
   chainsaw: () => m.names_item_chainsaw(),
   'electric-chainsaw': () => m.names_item_electric_chainsaw(),
+}
+
+export const REAGENT_NAME: { readonly [K in Reagent]: () => string } = {
+  'vanilla-extract': () => m.names_item_vanilla_extract(),
+  flakes: () => m.names_item_flakes(),
+  'truffle-extract': () => m.names_item_truffle_extract(),
+  'fly-agaric': () => m.names_item_fly_agaric(),
+}
+
+export const MUSHROOM_NAME: { readonly [K in MushroomId]: () => string } = {
+  'fly-agaric': () => m.names_item_fly_agaric(),
+  truffle: () => m.names_item_truffle(),
+}
+
+const INFUSE_GOOD_WORDS: { readonly [K in Infusable['kind']]: () => readonly string[] } = {
+  jam: () => [m.names_good_jam()],
+  cask: () => [m.names_good_wine(), m.names_good_cider()],
+  spirit: () => [m.names_good_spirits()],
+  oil: () => [m.names_item_oil()],
+  extract: () => [m.names_item_extract()],
+}
+
+export function infuseGoodsText(kinds: readonly Infusable['kind'][], type: 'conjunction' | 'disjunction'): string {
+  return new Intl.ListFormat('en', { type }).format(kinds.flatMap(k => INFUSE_GOOD_WORDS[k]()))
+}
+
+export function goodsTaking(r: Reagent): string {
+  return infuseGoodsText(
+    INFUSABLE_KINDS.filter(k => INFUSE_REAGENTS[k].includes(r)),
+    'disjunction',
+  )
+}
+
+export function mushroomItem(id: MushroomId): Extract<Item, { kind: MushroomId }> {
+  return { kind: id, count: 1 }
 }
 
 export const CONTAINER_NAME: { readonly [K in ContainerId]: () => string } = {
@@ -298,9 +349,10 @@ export function toolName(hand: Hand): string {
   if (it.kind === 'oil') return infusedName(m.names_item_oil(), it.infused)
   if (it.kind === 'flour') return m.names_item_flour()
   if (it.kind === 'bread') return m.names_item_bread()
-  if (it.kind === 'extract') return m.names_item_extract()
+  if (it.kind === 'extract') return infusedName(m.names_item_extract(), it.infused)
   if (it.kind === 'flakes') return m.names_item_flakes()
   if (it.kind === 'vanilla-extract') return m.names_item_vanilla_extract()
+  if (it.kind === 'truffle-extract') return m.names_item_truffle_extract()
   if (it.kind === 'tree-seed') return m.hud_tool_seed({ name: cropVariety(it.tree, it.variety) })
   if (it.kind === 'rotten') return rottenName(it.cls)
   if (it.kind === 'dead') return deadName(it.cls)
@@ -310,6 +362,7 @@ export function toolName(hand: Hand): string {
   if (it.kind === 'wood') return m.names_item_wood()
   if (it.kind === 'ash') return m.names_item_ash()
   if (it.kind === 'fly-agaric') return m.names_item_fly_agaric()
+  if (it.kind === 'truffle') return m.names_item_truffle()
   if (it.kind === 'graft') return m.names_item_graft({ name: cropVariety(it.crop, it.variety) })
   if (it.kind === 'grass') return m.names_item_cut_grass()
   if (it.kind === 'treasure') return m.names_item_treasure()
@@ -551,8 +604,13 @@ export function itemLine(item: Item, _mods: readonly Modifier[]): string {
     return `${m.hud_line_count({ name: m.names_item_bread(), count: item.count })} ${m.hud_quality_pct({ n: Math.floor(item.quality * 100) })}`
   }
   if (item.kind === 'extract') {
-    return `${m.hud_line_count({ name: m.names_item_extract(), count: item.count })} ${m.hud_quality_pct({ n: Math.floor(item.quality * 100) })}`
+    return m.hud_line_liters({
+      name: infusedName(m.names_item_extract(), item.infused),
+      liters: Math.visualRound(item.liters),
+      capacity: item.capacityLiters,
+    })
   }
+  if (item.kind === 'truffle-extract') return m.hud_line_count({ name: m.names_item_truffle_extract(), count: item.count })
   if (item.kind === 'flakes') {
     return `${m.hud_line_count({ name: m.names_item_flakes(), count: item.count })} ${m.hud_quality_pct({ n: Math.floor(item.quality * 100) })}`
   }
@@ -585,6 +643,7 @@ export function itemLine(item: Item, _mods: readonly Modifier[]): string {
   if (item.kind === 'wood') return m.hud_line_count({ name: m.names_item_wood(), count: item.count })
   if (item.kind === 'ash') return m.hud_line_compost({ name: m.names_item_ash(), count: item.count })
   if (item.kind === 'fly-agaric') return m.hud_line_compost({ name: m.names_item_fly_agaric(), count: item.count })
+  if (item.kind === 'truffle') return m.hud_line_compost({ name: m.names_item_truffle(), count: item.count })
   if (item.kind === 'grass') return m.hud_line_compost({ name: m.names_item_cut_grass(), count: item.count })
   if (item.kind === 'treasure') return m.hud_line_treasure({ coins: item.coins })
   return never(item)
@@ -604,7 +663,8 @@ export function itemGauge(item: Item): Gauge | undefined {
     item.kind === 'container' ||
     item.kind === 'fertilizer' ||
     item.kind === 'compost' ||
-    item.kind === 'weed-spray'
+    item.kind === 'weed-spray' ||
+    item.kind === 'extract'
   ) {
     return { label: m.hud_content(), value: item.liters, max: item.capacityLiters }
   }
@@ -769,7 +829,7 @@ const SKU_DESC: { readonly [K in SkuId]: () => string } = {
   'buy-axe': () => m.catalog_axe(AXES.axe),
   'buy-chainsaw': () => m.catalog_chainsaw(AXES.chainsaw),
   'buy-research-station': () => m.catalog_sku_buy_research_station({ seconds: STATION_SECONDS_BASE }),
-  'buy-infuser': () => m.catalog_sku_buy_infuser({ seconds: INFUSE_SECONDS }),
+  'buy-infuser': () => m.catalog_sku_buy_infuser({ goods: infuseGoodsText(INFUSABLE_KINDS, 'disjunction'), seconds: INFUSE_SECONDS }),
   'buy-necronomicon': () => m.catalog_sku_buy_necronomicon(),
   'buy-sorter': () => m.catalog_sku_buy_sorter(),
 }
@@ -809,6 +869,10 @@ export function makeFertilizer(): Item {
 
 export function makeCompost(): Item {
   return { kind: 'compost', liters: COMPOST_LITERS, capacityLiters: COMPOST_LITERS }
+}
+
+export function makeExtract(infused: boolean): Extract<Item, { kind: 'extract' }> {
+  return { kind: 'extract', liters: EXTRACT_BAG_LITERS, capacityLiters: EXTRACT_BAG_LITERS, infused }
 }
 
 export function makeSugar(liters: number, capacityLiters: number, unitSale: number, quality = 0): Item {
@@ -994,9 +1058,9 @@ export function crafted(item: Countable): boolean {
     item.kind === 'jam' ||
     item.kind === 'oil' ||
     item.kind === 'flour' ||
-    item.kind === 'extract' ||
     item.kind === 'flakes' ||
     item.kind === 'vanilla-extract' ||
+    item.kind === 'truffle-extract' ||
     item.kind === 'bread'
   )
 }
@@ -1068,6 +1132,7 @@ function copyItem(item: Item): Item {
     case 'extract':
     case 'flakes':
     case 'vanilla-extract':
+    case 'truffle-extract':
     case 'bread':
     case 'rotten':
     case 'dead':
@@ -1078,6 +1143,7 @@ function copyItem(item: Item): Item {
     case 'wood':
     case 'ash':
     case 'fly-agaric':
+    case 'truffle':
     case 'treasure':
       return { ...item }
   }
@@ -1117,7 +1183,13 @@ export function giveSlots(slots: Slot[], item: Item, maxSlots: number, maxUsed: 
     item.count -= n
     return item.count <= 0
   }
-  if (item.kind === 'sugar' || item.kind === 'fertilizer' || item.kind === 'compost' || item.kind === 'weed-spray') {
+  if (
+    item.kind === 'sugar' ||
+    item.kind === 'fertilizer' ||
+    item.kind === 'compost' ||
+    item.kind === 'weed-spray' ||
+    item.kind === 'extract'
+  ) {
     const piece = { ...item }
     if (!insertSlots(slots, piece, maxSlots, undefined)) return false
     item.liters = 0
@@ -1183,9 +1255,9 @@ export function compactSlots(slots: Slot[]): void {
       slot.item.kind === 'jam' ||
       slot.item.kind === 'oil' ||
       slot.item.kind === 'flour' ||
-      slot.item.kind === 'extract' ||
       slot.item.kind === 'flakes' ||
       slot.item.kind === 'vanilla-extract' ||
+      slot.item.kind === 'truffle-extract' ||
       slot.item.kind === 'bread'
     ) {
       const it = slot.item

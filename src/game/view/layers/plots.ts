@@ -74,6 +74,13 @@ export class PlotsLayer {
         s.position.set(at.col * TILE, at.row * TILE)
       }
     }
+    for (const at of world.mushrooms.values()) {
+      const cell = world.cell(at)
+      if (cell.kind === 'untilled' && cell.cover.kind === 'mushroom') {
+        const s = this.pool.take(atlasTex(`mushroom-${cell.cover.id}`))
+        s.position.set(at.col * TILE, at.row * TILE)
+      }
+    }
     for (const at of world.rocks.values()) {
       const cell = world.cell(at)
       if (cell.kind !== 'rock') continue

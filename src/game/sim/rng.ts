@@ -26,6 +26,7 @@ export type SpatialId =
   | 'contract'
   | 'weather'
   | 'burrow'
+  | 'mushroom'
   | 'variety'
   | 'market-demand'
 export type SeqId = 'fruit'

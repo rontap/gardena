@@ -36,7 +36,7 @@ import {
   SUGAR_SHOP,
 } from '../../defs/items.ts'
 import { SKUS } from '../../defs/research.ts'
-import { caskGroup, FAMILIARITY_PER_VARIETY, FAMILIARITY_SEED_QUALITY, familiarityMax, purposeMul, PURPOSE_MUL, qualityMul, VARIETIES } from '../../defs/varieties.ts'
+import { caskGroup, FAMILIARITY_PER_VARIETY, FAMILIARITY_POINT, FAMILIARITY_SEED_QUALITY, familiarityMax, purposeMul, PURPOSE_MUL, qualityMul, VARIETIES } from '../../defs/varieties.ts'
 import { boughtSeedQuality } from '../store.ts'
 import { SAT_IMPACT_FRUIT, SAT_STEP_FRUIT, saleUnits } from '../feature-contracts/market.ts'
 import {
@@ -390,8 +390,8 @@ function putFurnace(w: World, at: { col: number; row: number }): Furnace {
 describe('machines.furnace-feed', () => {
   test('Ash lock: compost feedstock + oil + spirit + wood + tree-seed + graft. Values as `FURNACE_VALUE`. Mix ash. Cap `FURNACE_CAP`. Refuse jam/cask/extract/vanilla-extract/flakes/bread/ash/tools. Flour is bread lock, not ash. Variety, quality, `infused` ignored on ash.', () => {
     expect(FURNACE_CAP).toBe(100)
-    expect(FURNACE_VALUE).toEqual({ green: 1, fruit: 3, oil: 20, spirit: 26, wood: 32, 'fly-agaric': 1 })
-    expect(COMPOST_VALUE).toEqual({ seeds: 1, fruit: 4, sugar: 3, grass: 1, weed: 1, rotten: 1, dead: 1, ash: 4, wood: 6, 'fly-agaric': 4 })
+    expect(FURNACE_VALUE).toEqual({ green: 1, fruit: 3, oil: 20, spirit: 26, wood: 32, 'fly-agaric': 1, truffle: 1 })
+    expect(COMPOST_VALUE).toEqual({ seeds: 1, fruit: 4, sugar: 3, grass: 1, weed: 1, rotten: 1, dead: 1, ash: 4, wood: 6, 'fly-agaric': 4, truffle: 4 })
     expect(AXES.axe).toEqual({ uses: 30, workSeconds: 5 })
     expect(AXES.chainsaw).toEqual({ uses: 90, workSeconds: 3 })
     const w = new World(1)
@@ -958,8 +958,12 @@ describe('familiarity.gain', () => {
     expect(w.familiarity.tomato).toBe(3)
     w.learn('tomato', FAMILIARITY_GAIN.heirloom)
     expect(w.familiarity.tomato).toBe(6)
+    expect(w.points).toBe(0)
     w.learn('tomato', 999)
     expect(w.familiarity.tomato).toBe(familiarityMax('tomato'))
+    expect(w.points).toBe(1)
+    w.learn('tomato', 999)
+    expect(w.points).toBe(1)
     expect(w.familiarity.wheat).toBe(0)
   })
 
@@ -971,6 +975,16 @@ describe('familiarity.gain', () => {
     expect(w.familiarity.carrot).toBe(FAMILIARITY_PER_VARIETY)
     expect(w.familiarity.wheat).toBe(FAMILIARITY_PER_VARIETY * 2)
     expect(w.familiarity.grape).toBe(FAMILIARITY_PER_VARIETY * 3)
+    expect(w.points).toBe(3 * FAMILIARITY_POINT)
+  })
+
+  test('Each grown crop pays `FAMILIARITY_POINT` once when it reaches `familiarityMax`. There are 13.', () => {
+    const w = new World(1)
+    GROWN_IDS.forEach(c => w.learn(c, familiarityMax(c)))
+    expect(GROWN_IDS).toHaveLength(13)
+    expect(w.points).toBe(13 * FAMILIARITY_POINT)
+    GROWN_IDS.forEach(c => w.learn(c, 1))
+    expect(w.points).toBe(13 * FAMILIARITY_POINT)
   })
 
   test('A fruit finishing at the station raises the locked crop by its variety tier and emits nothing.', () => {

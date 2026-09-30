@@ -160,6 +160,7 @@ function worldFromSave(save: Save, sink: LogSink): World {
     purchases: save.purchases,
     prizeSlots: save.prizeSlots,
     prizeFreezers: save.prizeFreezers,
+    sinceRare: save.sinceRare,
     points: save.points,
     clearance: save.clearance,
     loanDays: save.loanDays,
@@ -339,6 +340,8 @@ function makeLive(cell: Exclude<SaveCell, { kind: 'occ' }>): Cell {
         cell.yield,
       )
       tree.tended = cell.tended
+      tree.boost = cell.boost
+      tree.boosted = cell.boosted
       tree.trunk = cell.trunk
       tree.variety = cell.variety
       return tree
@@ -450,8 +453,7 @@ function makeLive(cell: Exclude<SaveCell, { kind: 'occ' }>): Cell {
       inf.quality = cell.quality
       inf.unitSale = cell.unitSale
       inf.units = cell.units
-      inf.flakes = cell.flakes
-      inf.extract = cell.extract
+      inf.reagents = { ...cell.reagents }
       inf.progress = cell.progress
       inf.inn = cell.inn
       return inf
@@ -654,6 +656,8 @@ function makePlant(p: SavePlant): Plant {
   plant.freshness = p.freshness
   plant.happiness = p.happiness
   plant.tended = p.tended
+  plant.boost = p.boost
+  plant.boosted = p.boosted
   return plant
 }
 

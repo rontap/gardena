@@ -4,7 +4,7 @@
 
 Gardena is a farming game with automation, played in the browser alone or with up to three other players. The player controls a gardener on a tile grid. They till plots, plant and water crops, harvest fruit and sell it at the Produce Warehouse. The money pays for tools, buildings, land, research and a daily land tax. Later the player automates the work with water networks, sprinklers, sensors and wires, processing machines, and vehicles that drive routes.
 
-The player's family gives each part of the game a member: the player is the gardener, the husband runs research, and the daughter runs the Market. Skill points, one per day, are spent on skills for any of them.
+The player's family gives each part of the game a member: the player is the gardener, the husband runs research, and the daughter runs the Market. Skill points, one on each odd day, are spent on skills for any of them.
 
 ## Daily loop
 
@@ -12,7 +12,7 @@ The player's family gives each part of the game a member: the player is the gard
 2. Keep each plot's water and fertilizer in range: bucket, fertilizer bag, later sprinklers ([[features/water]]).
 3. Harvest ripe fruit and take it to the Produce Warehouse. **Drop off** fills accepted contracts first, then sells the rest at once ([[features/market]], [[features/contracts]]).
 4. Spend money in Build, the Seed silo and the Additive store; start research ([[features/build]], [[features/inventory]], [[features/research]]).
-5. At the end of the day: grandma's support comes in for the first days, land tax and the water bill are paid, a skill point is granted, and the end-of-day summary is written ([[systems/tick]], [[features/weather-day]]).
+5. At the end of the day: grandma's support comes in for the first days, land tax and the water bill are paid, a skill point is granted when the ended day is odd, and the end-of-day summary is written ([[systems/tick]], [[features/weather-day]]).
 
 A day is `DAY_SECONDS` of game time, in four phases: Sunrise, Midday, Sunset, Twilight. Each day has a weather type from a table fixed by the game's seed: Clear, Rain, Dry, Flood or Drought.
 

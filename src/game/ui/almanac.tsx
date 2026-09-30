@@ -2,6 +2,19 @@ import { m } from '../../paraglide/messages.js'
 import { createContext, Fragment, useContext, useState, type ReactNode } from 'react'
 import * as Tabs from '@radix-ui/react-tabs'
 import { catalogEntries, type CatalogEntry } from '../defs/catalog.ts'
+import {
+  AGARIC_LOOT_COUNT,
+  BURROW_ENTRIES,
+  BURROW_RARE_STEP,
+  BURROW_RARITIES,
+  BURROW_START_N,
+  TRUFFLE_LOOT_COUNT,
+  WEED_LOOT_COUNT,
+  type BurrowEntry,
+  type BurrowRarity,
+} from '../defs/burrow.ts'
+import { MUSHROOM_CHANCE, MUSHROOM_DAYS, MUSHROOM_TRUFFLE } from '../defs/mushroom.ts'
+import { WEATHER_KINDS, WEATHER_NAME } from '../defs/weather.ts'
 import { CROP_NAME, CROPS, varietyName } from '../defs/crops.ts'
 import {
   ALMANAC_AT,
@@ -15,25 +28,38 @@ import {
   VARIANT_PURPOSE_AT,
   VARIETIES,
   VARIETY,
+  VARIETY_TIERS,
   type AlmanacEntry,
   type Purpose,
   type VarietyId,
 } from '../defs/varieties.ts'
 import { JAM_ROT, SKILLS } from '../defs/skills.ts'
 import { TREES, TREE_RATE_HAPPY, TREE_RATE_ON, TREE_YIELD_DAYS } from '../defs/trees.ts'
-import { PLANT_CROPS, TREE_IDS, type GrownCrop, type SkuId, type TreeId } from '../sim/ids.ts'
-import { faceName, type Face } from '../sim/item.ts'
+import { INFUSABLE_KINDS, PLANT_CROPS, TREE_IDS, type GrownCrop, type SkuId, type TreeId } from '../sim/ids.ts'
+import { toolItem } from '../sim/feature-burrow/burrow.ts'
+import { faceName, infuseGoodsText, REAGENT_NAME, tierLabel, type Face } from '../sim/item.ts'
 import { statsOf, type Stats } from '../sim/modifiers.ts'
 import { FERT_PLOT_MAX, SOIL_WATER_MID, TREE_FERT_MAX, TREE_WATER_MID } from '../sim/soil.ts'
 import { DAY_SECONDS, days } from '../sim/clock.ts'
 import type { World } from '../sim/world.ts'
-import { AXES, CONTAINERS, COUNTER_MAX, NEIGHBOUR_REACH, PICKAXES, SHOVELS } from '../defs/items.ts'
+import {
+  AXES,
+  CONTAINERS,
+  COUNTER_MAX,
+  INFUSE_REAGENTS,
+  MILL_TRUFFLE_OUT,
+  NEIGHBOUR_REACH,
+  PICKAXES,
+  SHOVELS,
+} from '../defs/items.ts'
 import { SKUS } from '../defs/research.ts'
 import {
   buttonArt,
   counterArt,
   cropInner,
   daySensorArt,
+  EXPAND_LAND,
+  SKILL_POINT,
   faceGfx,
   fertSensorArt,
   harvestSensorArt,
@@ -77,6 +103,7 @@ type ConceptId =
   | 'research'
   | 'luck'
   | 'burrow'
+  | 'mushrooms'
   | 'infusion'
 
 type AlmanacNav = { tab: AlmanacTab; id: string }
@@ -174,7 +201,7 @@ const LISTS: { readonly [K in AlmanacTab]: readonly ListItem[] } = {
     tools(() => m.names_item_axe(), AXE_TOOLS),
     tools(() => m.names_container_bucket(), BUCKET_TOOLS),
     heading(() => m.almanac_group_bags()),
-    ...['fertilizer', 'compost', 'weed-spray', 'sugar'].map(sku),
+    ...['fertilizer', 'compost', 'weed-spray', 'extract', 'sugar'].map(sku),
     heading(() => m.almanac_group_storage()),
     ...['chest', 'freezer', 'silo-seed', 'silo-spray', 'silo-produce'].map(sku),
   ],
@@ -207,19 +234,20 @@ const LISTS: { readonly [K in AlmanacTab]: readonly ListItem[] } = {
     ...(['family', 'skills', 'research'] as const).map(concept),
     heading(() => m.almanac_group_other()),
     concept('luck'),
+    concept('burrow'),
+    concept('mushrooms'),
     concept('infusion'),
     sku('necronomicon'),
   ],
   misc: [
     heading(() => m.almanac_group_ground()),
     sku('soil'),
-    concept('burrow'),
     sku('fence'),
     forms(() => m.almanac_forms_paving(), ['tile-asphalt', 'tile-cobble', 'tile-brick', 'tile-paved']),
     heading(() => m.almanac_group_compostable()),
     sku('weed'),
     forms(() => m.names_ground_grass(), ['grass', 'grass-seeds']),
-    ...['rotten', 'dead', 'wood', 'ash', 'fly-agaric'].map(sku),
+    ...['rotten', 'dead', 'wood', 'ash', 'fly-agaric', 'truffle'].map(sku),
   ],
 }
 
@@ -235,6 +263,7 @@ const CONCEPT_LABEL: { readonly [K in ConceptId]: () => string } = {
   research: () => m.names_role_research(),
   luck: () => m.almanac_concept_luck(),
   burrow: () => m.almanac_concept_burrow(),
+  mushrooms: () => m.almanac_concept_mushrooms(),
   infusion: () => m.almanac_concept_infusion(),
 }
 
@@ -625,6 +654,8 @@ function conceptBody(id: ConceptId) {
       return <LuckConcept />
     case 'burrow':
       return <BurrowConcept />
+    case 'mushrooms':
+      return <MushroomsConcept />
     case 'infusion':
       return <InfusionConcept />
   }
@@ -960,8 +991,6 @@ function LuckConcept() {
       <div>
         {m.almanac_see()}
         <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>{m.almanac_concept_skills()}</AlmanacLink>
-        {m.almanac_and()}
-        <AlmanacLink to={{ tab: 'misc', id: 'burrow' }}>{m.almanac_concept_burrow()}</AlmanacLink>
         {m.almanac_period()}
       </div>
     </>
@@ -972,11 +1001,116 @@ function BurrowConcept() {
   return (
     <>
       <div>{m.almanac_burrow_p1()}</div>
+      <div>{m.almanac_burrow_p2({ start: BURROW_START_N })}</div>
+      <div>{m.almanac_burrow_p3({ step: BURROW_RARE_STEP })}</div>
+      <BurrowCard />
+    </>
+  )
+}
+
+const RARITY_NAME: { readonly [K in BurrowRarity]: () => string } = {
+  common: () => m.names_rarity_common(),
+  uncommon: () => m.names_rarity_uncommon(),
+  rare: () => m.names_rarity_rare(),
+}
+
+type EntryCard = { caption: string; arts: readonly string[] }
+
+function oneCard(face: Face): EntryCard {
+  return { caption: faceName(face), arts: [itemInner(face)] }
+}
+
+function entryCard(entry: BurrowEntry): EntryCard {
+  switch (entry.kind) {
+    case 'treasure':
+      return {
+        caption: m.almanac_caption_treasure({ min: entry.min, max: entry.max }),
+        arts: [itemInner({ kind: 'treasure', coins: entry.min })],
+      }
+    case 'seeds':
+      return {
+        caption: m.almanac_caption_seeds({ tier: tierLabel(tierOf(entry.pool[0].variety)) }),
+        arts: entry.pool.map(p => itemInner({ kind: 'seeds', crop: p.crop, variety: p.variety, quality: 0, count: entry.count })),
+      }
+    case 'tree-seed':
+      return {
+        caption: m.almanac_caption_tree_seed({ tier: tierLabel(tierOf(entry.pool[0].variety)) }),
+        arts: entry.pool.map(p => itemInner({ kind: 'tree-seed', tree: p.tree, variety: p.variety, quality: 0 })),
+      }
+    case 'weed':
+      return oneCard({ kind: 'weed', count: WEED_LOOT_COUNT })
+    case 'fly-agaric':
+      return oneCard({ kind: 'fly-agaric', count: AGARIC_LOOT_COUNT })
+    case 'truffle':
+      return oneCard({ kind: 'truffle', count: TRUFFLE_LOOT_COUNT })
+    case 'skill-point':
+      return { caption: m.almanac_caption_skill_point(), arts: [SKILL_POINT] }
+    case 'tool':
+    case 'special-tool':
+      return { caption: m.almanac_caption_tool(), arts: entry.pool.map(tool => itemInner(toolItem(tool, uses => uses))) }
+    case 'permit':
+      return { caption: m.market_expansion_permit(), arts: [EXPAND_LAND] }
+  }
+}
+
+function BurrowCard() {
+  return (
+    <div className="flex flex-col gap-3">
+      {BURROW_RARITIES.map(rarity => (
+        <div key={rarity} className="w-fit rounded-lg border-2 border-ink/25 px-2 pb-2">
+          <Label>{RARITY_NAME[rarity]()}</Label>
+          <div className="flex gap-2">
+            {BURROW_ENTRIES[rarity].map((entry, i) => (
+              <EntryPortrait key={i} card={entryCard(entry)} />
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function EntryPortrait({ card }: { card: EntryCard }) {
+  const art = card.arts[useCycle(card.arts.length)]
+  return (
+    <Portrait caption={card.caption} fill="bg-dirt-dark">
+      <svg className="h-16 w-16" viewBox="0 0 24 24" dangerouslySetInnerHTML={{ __html: art }} />
+    </Portrait>
+  )
+}
+
+function ShareGrid({ rows }: { rows: readonly { key: string; label: string; share: number }[] }) {
+  return (
+    <div className="grid w-fit grid-cols-[auto_auto] gap-x-6">
+      {rows.map(r => (
+        <Fragment key={r.key}>
+          <div>{r.label}</div>
+          <div className="text-right">{m.almanac_pct({ n: Math.round(r.share * 100) })}</div>
+        </Fragment>
+      ))}
+    </div>
+  )
+}
+
+function MushroomsConcept() {
+  return (
+    <>
+      <div>{m.almanac_mushrooms_p1()}</div>
+      <div className="flex gap-2">
+        <EntryPortrait card={oneCard({ kind: 'fly-agaric', count: 1 })} />
+        <EntryPortrait card={oneCard({ kind: 'truffle', count: 1 })} />
+      </div>
+      <div>{m.almanac_mushrooms_p2()}</div>
+      <ShareGrid rows={WEATHER_KINDS.map(k => ({ key: k, label: WEATHER_NAME[k](), share: MUSHROOM_CHANCE[k] }))} />
+      <div>{m.almanac_mushrooms_p3()}</div>
+      <ShareGrid rows={VARIETY_TIERS.map(t => ({ key: t, label: tierLabel(t), share: MUSHROOM_TRUFFLE[t] }))} />
+      <div>{m.almanac_mushrooms_p4({ days: MUSHROOM_DAYS })}</div>
+      <div>{m.almanac_mushrooms_p5({ n: MILL_TRUFFLE_OUT })}</div>
       <div>
         {m.almanac_see()}
-        <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>{m.almanac_concept_skills()}</AlmanacLink>
+        <AlmanacLink to={{ tab: 'concepts', id: 'infusion' }}>{m.almanac_concept_infusion()}</AlmanacLink>
         {m.almanac_and()}
-        <AlmanacLink to={{ tab: 'concepts', id: 'luck' }}>{m.almanac_concept_luck()}</AlmanacLink>
+        <AlmanacLink to={{ tab: 'concepts', id: 'burrow' }}>{m.almanac_concept_burrow()}</AlmanacLink>
         {m.almanac_period()}
       </div>
     </>
@@ -987,6 +1121,21 @@ function InfusionConcept() {
   return (
     <>
       <div>{m.almanac_infusion_p1()}</div>
+      <div className="grid w-fit grid-cols-[auto_auto] gap-x-6">
+        {INFUSABLE_KINDS.map(k => {
+          const [first, second] = INFUSE_REAGENTS[k]
+          return (
+            <Fragment key={k}>
+              <div className="first-letter:uppercase">{infuseGoodsText([k], 'conjunction')}</div>
+              <div>{m.almanac_infuse_row({ first: REAGENT_NAME[first](), second: REAGENT_NAME[second]() })}</div>
+            </Fragment>
+          )
+        })}
+      </div>
+      <div>
+        {m.almanac_infusion_p2()}{' '}
+        <AlmanacLink to={{ tab: 'concepts', id: 'mushrooms' }}>{m.almanac_concept_mushrooms()}</AlmanacLink>
+      </div>
       <div>
         {m.almanac_see()}
         <AlmanacLink to={{ tab: 'concepts', id: 'market' }}>{m.names_role_market()}</AlmanacLink>

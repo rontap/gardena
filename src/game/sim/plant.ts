@@ -10,6 +10,8 @@ export class Plant {
   freshness = 1
   happiness = HAPPY_START
   tended = false
+  boost = 0
+  boosted = false
 
   readonly crop: PlantCrop
   variety: VarietyId

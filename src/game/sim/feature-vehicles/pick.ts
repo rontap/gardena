@@ -21,12 +21,14 @@ export type PickGood =
   | 'dead'
   | 'rotten'
   | 'fly-agaric'
+  | 'truffle'
   | 'shovel'
   | 'pickaxe'
   | 'axe'
   | 'container'
   | 'vanilla-extract'
   | 'flakes'
+  | 'truffle-extract'
   | 'treasure'
   | 'fertilizer'
   | 'compost'
@@ -72,22 +74,31 @@ const JAM_CROPS: readonly JamCrop[] = ['apricot', 'grape', 'raspberry', 'cherry'
 const GOODS: { readonly [K in PickType]: readonly PickGood[] } = {
   seed: CROPS_ALL,
   fruit: CROPS_ALL.filter((c): c is GrownCrop => c !== 'grass'),
-  produce: [...JAM_CROPS.map((c): JamId => `jam-${c}`), 'sugar', 'oil', 'flour', 'extract', 'bread'],
+  produce: [...JAM_CROPS.map((c): JamId => `jam-${c}`), 'sugar', 'oil', 'flour', 'bread'],
   alcohol: ['vodka', 'beer', 'brandy', 'mixed', 'wine', 'cider'],
-  compostable: ['wood', 'ash', 'weed', 'grass', 'dead', 'rotten', 'fly-agaric'],
+  compostable: ['wood', 'ash', 'weed', 'grass', 'dead', 'rotten', 'fly-agaric', 'truffle'],
   tool: ['shovel', 'pickaxe', 'axe', 'container'],
-  other: ['vanilla-extract', 'flakes', 'treasure', 'fertilizer', 'compost', 'weed-spray'],
+  other: ['extract', 'vanilla-extract', 'flakes', 'truffle-extract', 'treasure', 'fertilizer', 'compost', 'weed-spray'],
 }
 
 export function typeOf(item: Item): PickType {
   const k = item.kind
   if (k === 'seeds' || k === 'tree-seed' || k === 'graft') return 'seed'
   if (k === 'fruit') return 'fruit'
-  if (k === 'jam' || k === 'oil' || k === 'flour' || k === 'extract' || k === 'bread' || k === 'sugar') {
+  if (k === 'jam' || k === 'oil' || k === 'flour' || k === 'bread' || k === 'sugar') {
     return 'produce'
   }
   if (k === 'spirit' || k === 'cask') return 'alcohol'
-  if (k === 'wood' || k === 'ash' || k === 'weed' || k === 'grass' || k === 'dead' || k === 'rotten' || k === 'fly-agaric') {
+  if (
+    k === 'wood' ||
+    k === 'ash' ||
+    k === 'weed' ||
+    k === 'grass' ||
+    k === 'dead' ||
+    k === 'rotten' ||
+    k === 'fly-agaric' ||
+    k === 'truffle'
+  ) {
     return 'compostable'
   }
   if (k === 'shovel' || k === 'pickaxe' || k === 'axe' || k === 'container') return 'tool'
@@ -208,7 +219,7 @@ const FLAT = {
   sugar: { kind: 'sugar', liters: 1, capacityLiters: 1, unitSale: 1, quality: 0.5 },
   oil: { kind: 'oil', quality: 0.5, count: 1, unitSale: 1, infused: false },
   flour: { kind: 'flour', quality: 0.5, count: 1, unitSale: 1 },
-  extract: { kind: 'extract', quality: 0.5, count: 1, unitSale: 1 },
+  extract: { kind: 'extract', liters: 1, capacityLiters: 1, infused: false },
   bread: { kind: 'bread', quality: 0.5, count: 1, unitSale: 1 },
   wood: { kind: 'wood', count: 1 },
   ash: { kind: 'ash', count: 1 },
@@ -217,12 +228,14 @@ const FLAT = {
   dead: { kind: 'dead', cls: 'root', count: 1 },
   rotten: { kind: 'rotten', cls: 'root', count: 1, createdAt: 0 },
   'fly-agaric': { kind: 'fly-agaric', count: 1 },
+  truffle: { kind: 'truffle', count: 1 },
   shovel: { kind: 'shovel', id: 'shovel', usesLeft: 1, workSeconds: 1 },
   pickaxe: { kind: 'pickaxe', id: 'pickaxe', usesLeft: 1, workSeconds: 1 },
   axe: { kind: 'axe', id: 'axe', usesLeft: 1, workSeconds: 1 },
   container: { kind: 'container', id: 'bucket', liters: 0, capacityLiters: 1 },
   'vanilla-extract': { kind: 'vanilla-extract', quality: 0.5, count: 1 },
   flakes: { kind: 'flakes', quality: 0.5, count: 1 },
+  'truffle-extract': { kind: 'truffle-extract', count: 1 },
   treasure: { kind: 'treasure', coins: 1 },
   fertilizer: { kind: 'fertilizer', liters: 1, capacityLiters: 1 },
   compost: { kind: 'compost', liters: 1, capacityLiters: 1 },

@@ -98,7 +98,7 @@ Weed cells (look, growth, full-grown day) and `Soil.weedChance` are saved. The d
 - Weed chance or growth numbers: [[features/weather-day]] multiplies them; the plot's soil carries over to the next crop in [[features/plants]].
 - What a weed turns into: the grass it leaves is a paving and fence site in [[features/build]] and [[features/fences]].
 - A new way to remove weeds: the Harvester in [[features/vehicles]] already removes them; guests can do every weed action ([[features/multiplayer]]).
-- The Pulled weed item: [[features/machines]] (Compost box, Furnace) and [[features/burrow]] loot use it.
+- The Pulled weed item: [[features/machines]] (Compost box, Furnace) takes it, and a Common burrow gives it ([[features/burrow]]).
 - Weed state: [[systems/save]] saves it; [[systems/net]] leaves it out of the digest.
 
 ## Decisions

@@ -19,6 +19,7 @@ import type {
   Grandma,
   FurnaceRecipe,
   Infusable,
+  Reagent,
   JamCrop,
   MillRecipe,
   PageId,
@@ -65,6 +66,8 @@ export type SavePlant = {
   freshness: number
   happiness: number
   tended: boolean
+  boost: number
+  boosted: boolean
 }
 
 export type SaveWeed = { variant: 0 | 1; maturity: number; spread: boolean; readyAt: WeedAge }
@@ -85,7 +88,7 @@ export type SaveCell =
   | { kind: 'tap'; base: RectBase }
   | { kind: 'well'; base: RectBase; stored: number }
   | { kind: 'rock'; base: RectBase }
-  | { kind: 'tree'; species: TreeId; base: RectBase; juvenile: number; fruit: number; yield: TreeYield; tended: boolean; trunk: boolean; variety: VarietyId; happiness: number; soil: SaveSoil }
+  | { kind: 'tree'; species: TreeId; base: RectBase; juvenile: number; fruit: number; yield: TreeYield; tended: boolean; boost: number; boosted: boolean; trunk: boolean; variety: VarietyId; happiness: number; soil: SaveSoil }
   | { kind: 'chest'; base: RectBase; slots: Slot[]; out: 0 | 1; hold: number }
   | { kind: 'grinder'; base: RectBase; crop: GrownCrop | 'none'; variety: VarietyId; quality: number; units: number; progress: number; n: number }
   | { kind: 'compost-box'; base: RectBase; units: number; progress: number }
@@ -94,7 +97,7 @@ export type SaveCell =
   | { kind: 'still'; base: RectBase; feed: { crop: StillCrop; variety: VarietyId; quality: number; count: number }[]; progress: number; n: number; inn: 0 | 1 }
   | { kind: 'furnace'; base: RectBase; recipe: FurnaceRecipe; quality: number; units: number; progress: number; inn: 0 | 1; out: 0 | 1; hold: number }
   | { kind: 'refuel'; base: RectBase; buy: boolean; store: number; units: number; progress: number }
-  | { kind: 'infuser'; base: RectBase; lock: Infusable | 'none'; quality: number; unitSale: number; units: number; flakes: number; extract: number; progress: number; inn: 0 | 1 }
+  | { kind: 'infuser'; base: RectBase; lock: Infusable | 'none'; quality: number; unitSale: number; units: number; reagents: { [K in Reagent]: number }; progress: number; inn: 0 | 1 }
   | { kind: 'necronomicon'; base: RectBase; crop: GrownCrop | 'none'; cropCount: number; fruit: GrownCrop[]; ash: number; gold: number; agaric: number; tool: boolean; supper: SupperId[]; pages: PageId[] }
   | { kind: 'weather-station'; base: RectBase }
   | { kind: 'station'; base: RectBase; crop: GrownCrop | 'none'; variety: VarietyId; quality: number; units: number; progress: number; inn: 0 | 1 }
@@ -231,6 +234,7 @@ export type Save = {
   purchases: number
   prizeSlots: number
   prizeFreezers: number
+  sinceRare: number
   points: number
   clearance: number
   loanDays: number

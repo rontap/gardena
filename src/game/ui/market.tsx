@@ -141,7 +141,7 @@ function boxFace(id: StallGoodId, variety: VarietyId, infused: boolean, n: numbe
     const crop = id.slice(4) as JamCrop
     return { kind: 'jam', crop, variety, quality: 0, count: n, unitSale: 1, infused }
   }
-  if (id === 'flour' || id === 'extract' || id === 'bread') return { kind: id, quality: 0, count: n, unitSale: 1 }
+  if (id === 'flour' || id === 'bread') return { kind: id, quality: 0, count: n, unitSale: 1 }
   if (id === 'oil') return { kind: 'oil', quality: 0, count: n, unitSale: 1, infused }
   if (!isCropStall(id)) throw new Error(`boxFace: ${id}`)
   return { kind: 'fruit', crop: id, variety, quality: 0, count: n, unitSale: CROPS[id].sale, freshness: 1, cut: false }

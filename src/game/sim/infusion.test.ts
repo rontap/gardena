@@ -4,9 +4,8 @@ import {
   BREAD,
   FURNACE_BREAD_IN,
   FURNACE_SECONDS,
-  INFUSE_EXTRACT,
-  INFUSE_FLAKES,
   INFUSE_IN,
+  INFUSE_REAGENT,
   INFUSE_SECONDS,
   MILL_CHILLI_IN,
   MILL_CHILLI_OUT,
@@ -103,16 +102,15 @@ describe('infusion.item', () => {
 })
 
 describe('infusion.extract', () => {
-  test("Vanilla mill `MILL_VANILLA_IN` 1 → `{ kind: 'vanilla-extract' }` count `MILL_VANILLA_OUT` 4. Not `{ kind: 'extract' }`. Grass mill stays stall `'extract'`. Flakes and vanilla-extract are not `StallGoodId`. Illegal: `unitSale` on either.", () => {
+  test("Vanilla mill `MILL_VANILLA_IN` 1 → `{ kind: 'vanilla-extract' }` count `MILL_VANILLA_OUT` 4. Not `{ kind: 'extract' }`. Grass mill makes an `'extract'` bag, not a stall good. Flakes and vanilla-extract are not `StallGoodId`. Illegal: `unitSale` on either.", () => {
     expect(MILL_VANILLA_IN).toBe(1)
     expect(MILL_VANILLA_OUT).toBe(4)
     expect(MILL_CHILLI_IN).toBe(3)
     expect(MILL_CHILLI_OUT).toBe(2)
     expect(INFUSE_IN).toBe(1)
-    expect(INFUSE_FLAKES).toBe(1)
-    expect(INFUSE_EXTRACT).toBe(1)
+    expect(INFUSE_REAGENT).toBe(1)
     expect(INFUSE_SECONDS).toBe(90)
-    expect(MILL_RECIPES).toEqual(['sugar-cane', 'olive', 'wheat', 'grass', 'vanilla', 'chilli'])
+    expect(MILL_RECIPES).toEqual(['sugar-cane', 'olive', 'wheat', 'grass', 'vanilla', 'chilli', 'truffle'])
     expect(millNeed('vanilla')).toBe(MILL_VANILLA_IN)
     expect(millNeed('chilli')).toBe(MILL_CHILLI_IN)
     const vanilla = millProduct('vanilla', 'base', 0)
@@ -121,8 +119,8 @@ describe('infusion.extract', () => {
     const flakes = millProduct('chilli', 'base', 0)
     expect(flakes).toEqual({ kind: 'flakes', quality: 0, count: MILL_CHILLI_OUT })
     expect('unitSale' in flakes).toBe(false)
-    expect(millProduct('grass', 'base', 0)).toMatchObject({ kind: 'extract' })
-    expect(STALL_IDS.includes('extract')).toBe(true)
+    expect(millProduct('grass', 'base', 0)).toMatchObject({ kind: 'extract', infused: false })
+    expect((STALL_IDS as readonly string[]).includes('extract')).toBe(false)
     expect((STALL_IDS as readonly string[]).includes('flakes')).toBe(false)
     expect((STALL_IDS as readonly string[]).includes('vanilla-extract')).toBe(false)
   })
@@ -140,7 +138,7 @@ function drain(w: World): void {
 const AT = { col: 10, row: 12 }
 
 describe('machines.mill-vanilla', () => {
-  test("Mill recipe `'vanilla'`: `MILL_VANILLA_IN` 1 vanilla fruit → `{ kind: 'vanilla-extract'; quality }` count `MILL_VANILLA_OUT` 4. Not stall `'extract'`. `millProductName('vanilla')` is `vanilla extract`. Grass mill stays `{ kind: 'extract' }` stall `'extract'`, quality 0. `MILL_RECIPES` order sugar-cane olive wheat grass vanilla chilli. Almanac vanilla-extract plate is Ingredients via `recipesUsing`, not a fruit-row plate.", () => {
+  test("Mill recipe `'vanilla'`: `MILL_VANILLA_IN` 1 vanilla fruit → `{ kind: 'vanilla-extract'; quality }` count `MILL_VANILLA_OUT` 4. Not `'extract'`. `millProductName('vanilla')` is `vanilla extract`. Grass mill makes an `'extract'` bag. `MILL_RECIPES` order sugar-cane olive wheat grass vanilla chilli truffle. Almanac vanilla-extract plate is Ingredients via `recipesUsing`, not a fruit-row plate.", () => {
     expect(millNeed('vanilla')).toBe(MILL_VANILLA_IN)
     expect(millProductName('vanilla').toLowerCase()).toContain('vanilla extract')
     expect(millRecipeOf({ kind: 'fruit', crop: 'vanilla', variety: 'base', quality: 0.5, count: 1, unitSale: 1, freshness: 1, cut: false })).toBe(
@@ -235,7 +233,7 @@ describe('infusion.machine', () => {
   test('Infuser 2×2 `Machine`, `MILL_W` × `MILL_H`, `INFUSE_SECONDS` 90 `fixed`, mill I/O, pads, `inn`. `furnaceMul` applies. Not machinery. Not `work`. Not `machineMul`. Need `INFUSE_IN` good + 1 reagent: `INFUSE_FLAKES` flakes or `INFUSE_EXTRACT` vanilla-extract, not both. Same `infused: true` either way. Output same good, quality and `unitSale` unchanged. Refuses `infused === true`. `MachineId` += `infuser`.', () => {
     expect(INFUSE_SECONDS).toBe(90)
     expect(machineOfSku('buy-infuser')).toBe('infuser')
-    expect(recipesOf('infuser').length).toBe(4)
+    expect(recipesOf('infuser').length).toBe(5)
     expect(recipesOf('infuser').every(r => r.duration.kind === 'fixed' && r.duration.seconds === INFUSE_SECONDS)).toBe(true)
     const w = new World(1)
     const inf = new Infuser({ shape: 'rect', col: AT.col, row: AT.row, w: MILL_W, h: MILL_H })
@@ -267,10 +265,10 @@ describe('infusion.machine', () => {
     w.enqueue({ act: 'infuse', at: AT })
     drain(w)
     expect(inf.units).toBe(INFUSE_IN)
-    w.seats[0].hand = { kind: 'hold', item: { kind: 'flakes', quality: 1, count: INFUSE_FLAKES } }
+    w.seats[0].hand = { kind: 'hold', item: { kind: 'flakes', quality: 1, count: INFUSE_REAGENT } }
     w.enqueue({ act: 'infuse', at: AT })
     drain(w)
-    expect(inf.flakes).toBe(INFUSE_FLAKES)
+    expect(inf.reagents.flakes).toBe(INFUSE_REAGENT)
     const p0 = inf.progress
     w.tick(DT_MAX)
     expect(inf.progress - p0).toBeCloseTo(DT_MAX / INFUSE_SECONDS)
@@ -283,7 +281,7 @@ describe('infusion.machine', () => {
     w.seats[0].hand = { kind: 'hold', item: oil }
     w.enqueue({ act: 'infuse', at: AT })
     drain(w)
-    w.seats[0].hand = { kind: 'hold', item: { kind: 'vanilla-extract', quality: 1, count: INFUSE_EXTRACT } }
+    w.seats[0].hand = { kind: 'hold', item: { kind: 'truffle-extract', count: INFUSE_REAGENT } }
     w.enqueue({ act: 'infuse', at: AT })
     drain(w)
     ticks(w, INFUSE_SECONDS)
@@ -349,8 +347,7 @@ describe('infusion.stall', () => {
     inf.quality = 0.3
     inf.unitSale = 96
     inf.units = 1
-    inf.flakes = 2
-    inf.extract = 1
+    inf.reagents = { 'vanilla-extract': 1, flakes: 2, 'truffle-extract': 3, 'fly-agaric': 4 }
     inf.progress = 0.4
     inf.inn = 1
     const furnaceAt = { col: AT.col, row: AT.row + 4 }
@@ -379,8 +376,7 @@ describe('infusion.stall', () => {
     expect(back.quality).toBe(0.3)
     expect(back.unitSale).toBe(96)
     expect(back.units).toBe(1)
-    expect(back.flakes).toBe(2)
-    expect(back.extract).toBe(1)
+    expect(back.reagents).toEqual({ 'vanilla-extract': 1, flakes: 2, 'truffle-extract': 3, 'fly-agaric': 4 })
     expect(back.progress).toBe(0.4)
     expect(back.inn).toBe(1)
     const fb = loaded.world.cell(furnaceAt)

@@ -93,9 +93,10 @@ test('start farm has burrows; shovel extract drops beside the hole; treasure pay
       return { col: at.col, row: at.row }
     })()`,
   )
+  const slots0 = await readWorld<number>(page, null, 'w.prizeSlots')
   await standAndEnqueue(page, startAt, 'shovel')
 
-  const dug = await readWorld<{ cover: string; onCell: string; dropKind: string; dropAt: At }>(
+  const dug = await readWorld<{ cover: string; onCell: string; dropKind: string; dropAt: At; slots: number }>(
     page,
     startAt,
     `(() => {
@@ -113,47 +114,30 @@ test('start farm has burrows; shovel extract drops beside the hole; treasure pay
         onCell: here === undefined ? '' : here.item.kind,
         dropKind: drop === undefined ? '' : drop.item.kind,
         dropAt: drop === undefined ? at : drop.at,
+        slots: w.prizeSlots,
       }
     })()`,
   )
   expect(dug.cover).toBe('bare')
   expect(dug.onCell).toBe('')
-  expect(dug.dropKind.length).toBeGreaterThan(0)
+  expect(dug.dropKind.length > 0 || dug.slots === slots0 + 1).toBe(true)
 
-  let holdAt = startAt
   if (dug.dropKind !== 'treasure') {
-    holdAt = await readWorld<At>(
+    await readWorld<null>(
       page,
       startAt,
       `(() => {
-        for (let row = 0; row < 32; row++) {
-          for (let col = 0; col < 32; col++) {
-            if (col === at.col && row === at.row) continue
-            const p = { col, row }
-            const c = w.cell(p)
-            if (c.kind !== 'untilled' || c.cover.kind !== 'bare') continue
-            if (c.ground === 'very-hard') continue
-            if (w.drops.some(d => d.at.col === col && d.at.row === row)) continue
-            w.setCell(p, {
-              kind: 'untilled',
-              ground: c.ground,
-              hardness: c.hardness,
-              cover: { kind: 'burrow', loot: { kind: 'treasure', coins: 9 } },
-            })
-            return p
-          }
-        }
-        throw new Error('plant')
+        w.drops.push({ at: { col: at.col, row: at.row }, item: { kind: 'treasure', coins: 9 } })
+        return null
       })()`,
     )
-    await standAndEnqueue(page, holdAt, 'shovel')
   }
-
   const lying = await readWorld<{ at: At; coins: number }>(
     page,
-    holdAt,
+    startAt,
     `(() => {
       const near = [
+        { col: at.col, row: at.row },
         { col: at.col, row: at.row + 1 },
         { col: at.col - 1, row: at.row },
         { col: at.col + 1, row: at.row },

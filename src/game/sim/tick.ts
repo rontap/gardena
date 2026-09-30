@@ -12,6 +12,7 @@ import * as machines from './feature-machines/machines.tick.ts'
 import { sproutWeeds, sproutGrass } from './feature-field/field.ts'
 import * as field from './feature-field/field.ts'
 import * as burrow from './feature-burrow/burrow.ts'
+import { mushroomSeam } from './feature-mushroom/mushroom.ts'
 import { advanceGrandma } from './feature-necronomicon/necronomicon.ts'
 import * as vehicles from './feature-vehicles/vehicle.ts'
 import * as queue from './queue.ts'
@@ -21,7 +22,7 @@ import { tutorialTick } from './tutorial.ts'
 import { settleLoan } from './loan.ts'
 import { STALL_IDS } from './stall.ts'
 import type { FruitStack, Item, Slot } from './item.ts'
-import { POINTS_PER_DAY, stipendOf, type World } from './world.ts'
+import { pointsForEndedDay, stipendOf, type World } from './world.ts'
 
 export function tickSpeech(world: World, dt: number): void {
   if (world.speech.kind !== 'say') return
@@ -163,6 +164,7 @@ export function tickWorld(world: World, dt: number): void {
     clearOldRotten(world)
     field.clearRipeWeeds(world)
     burrow.mintSeam(world)
+    mushroomSeam(world)
     field.tickTreesSeam(world)
     advanceGrandma(world, world.clock.day - 1)
     const { loan, payback } = settleLoan(world)
@@ -182,7 +184,7 @@ export function tickWorld(world: World, dt: number): void {
     }
     world.recaps.push(recap)
     world.recapUnseen.push(recap.day)
-    world.grantPoints(POINTS_PER_DAY)
+    world.grantPoints(pointsForEndedDay(world.clock.day - 1))
     world.clock.banner = 4
     world.seam = { kind: 'play' }
     world.tally = { died: 0, harvests: 0, research: [], contracts: [] }

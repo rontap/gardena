@@ -77,6 +77,7 @@ export const FAMILIARITY_VAR_BONUS = 0.001
 export const FAMILIARITY_PER_VARIETY = 10
 export const FAMILIARITY_RECOVER = 0.005
 export const FAMILIARITY_SEED_QUALITY = 0.02
+export const FAMILIARITY_POINT = 1
 
 export type AlmanacEntry = 'grow' | 'water' | 'fert' | 'fresh'
 

@@ -20,7 +20,7 @@ A tree seed (`'tree-seed'`, [[items/other/tree-seed]]) comes from:
 | source | species and variety |
 |---|---|
 | contract prize ([[features/contracts]]) | fixed per company and difficulty: a Plain species, or one from the Plain, Named or Heirloom tree groups |
-| burrow loot ([[features/burrow]]) | a Plain, Named or Heirloom tree seed, depending on the loot value |
+| a burrow ([[features/burrow]]) | Common: a Plain tree seed; Uncommon: a Named tree seed; Rare: an Heirloom tree seed |
 | Grinder, from tree fruit ([[items/buildings/grinder]]) | the fruit's species, always Plain (`grindProduct`) |
 | digging up a tree with a shovel | that tree's species and variety |
 
@@ -174,6 +174,8 @@ When `fruit` reaches 1, `dropTreeFruit` puts one fruit on the ground on a random
 
 A landing tile must be inside the owned land and be ground (`isPlot`: untilled or tilled, with or without a plant); fruit can land on a tile that already has items on it. When no tile qualifies, `fruit` stays at 1, the tree shows ripe, and the fruit drops as soon as a tile is free.
 
+Fly agaric and Truffle come up on the untilled tiles of the same area at the end of a day ([[features/mushrooms]]).
+
 The fruit is the tree's species and variety, quality 0, freshness 1, with the sale price from `statsOf` at quality 0. On the ground it loses freshness like any other fruit, at `rotSeconds` × `VARIETY_ROT` ([[features/plants]] freshness). The player picks it up with **Pick up**. Each drop counts as a harvest in the end-of-day summary (`tally.harvests`).
 
 ### Chopping
@@ -181,7 +183,7 @@ The fruit is the tree's species and variety, quality 0, freshness 1, with the sa
 **Chop** with an axe or chainsaw ([[items/other/axe]]) on either tile of a grown tree that is not a stump. It takes one use of the tool and the tool's work time. Then:
 
 - one Wood, and with the `grafting` skill `CHOP_GRAFTS` grafts of the tree's species and variety, drop on the first ground tile next to the tree, checked below it, then left, right and above (`dropSpot`);
-- the tree becomes a stump: `trunk` true, `juvenile` 0, `fruit` 0, season waiting, `tended` false. Soil, happiness and variety stay.
+- the tree becomes a stump: `trunk` true, `juvenile` 0, `fruit` 0, season waiting, `tended` false, `boost` 0, `boosted` false. Soil, happiness and variety stay.
 
 A stump grows back:
 
@@ -205,6 +207,18 @@ Grafts of annual crops follow the same item rules on growing plants ([[features/
 
 With the `tending` skill and an empty hand, **Tend** on either tile of a grown tree that is out of season, not a stump, and not yet tended this out-of-season: `chance` + 0.15. `tended` resets when the next season ends.
 
+### Extract
+
+With an Extract or Infused Extract bag in hand ([[items/produce/extract]]), **Pour extract** on either tile of a tree that has not had Extract (`Tree.boosted` false) takes `EXTRACT_WORK` seconds, uses `EXTRACT_POUR` L and sets `boosted`:
+
+| tree | effect |
+|---|---|
+| sapling or stump | `Tree.boost` is set to `EXTRACT_SECONDS`, or `EXTRACT_INFUSED_SECONDS` with Infused Extract. While it is above 0, `juvenile` gains `EXTRACT_GROWTH` ÷ `EXTRACT_SECONDS` more per second, at every happiness and range as the sapling's own growth does, and `boost` falls by `dt`. When `juvenile` reaches 1, `boost` becomes 0. |
+| grown, out of season | `chance` + `EXTRACT_SEASON`, the same for both bags; it adds to `chance` as Tend does |
+| grown, waiting or in season | no prompt; nothing is used |
+
+`boosted` resets at a chop, when a stump becomes a sapling, and when a season ends. Extract and Tend both count on the same out-of-season.
+
 ### Varieties: how trees differ from annual crops
 
 | | annual crop | tree |
@@ -227,7 +241,7 @@ With the `tending` skill and an empty hand, **Tend** on either tile of a grown t
 - Hover: **{Name} tree - {detail}** (`treeLine`), where detail is **trunk**, **growing** (sapling), **on-season** or **off-season** (also shown while waiting). The name includes the variety: **{Crop} ({Variety}) tree**. [[name-map]] replaces trunk with Stump and on-season / off-season with in season / out of season.
 - Hover on a Pink Lady or Bing tree without a neighbour: **Needs another {name} tree nearby that is not Heirloom.**
 - Inspect rows: **Growth** (sapling progress while growing, fruit progress after), **Happiness**, **Fertilizer** (litres of `TREE_FERT_MAX`, with the red, orange and green parts of the range), **Water** (litres of `TREE_WATER_MAX`, with the ranges around `TREE_WATER_MID`).
-- Prompts: **Plant {Name}**, **Water**, **Fertilize**, **Chop**, **Dig**, **Graft**, **Tend**, **Pick up** for fallen fruit.
+- Prompts: **Plant {Name}**, **Water**, **Fertilize**, **Chop**, **Dig**, **Graft**, **Tend**, **Pour extract**, **Pick up** for fallen fruit.
 - Command Center: **{Crop} is wilting**, **{Crop} is drowning**, **{Crop} is starving for fertilizer** for a tree in a red range, with happiness as the bar and both tiles marked ([[shell]]).
 - Sensors: the variety sensor sees trees that are not stumps; the water and fertilizer sensors read the tree's soil once per tree ([[features/sensors]]).
 
@@ -237,7 +251,7 @@ A guest can do everything on this page.
 
 ## Save and sync
 
-Saved per tree, on its cells: species, `base`, `juvenile`, `fruit`, `yield`, `tended`, `trunk`, variety, happiness, and the soil's water, fertilizer and weed chance. Fallen fruit is saved with the ground items.
+Saved per tree, on its cells: species, `base`, `juvenile`, `fruit`, `yield`, `tended`, `boost`, `boosted`, `trunk`, variety, happiness, and the soil's water, fertilizer and weed chance. Fallen fruit is saved with the ground items.
 
 The digest carries each tree tile's variety, and at `base` the tree's happiness, water and fertilizer ([[systems/net]]).
 
@@ -262,6 +276,7 @@ Chopping with an axe or chainsaw plays a knock on every stretch of work and a cr
 | `trees.wild` | chunk `(0, 0)` has one Plain wild apple with the new-tree soil and happiness | `trees.test.ts` |
 | `trees.drop` | fallen fruit has the tree's variety, quality 0, freshness 1; digging gives a tree seed of that variety at quality 0 | `plants.test.ts`, `world.test.ts` |
 | `trees.tend` | tending an out-of-season tree adds 0.15 to `chance` once per out-of-season | `plants.test.ts` |
+| `trees.extract` | Extract on a sapling or stump adds `EXTRACT_GROWTH` ÷ `EXTRACT_SECONDS` to `juvenile` per second for the bag's seconds; on an out-of-season tree it adds `EXTRACT_SEASON` to `chance`; no prompt on a waiting or in-season tree; once until a chop, a stump becoming a sapling, or a season end | `extract.test.ts` |
 | `water.pour` | a bucket fills a tree to `TREE_WATER_MID` + `waterTolerance` | `trees.test.ts` |
 | — | a tree's variety changes by a graft only | `plants.test.ts` |
 | — | chop, trunk, grow and dig in the browser; tree inspect bars; Command Center rows for a tree | `e2e/trees.spec.ts` |

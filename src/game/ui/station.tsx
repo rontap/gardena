@@ -5,6 +5,7 @@ import { stationSeconds } from '../defs/items.ts'
 import {
   ALMANAC_AT,
   almanacEntries,
+  FAMILIARITY_POINT,
   FAMILIARITY_RECOVER,
   FAMILIARITY_SEED_QUALITY,
   FAMILIARITY_VAR_BONUS,
@@ -26,7 +27,7 @@ import { SAT_STEP_FRUIT } from '../sim/feature-contracts/market.ts'
 import type { Coord } from '../sim/building.ts'
 import { GROWN_IDS, isTreeId, packSku, type GrownCrop } from '../sim/ids.ts'
 import type { World } from '../sim/world.ts'
-import { fruitInner, fruitVarietyInner, svgInner, UI_BTN_ALMANAC } from '../view/svgs.ts'
+import { fruitInner, fruitVarietyInner, SKILL_POINT, svgInner, UI_BTN_ALMANAC } from '../view/svgs.ts'
 import { CalloutHover } from './callout-hover.tsx'
 import { Bar } from './frame.tsx'
 import { Shell } from './store.tsx'
@@ -54,6 +55,7 @@ type TipKind =
   | 'variantPurpose'
   | 'heirloomPlace'
   | 'heirloomPurpose'
+  | 'point'
 
 type Tip = { kind: TipKind; n: number; crop: GrownCrop } | undefined
 
@@ -74,6 +76,7 @@ function tipName(tip: { kind: TipKind; crop: GrownCrop }): string {
   if (tip.kind === 'variety') return m.hud_station_variety_name()
   if (tip.kind === 'seed') return m.hud_station_seed_name()
   if (tip.kind === 'recover') return m.hud_station_recover_name()
+  if (tip.kind === 'point') return m.hud_station_point_name()
   if (tip.kind === 'almanac') return m.hud_station_almanac_name()
   if (tip.kind === 'heirloomPlace') return m.hud_station_place_name()
   const tier = tip.kind === 'variant' || tip.kind === 'variantPurpose' ? 'variant' : 'heirloom'
@@ -88,6 +91,7 @@ function tipBody(tip: { kind: TipKind; n: number; crop: GrownCrop }): string {
     const fruit = Math.round(((tip.n * FAMILIARITY_RECOVER) / SAT_STEP_FRUIT) * 100) / 100
     return m.hud_station_recover_tip({ fruit })
   }
+  if (tip.kind === 'point') return m.hud_station_point_tip({ n: FAMILIARITY_POINT })
   if (tip.kind === 'almanac') {
     const entries = almanacEntries(tip.n)
     return m.hud_station_almanac_tip({
@@ -272,6 +276,14 @@ function unlocks(crop: GrownCrop, n: number): Chip[] {
       tone: 'variety',
       icon: fruitVarietyInner(crop, heirloom),
       text: m.hud_station_best_for({ purpose: PURPOSE_LABEL[VARIETY[heirloom].purpose]() }),
+    })
+  }
+  if (n >= familiarityMax(crop)) {
+    out.push({
+      kind: 'point',
+      tone: 'study',
+      icon: SKILL_POINT,
+      text: m.hud_station_point({ n: FAMILIARITY_POINT }),
     })
   }
   return out

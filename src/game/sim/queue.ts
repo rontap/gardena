@@ -1,12 +1,12 @@
 import { BURROW_MUL } from '../defs/burrow.ts'
 import { TEND_WORK } from '../defs/skills.ts'
-import { DIG_HARD_SPAN, GRAFT_WORK, SPRAY_WORK } from '../defs/items.ts'
+import { DIG_HARD_SPAN, EXTRACT_WORK, GRAFT_WORK, SPRAY_WORK } from '../defs/items.ts'
 import { m } from '../../paraglide/messages.js'
 import { PAD, DOOR, occupiedCells, type Base, type Coord, type ChunkId, type Pump, type Tap, type Well } from './building.ts'
 import { SOURCE, TAP_RATE } from './water.ts'
 import { flipLever, pressButton } from './sensor.ts'
 import { type Edge } from './pipe.ts'
-import { countable, mergeInto, stackable, type Item } from './item.ts'
+import { countable, mergeInto, mushroomItem, stackable, type Item } from './item.ts'
 import { topIndex } from './drop.ts'
 import { isPlot } from './plot.ts'
 import { HAND_FULL, NEED_EMPTY_HAND } from './prompt.ts'
@@ -118,6 +118,8 @@ export function taskName(world: World, i: Intent): TaskName {
       return m.prompt_tend()
     case 'weed-spray':
       return m.prompt_spray()
+    case 'extract':
+      return m.prompt_pour_extract()
     case 'chop':
       return m.prompt_chop()
     case 'graft':
@@ -413,6 +415,13 @@ export function begin(world: World, i: Intent): void {
       }
       arm(world, SPRAY_WORK)
       return
+    case 'extract':
+      if (!field.canExtract(world, i.at)) {
+        shiftHead(world)
+        return
+      }
+      arm(world, EXTRACT_WORK)
+      return
     case 'chop':
       if (!field.canChop(world, i.at)) {
         shiftHead(world)
@@ -576,6 +585,11 @@ export function finishWork(world: World): void {
     field.doWeedSpray(world, i.at)
     world.cue({ kind: 'act', act: 'weed-spray' })
   }
+  if (i.act === 'extract') {
+    field.doExtract(world, i.at)
+    world.burst('pour', i.at)
+    world.cue({ kind: 'act', act: 'extract' })
+  }
   if (i.act === 'chop') {
     field.doChop(world, i.at)
     world.cue({ kind: 'act', act: 'chop' })
@@ -674,13 +688,14 @@ export function doPickup(world: World, at: Coord): void {
   const i = topIndex(world.drops, at)
   if (i < 0) {
     const c = world.cell(at)
-    const cover = c.kind === 'untilled' && c.cover.kind === 'grass'
     const gained =
       c.kind === 'weed'
         ? { kind: 'weed' as const, count: 1 }
-        : cover
+        : c.kind === 'untilled' && c.cover.kind === 'grass'
           ? { kind: 'grass' as const, count: 1 }
-          : field.plotPick(c, world.clock.day)
+          : c.kind === 'untilled' && c.cover.kind === 'mushroom'
+            ? mushroomItem(c.cover.id)
+            : field.plotPick(c, world.clock.day)
     if (gained === undefined) return
     const held = world.act.hand
     if (held.kind === 'hold') {

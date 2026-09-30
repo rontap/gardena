@@ -33,7 +33,7 @@ consignItem(item)
 | spirit | `vodka`, `beer`, `brandy`, `mixed` (`SPIRIT_KINDS`) | variety; infused or not |
 | cask | `wine`, `cider` (`CASK_IDS`) | variety; infused or not |
 | oil | `oil` | infused or not |
-| flour, extract, bread | `flour`, `extract`, `bread` | — |
+| flour, bread | `flour`, `bread` | — |
 | rotten produce | none; counted in `World.clearance` | — |
 
 `consignUnits` takes only the items in this table; rotten produce only after `unlock-fermentation`. The hand prompt offers **Drop off** for the same items (`canConsign`). A driver unloading a vehicle at the Produce Warehouse sells every item of the table in the cargo (`unloadBody`).
@@ -50,7 +50,7 @@ Each unit's value before the price drop (`unitClean`):
 | jam | `unitSale` × `specialty` skill for a Named or Heirloom variety × `saleswoman` skill |
 | vodka, beer, brandy, mixed, wine | `unitSale` × `heirloom` skill for an Heirloom variety × `specialty` skill for a Named or Heirloom variety × `saleswoman` skill |
 | cider | `unitSale` × `specialty` skill for a Named or Heirloom variety × `saleswoman` skill |
-| oil, sugar, flour, extract, bread | `unitSale` × `saleswoman` skill |
+| oil, sugar, flour, bread | `unitSale` × `saleswoman` skill |
 | rotten produce | 1 coin; nothing else applies |
 
 - `saleswoman`: + `SALE_PCT` % per rank. `heirloom`: + `HEIRLOOM_PCT` % per rank. `specialty`: + `SPECIALTY_PCT` % per rank ([[features/family]]).
@@ -75,7 +75,7 @@ Below 0 the cut is negative and the price is above the unit value; the cap limit
 |---|---|
 | fruit | `SAT_IMPACT_FRUIT` of the variety tier: Plain, Named or Heirloom |
 | jam, spirits, wine, cider | `SAT_IMPACT_CRAFT` of the variety tier |
-| oil, sugar, flour, extract, bread | `SAT_IMPACT_CRAFT.base` |
+| oil, sugar, flour, bread | `SAT_IMPACT_CRAFT.base` |
 
 ### Sale
 

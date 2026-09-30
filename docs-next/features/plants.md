@@ -63,6 +63,19 @@ Growth goes from 0 to 1 over the plant's grow time. Each red range multiplies gr
 
 Three named varieties need a neighbour to grow (`NEIGHBOUR_IDS`): a plant of the same crop within `NEIGHBOUR_REACH` tiles that is growing, not Heirloom, and has no red range, or a grown tree of that species. Without one, growth stops; water, fertilizer, happiness and death continue.
 
+### Extract
+
+**Pour extract** with an Extract or Infused Extract bag ([[items/produce/extract]]) on a growing plant that has not had Extract (`Plant.boosted` false) takes `EXTRACT_WORK` seconds, uses `EXTRACT_POUR` L, sets `boosted`, and sets `Plant.boost` to the bag's seconds. While `boost` is above 0, growth gains extra, and `boost` falls by `dt`:
+
+```
+extra growth per second   EXTRACT_GROWTH ÷ EXTRACT_SECONDS
+                          × STUNT for each red range; 0 while a needed neighbour is missing
+for                       EXTRACT_SECONDS           Extract
+                          EXTRACT_INFUSED_SECONDS   Infused Extract
+```
+
+The extra is a share of the whole growth bar, the same for every crop, variety and `growSpeed` modifier, so it adds the same amount at any point of growth. Extract adds at most `EXTRACT_GROWTH`, and Infused Extract `EXTRACT_GROWTH` × `EXTRACT_INFUSED_SECONDS` ÷ `EXTRACT_SECONDS`. At ripening `boost` becomes 0 and the rest is lost. A plant takes Extract once: once `boosted` is set there is no prompt and nothing is used.
+
 ### Ripening and quality
 
 At growth 1 the plant becomes ripe, freshness is set to 1, and quality is fixed:
@@ -100,6 +113,7 @@ A ripe plant loses freshness at 1 ÷ `rotSeconds` per second, slowed by the `jam
 | **Water** | bucket with water | adds water up to the top of the plant's green range (`SOIL_WATER_MID` + tolerance); an empty plot up to `SOIL_WATER_MID`; uses only the difference |
 | **Fertilize** | fertilizer or compost bag | fills the plot to `FERT_PLOT_MAX`; uses only the difference |
 | **Tend** | `tending` skill, empty hand, growing plant not yet tended | happiness + 0.1, once per plant |
+| **Pour extract** | Extract or Infused Extract bag, growing plant that has not had Extract | extra growth for the bag's seconds (Extract, above); uses `EXTRACT_POUR` L, once per plant |
 | **Harvest** | ripe plot; empty hand, or the same crop and variety in hand with room in the stack | one fruit into the hand with the plant's quality and freshness; plot becomes empty |
 | **Dig up plant** | shovel, growing or ripe plant | one seed of that crop, variety and quality drops; plot becomes empty |
 | **Dig out dead plant** / pick up | shovel, or empty hand | removes a dead plant or Rotten produce; picking up gives the item |
@@ -113,7 +127,7 @@ The Harvester trailer also harvests plots ([[features/vehicles]]).
 - A neighbour-needing plant without a neighbour: **Needs another {name} nearby that is not Heirloom.**
 - Inspect bars: growing plot — Growth, Happiness, Water, Fertilizer; ripe plot and fruit — Quality, Freshness.
 - Command Center, red ranges only: **{crop} is wilting**, **{crop} is drowning**, **{crop} is starving for fertilizer**; **{crop} is losing freshness** below `FRESH_FULL`; **Dead plant**; **Rotten produce**.
-- Prompts: **Plant {name}**, **Water**, **Fertilize**, **Tend**, **Harvest**, **Dig up plant**, **Dig out dead plant**.
+- Prompts: **Plant {name}**, **Water**, **Fertilize**, **Tend**, **Pour extract**, **Harvest**, **Dig up plant**, **Dig out dead plant**.
 - todo-almanac
 
 ## Guest
@@ -122,7 +136,7 @@ A guest can do every action on this page.
 
 ## Save and sync
 
-Saved per plot: soil (water, fertilizer, weed chance) and plant (crop, variety, quality, growth, freshness, happiness, tended). The digest carries each plant's crop, variety, quality, growth and happiness, and each plot's water and fertilizer.
+Saved per plot: soil (water, fertilizer, weed chance) and plant (crop, variety, quality, growth, freshness, happiness, tended, `boost`, `boosted`). The digest carries each plant's crop, variety, quality, growth and happiness, and each plot's water and fertilizer.
 
 ## Art
 
@@ -130,13 +144,14 @@ Saved per plot: soil (water, fertilizer, weed chance) and plant (crop, variety, 
 
 ## Sound
 
-Digging with a shovel plays a dig on every stretch of work and a turn of soil at the end; watering plays a pour and a soak; fertilizing plays a bag pour; harvesting plays leaves and the fruit coming off ([[systems/sound]]).
+Digging with a shovel plays a dig on every stretch of work and a turn of soil at the end; watering plays a pour and a soak; pouring Extract plays the pour; fertilizing plays a bag pour; harvesting plays leaves and the fruit coming off ([[systems/sound]]).
 
 ## Invariants
 
 | id             | rule                                                                                                                                | test             |
 | -------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ---------------- |
 | `plants.drink` | a growing plant uses its crop's water and fertilizer from the plot's soil                                                           | `plants.test.ts` |
+| `plants.extract` | Extract adds `EXTRACT_GROWTH` ÷ `EXTRACT_SECONDS` growth per second for the bag's seconds, × `STUNT` per red range, none without a needed neighbour; ripening ends it; once per plant, and a second pour shows no prompt and uses nothing | `extract.test.ts` |
 | —              | quality is fixed at ripening from seed quality, happiness and the `better-*` skill; bought seed at `HAPPY_START` stays at quality 0 | `plants.test.ts` |
 | —              | two plots ripening on the same day roll on different stream values                                                                  | `plants.test.ts` |
 | —              | a picked fruit keeps losing freshness in the hand, house, chest, ground, Quad and Harvester trailer; freezers slow it               | `plants.test.ts` |

@@ -28,6 +28,7 @@ import {
   age,
   ageTree,
   doomed,
+  extractGain,
   grassCount,
   hasNeighbour,
   mood,
@@ -37,6 +38,7 @@ import {
 
 export {
   canChop,
+  canExtract,
   canFertilize,
   canGraft,
   canHarvest,
@@ -47,6 +49,7 @@ export {
   canWater,
   canWeedSpray,
   doChop,
+  doExtract,
   doFertilize,
   doGraft,
   doHarvest,
@@ -135,9 +138,11 @@ export function tickField(w: World, dt: number): void {
       }
       const stunt = (water === 'red' ? STUNT : 1) * (fert === 'red' ? STUNT : 1)
       const lonely = needsNeighbour(c.plant.variety) && !hasNeighbour(w, [at], c.plant.crop)
-      if (!lonely) c.plant.maturity += (dt * stunt) / st.growSeconds
+      const gain = extractGain(dt, c.plant)
+      if (!lonely) c.plant.maturity += (dt * stunt) / st.growSeconds + gain * stunt
       if (c.plant.maturity >= 1) {
         c.plant.maturity = 1
+        c.plant.boost = 0
         c.plant.freshness = 1
         c.plant.quality = q
         upgradeVariety(w, at, c.plant)
@@ -197,6 +202,7 @@ export function advanceYield(w: World, t: Tree): void {
     const left = (t.yield.daysLeft - 1) as 0 | 1
     if (left === 0) {
       t.tended = false
+      t.boosted = false
       t.yield = { kind: 'off', chance: -0.25 + t.happiness * 0.1 }
     } else {
       t.yield = { kind: 'on', daysLeft: left }
@@ -216,12 +222,14 @@ export function tickTree(w: World, t: Tree, dt: number): boolean {
   const fert = fertBand(t.soil.fertilizer, st.fertTolerance, t.soil.fertMax)
   ageTree(t, t.soil, water, fert, dt)
   if (t.juvenile < 1) {
-    t.juvenile += dt / TREES[t.species].juvenileSeconds
+    t.juvenile += dt / TREES[t.species].juvenileSeconds + extractGain(dt, t)
     if (t.juvenile < 1) return false
     t.juvenile = 1
+    t.boost = 0
     if (t.trunk) {
       t.trunk = false
       t.juvenile = 0
+      t.boosted = false
       return true
     }
     t.yield = { kind: 'pending' }
@@ -243,14 +251,14 @@ export function tickTree(w: World, t: Tree, dt: number): boolean {
   return true
 }
 
+export function treeArea(t: Tree): Coord[] {
+  return TREE_DROP_ROWS.flatMap(dr => TREE_DROP_COLS.map(dc => ({ col: t.base.col + dc, row: t.base.row + dr }))).filter(
+    p => p.col !== t.base.col || (p.row !== t.base.row && p.row !== t.base.row + 1),
+  )
+}
+
 export function dropTreeFruit(w: World, t: Tree): boolean {
-  const open = TREE_DROP_ROWS.flatMap(dr =>
-    TREE_DROP_COLS.map(dc => ({ col: t.base.col + dc, row: t.base.row + dr })),
-  ).filter(p => {
-    if (p.col === t.base.col && (p.row === t.base.row || p.row === t.base.row + 1)) return false
-    if (!w.inWorld(p)) return false
-    return isPlot(w.cell(p))
-  })
+  const open = treeArea(t).filter(p => w.inWorld(p) && isPlot(w.cell(p)))
   if (open.length === 0) return false
   const fruit = w.rng.stream('fruit')
   const hit = open[Math.floor(fruit.next() * open.length)]

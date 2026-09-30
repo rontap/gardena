@@ -106,7 +106,7 @@ share   = solo ÷ 2 when a pair is wanted, else solo
 
 #### Goods
 
-`CONTRACT_GOODS` is every Market good except `sugar` and `extract`. `spendLine` picks line 1 uniformly from the candidates:
+`CONTRACT_GOODS` is every Market good except `sugar`. `spendLine` picks line 1 uniformly from the candidates:
 
 - `GOOD_TIER[good]` is at most `starsOf(D)`;
 - `GOOD_COST[good]` is at most the line's budget + `BUDGET_OVERDRAFT`;
@@ -137,7 +137,7 @@ amount  = the largest value in NICE_AMOUNTS that is at most min(wanted, limit); 
 
 `limit` keeps an order within what the farm can make in the time: `FEASIBLE_PER_DAY` is a good's expected daily output, and `scale` makes it smaller on early days. For Any jam the good used for `FEASIBLE_PER_DAY` is `jam-cherry`; for Any spirit it is `vodka`. Every published amount is at least `AMOUNT_MIN`.
 
-`cleanUnit` is a line's base price per unit, with no quality, freshness, variety or skill: `unitOf(good)`, which is `CROPS[crop].sale` for fruit, `JAM_SALE[crop]` for jam, `CASK_SALE` for wine and cider, `bakeSpiritSale(kind, 'base', 0)` for spirits, and `SUGAR_MILL`, `OIL`, `FLOUR`, `EXTRACT`, `BREAD` for the others. Any jam uses the lowest `JAM_SALE`; Any spirit uses the vodka price.
+`cleanUnit` is a line's base price per unit, with no quality, freshness, variety or skill: `unitOf(good)`, which is `CROPS[crop].sale` for fruit, `JAM_SALE[crop]` for jam, `CASK_SALE` for wine and cider, `bakeSpiritSale(kind, 'base', 0)` for spirits, and `SUGAR_MILL`, `OIL`, `FLOUR`, `BREAD` for the others. Any jam uses the lowest `JAM_SALE`; Any spirit uses the vodka price.
 
 #### Payment
 
@@ -159,8 +159,8 @@ The item is `COMPANY_PRIZES[company][prizeBandOf(eff)]`. `prizeBandOf` picks the
 | company | from `PRIZE_BAND_MIN[0]` | from `PRIZE_BAND_MIN[1]` | from `PRIZE_BAND_MIN[2]` | from `PRIZE_BAND_MIN[3]` |
 |---|---|---|---|---|
 | Whole Cart | Cherry tree seed | Apricot tree seed | one Named tree seed | one Heirloom tree seed, or 1 Vanilla seed |
-| Little Lid | Apple tree seed | Olive tree seed | one Plain tree seed | one Named tree seed |
-| Trade Jo | Apple tree seed | Cherry tree seed | 1 skill point | a tool |
+| Little Lid | Apple tree seed | one Plain Olive or Cherry tree seed | one Plain tree seed | one Named tree seed |
+| Trade Jo | Apple tree seed | 1 skill point | 1 skill point | a tool |
 | Mercanova | fertilizer | Large freezer | 1 skill point | expansion permit |
 | Halbert Eijn | Plain fruit seeds, count from the reward | 2 Named annual seeds | 1 Heirloom annual seed | a tool |
 | Intercrop | `STARTER_CROPS` seeds, count from the reward | Plain fruit seeds, count from the reward | 4 Named annual seeds | 2 Heirloom annual seeds, or 2 Vanilla seeds |
@@ -171,6 +171,7 @@ Where an entry names a group, value `k` 32 picks one member uniformly:
 - Annual seeds: Named and Heirloom are every annual variety of that tier, grass excluded (`NAMED_ANNUAL_POOL`, `HEIRLOOM_ANNUAL_POOL`). Plain fruit is every annual of class `fruit` except vanilla, at its Plain variety (`FRUIT_ANNUAL_POOL`).
 - "or Vanilla seeds": the Vanilla seeds are one more member beside the group's members.
 - A tool: the Rotary shovel, the Diamond pickaxe or the Electric chainsaw, one in three (`PRIZE_TOOLS`).
+- Little Lid at `PRIZE_BAND_MIN[1]`: one Plain tree seed, olive or cherry (`trees`), equal chance on the same `k` 32.
 - "count from the reward": `ceil(reward ÷ CROPS[crop].seed)` seeds — as many as the reward would buy at the seed price.
 
 The offer still has a `reward` and `penalty`. The fertilizer and "count from the reward" prizes use the reward; the penalty and cancel fee work as for money offers.
@@ -293,7 +294,7 @@ The digest carries `takenToday` and, for each running contract, its id, `dueDay`
 | `contracts.reward` | `reward = clean × (1 + markup)` is fixed at generation | `market.test.ts` |
 | — | amount, clean, reward and penalty are whole numbers; markup is whole percent | `market.test.ts` |
 | — | a pair never has two lines of one family | `market.test.ts` |
-| — | no good appears below its `GOOD_TIER`; sugar and extract never appear | `market.test.ts` |
+| — | no good appears below its `GOOD_TIER`; sugar never appears | `market.test.ts` |
 | — | one day never offers the same company twice in the first `CONTRACT_OFFERS` positions | `market.test.ts` |
 | — | final difficulty stays within 0 and `DIFFICULTY_CEILING` | `market.test.ts` |
 | — | the list reads `repDay`, so reputation changes during the day do not change it | `market.test.ts` |

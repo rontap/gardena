@@ -211,7 +211,6 @@ export function consignUnits(world: World, item: Item): number {
     item.kind === 'jam' ||
     item.kind === 'oil' ||
     item.kind === 'flour' ||
-    item.kind === 'extract' ||
     item.kind === 'bread'
   ) {
     return item.count
@@ -270,7 +269,7 @@ function toStall(world: World, item: Item): Sale {
     }, item.infused)
     return { name: stallGoodName('oil', 'base'), n: rest }
   }
-  if (item.kind === 'flour' || item.kind === 'extract' || item.kind === 'bread') {
+  if (item.kind === 'flour' || item.kind === 'bread') {
     const good = item.kind
     const rest = splitConsign(world, good, item.count, false, n => {
       world.stall[good].takeBaked(n, item.unitSale)

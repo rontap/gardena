@@ -148,6 +148,7 @@ const HITS: Partial<Record<Intent['act'], Hit>> = {
   chop: { every: 0.7, play: () => sfx(knock) },
   water: { every: Infinity, play: () => sfx(pour) },
   fertilize: { every: Infinity, play: () => sfx(pourBag) },
+  extract: { every: Infinity, play: () => sfx(pour) },
   harvest: { every: Infinity, play: () => sfx(rustle) },
   compost: LOAD,
   grind: LOAD,

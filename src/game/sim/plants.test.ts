@@ -32,6 +32,7 @@ import {
   tierOf,
   VARIETIES,
   varietyChance,
+  FAMILIARITY_POINT,
   familiarityMax,
   type VarietyId,
 } from '../defs/varieties.ts'
@@ -39,7 +40,7 @@ import { SAT_IMPACT_FRUIT, SAT_STEP_FRUIT, saleUnits } from './feature-contracts
 import { hasCrossbreed, upgradeVariety } from './feature-field/field.helpers.ts'
 import { RESEARCH, SKUS } from '../defs/research.ts'
 import { JAM_ROT, SKILL_IDS, SEED_BANK_QUALITY, SKILLS, TEND_WORK } from '../defs/skills.ts'
-import { ANNUAL_IDS, packSku, type AnnualId, type PlantCrop, type SkuId } from './ids.ts'
+import { ANNUAL_IDS, GROWN_IDS, packSku, type AnnualId, type PlantCrop, type SkuId } from './ids.ts'
 import {
   Chest,
   CHUNK,
@@ -172,7 +173,7 @@ describe('0.8 plants and trees', () => {
   })
 
   test('fermentation unlocks cane; raspberry parent is advanced plants', () => {
-    expect(RESEARCH['unlock-fermentation']).toMatchObject({ parent: 'unlock-preservatives', cost: 48, seconds: 70 })
+    expect(RESEARCH['unlock-fermentation']).toMatchObject({ parent: 'unlock-preservatives', cost: 48, seconds: 60 })
     expect(SKUS['pack-sugar-cane'].unlock).toBe('unlock-fermentation')
     expect(RESEARCH['unlock-raspberry'].parent).toBe('unlock-advanced-plants')
     expect(Object.keys(RESEARCH).includes('unlock-vanilla')).toBe(false)
@@ -1121,7 +1122,21 @@ describe('1.8 permits and points', () => {
     expect(SKILLS['inherit-land'].gate).toEqual({ kind: 'research', id: 'unlock-expand' })
   })
 
-  test('Skill points are one shared bank of `POINTS_PER_DAY` a day.', () => {
+  test('Reaching `familiarityMax` grants `FAMILIARITY_POINT` once per grown crop. There are 13.', () => {
+    const w = new World(1)
+    w.learn('tomato', familiarityMax('tomato') - 1)
+    expect(w.points).toBe(0)
+    w.learn('tomato', 1)
+    expect(w.familiarity.tomato).toBe(familiarityMax('tomato'))
+    expect(w.points).toBe(FAMILIARITY_POINT)
+    w.learn('tomato', 1)
+    expect(w.points).toBe(FAMILIARITY_POINT)
+    GROWN_IDS.forEach(c => w.learn(c, familiarityMax(c)))
+    expect(GROWN_IDS).toHaveLength(13)
+    expect(w.points).toBe(13 * FAMILIARITY_POINT)
+  })
+
+  test('Skill points are one shared bank. `POINTS_PER_DAY` is 1.', () => {
     const w = new World(1)
     expect(w.points).toBe(0)
     w.grantPoints(POINTS_PER_DAY)

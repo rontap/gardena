@@ -5,7 +5,7 @@
 | item kind | `'fertilizer'` |
 | unit | litres; a bag holds `FERT_BAG_LITERS` |
 | stack limit | 1 bag |
-| obtained from | `buy-fertilizer` in the [[items/buildings/additive-store]], from the start; burrow loot; contract prize (`mercanova`) |
+| obtained from | `buy-fertilizer` in the [[items/buildings/additive-store]], from the start; contract prize (`mercanova`) |
 | sold at | not sold |
 
 Adds fertilizer to plots and trees.

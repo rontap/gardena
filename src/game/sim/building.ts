@@ -17,9 +17,8 @@ import {
   stationSeconds,
   FURNACE_NEED,
   FURNACE_SECONDS,
-  INFUSE_EXTRACT,
-  INFUSE_FLAKES,
   INFUSE_IN,
+  INFUSE_REAGENT,
   INFUSE_SECONDS,
   GRIND_MAX,
   grindMinAt,
@@ -48,14 +47,15 @@ import {
 } from '../defs/items.ts'
 import { NECRO_H, NECRO_W } from '../defs/necronomicon.ts'
 import { tierOf, VARIETY_TIERS, type VarietyId } from '../defs/varieties.ts'
-import { JAM_CROPS, SENSOR_CELL_SKUS, SPIRIT_KINDS, STILL_CROPS, type AnnualId, type BarrelCrop, type FurnaceRecipe, type GrownCrop, type Infusable, type JamCrop, type MillRecipe, type PageId, type Signal, type SupperId, type SkuId, type StillCrop, type TreeId } from './ids.ts'
-import { compostValue, giveSlots, makeCompost, mergeUnitSale, organic, slotsCouldTake, type Item, type Slot } from './item.ts'
+import { JAM_CROPS, SENSOR_CELL_SKUS, SPIRIT_KINDS, STILL_CROPS, type AnnualId, type BarrelCrop, type FurnaceRecipe, type GrownCrop, type Infusable, type JamCrop, type MillRecipe, type PageId, type Reagent, type Signal, type SupperId, type SkuId, type StillCrop, type TreeId } from './ids.ts'
+import { compostValue, giveSlots, isReagent, makeCompost, mergeUnitSale, organic, slotsCouldTake, type Item, type Slot } from './item.ts'
 import { allSlots, slots, type PadGoods } from './feature-vehicles/pick.ts'
 
 const JAM_GOODS = JAM_CROPS.map(c => `jam-${c}` as const)
-const MILL_IN = slots('fruit', ['sugar-cane', 'olive', 'wheat', 'vanilla', 'chilli']).concat(slots('compostable', ['grass']))
-const MILL_OUT = slots('produce', ['sugar', 'oil', 'flour', 'extract']).concat(slots('other', ['vanilla-extract', 'flakes']))
-const INFUSE_GOODS = slots('produce', [...JAM_GOODS, 'oil']).concat(allSlots('alcohol'))
+const MILL_IN = slots('fruit', ['sugar-cane', 'olive', 'wheat', 'vanilla', 'chilli']).concat(slots('compostable', ['grass', 'truffle']))
+const MILL_OUT = slots('produce', ['sugar', 'oil', 'flour']).concat(slots('other', ['extract', 'vanilla-extract', 'flakes', 'truffle-extract']))
+const INFUSE_GOODS = slots('produce', [...JAM_GOODS, 'oil']).concat(allSlots('alcohol'), slots('other', ['extract']))
+const INFUSE_REAGENTS_IN = slots('other', ['vanilla-extract', 'flakes', 'truffle-extract']).concat(slots('compostable', ['fly-agaric']))
 import { applyClaim, pageClaim } from './feature-necronomicon/necronomicon.ts'
 import {
   addStillFeed,
@@ -75,6 +75,7 @@ import {
   grindProduct,
   infusableOf,
   infusedProduct,
+  infuseReagent,
   infuserWorking,
   jamCropOf,
   jamSale,
@@ -383,6 +384,8 @@ export class Tree {
   fruit: number
   yield: TreeYield
   tended = false
+  boost = 0
+  boosted = false
   trunk = false
   variety: VarietyId = 'base'
   happiness: number
@@ -1009,37 +1012,37 @@ export class Infuser extends Machine {
   quality = 0
   unitSale = 0
   units = 0
-  flakes = 0
-  extract = 0
+  reagents: { [K in Reagent]: number } = { 'vanilla-extract': 0, flakes: 0, 'truffle-extract': 0, 'fly-agaric': 0 }
   progress = 0
   override padGoods(role: 'in' | 'out'): PadGoods {
     if (role === 'out') return INFUSE_GOODS
-    return [...INFUSE_GOODS, ...slots('other', ['flakes', 'vanilla-extract'])]
+    return [...INFUSE_GOODS, ...INFUSE_REAGENTS_IN]
   }
   constructor(base: RectBase) {
     super({ shape: 'rect', col: base.col, row: base.row, w: MILL_W, h: MILL_H })
   }
   override accept(item: Item): number {
-    if (item.kind === 'flakes' || item.kind === 'vanilla-extract') return item.count
-    if (item.kind !== 'jam' && item.kind !== 'cask' && item.kind !== 'spirit' && item.kind !== 'oil') return 0
+    if (isReagent(item)) return item.count
     const lock = infusableOf(item)
     if (lock === undefined) return 0
     if (this.lock !== 'none' && !sameInfusable(this.lock, lock)) return 0
-    if (item.count <= 0) return 0
+    if (item.kind === 'extract') return item.liters
+    if (item.kind !== 'jam' && item.kind !== 'cask' && item.kind !== 'spirit' && item.kind !== 'oil') return 0
     return item.count
   }
   override apply(item: Item, n: number): void {
     if (n <= 0) return
-    if (item.kind === 'flakes') {
-      this.flakes += n
-      return
-    }
-    if (item.kind === 'vanilla-extract') {
-      this.extract += n
+    if (isReagent(item)) {
+      this.reagents[item.kind] += n
       return
     }
     const lock = infusableOf(item)
     if (lock === undefined) return
+    if (item.kind === 'extract') {
+      this.lock = lock
+      this.units += 1
+      return
+    }
     if (item.kind !== 'jam' && item.kind !== 'cask' && item.kind !== 'spirit' && item.kind !== 'oil') return
     if (this.lock === 'none') {
       this.lock = lock
@@ -1056,12 +1059,13 @@ export class Infuser extends Machine {
     if (!infuserWorking(this)) return false
     if (this.progress < 1) this.progress += (dt * furnaceMul(w.furnaceSnap, this.base)) / INFUSE_SECONDS
     if (this.progress < 1) return false
+    const reagent = infuseReagent(this)
+    if (reagent === undefined) throw new Error('reagent')
     if (!emitProduct(w, this.base, infusedProduct(this))) return false
     this.progress = 0
     w.cue({ kind: 'machine', machine: 'infuser' })
     this.units -= INFUSE_IN
-    if (this.flakes >= INFUSE_FLAKES) this.flakes -= INFUSE_FLAKES
-    else this.extract -= INFUSE_EXTRACT
+    this.reagents[reagent] -= INFUSE_REAGENT
     if (this.units === 0) {
       this.lock = 'none'
       this.quality = 0

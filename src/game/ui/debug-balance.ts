@@ -419,7 +419,7 @@ function millSugarGrowPerL(cane: CropEdit, g: Globals): number {
 function liveMillSale(recipe: Exclude<MillRecipe, 'grass'>, variety: VarietyId, quality: number): number {
   const p = millProduct(recipe, variety, quality)
   if (p.kind === 'sugar') return p.liters * p.unitSale
-  if (p.kind === 'oil' || p.kind === 'flour' || p.kind === 'extract') return p.count * p.unitSale
+  if (p.kind === 'oil' || p.kind === 'flour') return p.count * p.unitSale
   return 0
 }
 

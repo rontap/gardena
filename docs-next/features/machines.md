@@ -71,14 +71,16 @@ A machine with a signal input stops starting and advancing batches while that in
 
 ### Infusion
 
-The Infuser sets `infused` on jam, spirits, wine and cider, and olive oil, using flakes or vanilla extract ([[items/buildings/infuser]]). An infused item keeps the quality and `unitSale` of the good that went in, and stacks separately from the plain good. Infusion has two outcomes:
+The Infuser sets `infused` on jam, spirits, wine and cider, olive oil, and Extract. Each good takes two of the reagents vanilla extract, flakes, Truffle extract and Fly agaric (`INFUSE_REAGENTS`, [[items/buildings/infuser]]). An infused item keeps the quality and `unitSale` of the good that went in, and stacks separately from the plain good. An infused jam, cask, spirit or oil has two outcomes:
 
 1. **Market: a fixed price drop.** Infused units of a good all sell at the price drop that good had when the drop-off started, and leave it as it is, so any number of infused units sells at one price (`marketQuote`, [[features/market]]).
 2. **Contracts: more reputation.** Infused units count toward a contract like plain ones. On completion, reputation gained is multiplied by 1 + 0.25 × (infused units delivered ÷ units required) ([[features/contracts]]).
 
+Infused Extract is not sold. Poured on a plant, sapling or stump, it speeds up growth for `EXTRACT_INFUSED_SECONDS` instead of `EXTRACT_SECONDS` ([[items/produce/extract]]).
+
 ### Familiarity
 
-The research station studies fruit. Each fruit studied raises the crop's familiarity (`World.familiarity`) by `FAMILIARITY_GAIN` of its variety tier, up to `familiarityMax(crop)`. Familiarity raises the chance of a better variety at ripening ([[features/plants]]) and the quality of bought seeds ([[features/inventory]]).
+The research station studies fruit. Each fruit studied raises the crop's familiarity (`World.familiarity`) by `FAMILIARITY_GAIN` of its variety tier, up to `familiarityMax(crop)`. The step that reaches `familiarityMax` grants `FAMILIARITY_POINT` skill points, once per crop (`GROWN_IDS`, 13 crops). A later study of a crop already at the cap grants nothing. Loading a save does not grant it again: familiarity is stored, and the points already paid are stored with it. Familiarity raises the chance of a better variety at ripening ([[features/plants]]) and the quality of bought seeds ([[features/inventory]]).
 
 ## Screen
 
@@ -107,6 +109,7 @@ Putting an item into any machine plays one load sound: lid open, item in, lid sh
 | — | Furnace: `FURNACE_NEED` units burn in `FURNACE_SECONDS` into `FURNACE_ASH` ash; leftover units stay | `machine.test.ts` |
 | — | Mill: `MILL_IN` cane makes `SUGAR_BAG` L of sugar | `plants.test.ts` |
 | — | Pot still starts only when its water network gives the full `STILL_WATER` | `plants.test.ts` |
+| `familiarity.point` | reaching `familiarityMax` grants `FAMILIARITY_POINT` once per grown crop; 13 crops grant 13 | `plants.test.ts`, `machine.test.ts` |
 
 ## When you change this
 

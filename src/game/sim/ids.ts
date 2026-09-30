@@ -102,7 +102,7 @@ export const CROP_OF_SPIRIT: { readonly [K in Exclude<SpiritKind, 'mixed'>]: Sti
   brandy: 'apricot',
 }
 
-export type MillRecipe = 'sugar-cane' | 'olive' | 'wheat' | 'grass' | 'vanilla' | 'chilli'
+export type MillRecipe = 'sugar-cane' | 'olive' | 'wheat' | 'grass' | 'vanilla' | 'chilli' | 'truffle'
 
 export type FurnaceRecipe = 'none' | 'ash' | 'bread'
 
@@ -112,6 +112,13 @@ export type Infusable =
   | { kind: 'spirit'; spirit: Exclude<SpiritKind, 'mixed'>; variety: VarietyId }
   | { kind: 'spirit'; spirit: 'mixed' }
   | { kind: 'oil' }
+  | { kind: 'extract' }
+
+export const INFUSABLE_KINDS: readonly Infusable['kind'][] = ['jam', 'cask', 'spirit', 'oil', 'extract']
+
+export type Reagent = 'vanilla-extract' | 'flakes' | 'truffle-extract' | 'fly-agaric'
+
+export const REAGENTS: readonly Reagent[] = ['vanilla-extract', 'flakes', 'truffle-extract', 'fly-agaric']
 
 export type JamId = `jam-${JamCrop}`
 
@@ -123,9 +130,9 @@ export const JAM_IDS: readonly JamId[] = JAM_CROPS.map(c => `jam-${c}` as JamId)
 
 export const STILL_CROPS: readonly StillCrop[] = ['potato', 'wheat', 'apricot']
 
-export const MILL_RECIPES: readonly MillRecipe[] = ['sugar-cane', 'olive', 'wheat', 'grass', 'vanilla', 'chilli']
+export const MILL_RECIPES: readonly MillRecipe[] = ['sugar-cane', 'olive', 'wheat', 'grass', 'vanilla', 'chilli', 'truffle']
 
-export type StallGoodId = GrownCrop | 'sugar' | SpiritKind | CaskId | JamId | 'oil' | 'flour' | 'extract' | 'bread'
+export type StallGoodId = GrownCrop | 'sugar' | SpiritKind | CaskId | JamId | 'oil' | 'flour' | 'bread'
 
 export type ShovelId = 'shovel' | 'better-shovel' | 'rotary-shovel'
 

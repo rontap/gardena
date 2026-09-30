@@ -30,29 +30,19 @@ import {
   type Well,
   type Barrel,
 } from './building.ts'
-import type { VarietyId } from '../defs/varieties.ts'
-import type { GrownCrop, TreeId } from './ids.ts'
+import type { MushroomId } from '../defs/mushroom.ts'
+import type { GrownCrop } from './ids.ts'
 import type { Plant, Turf, Weed } from './plant.ts'
 import { isSensor, type Sensor } from './sensor.ts'
 import type { Soil } from './soil.ts'
 
 export type Ground = 'soft' | 'hard' | 'very-hard'
 
-export type LootItem =
-  | { kind: 'treasure'; coins: number }
-  | { kind: 'tree-seed'; tree: TreeId; variety: VarietyId; quality: number }
-  | { kind: 'seeds'; crop: 'tomato' | 'raspberry' | 'grape'; variety: VarietyId; quality: number; count: number }
-  | { kind: 'fertilizer'; liters: number; capacityLiters: number }
-  | { kind: 'weed'; count: number }
-  | { kind: 'fly-agaric'; count: number }
-  | { kind: 'shovel'; id: 'better-shovel'; usesLeft: number; workSeconds: number }
-  | { kind: 'pickaxe'; id: 'better-pickaxe'; usesLeft: number; workSeconds: number }
-  | { kind: 'axe'; id: 'axe'; usesLeft: number; workSeconds: number }
-
 export type Cover =
   | { kind: 'bare' }
   | { kind: 'grass'; variant: 0 | 1 | 2 }
-  | { kind: 'burrow'; loot: LootItem }
+  | { kind: 'burrow' }
+  | { kind: 'mushroom'; id: MushroomId; day: number }
 
 export type Plot =
   | { kind: 'untilled'; ground: Ground; hardness: number; cover: Cover }
@@ -130,8 +120,12 @@ export function isTilled(c: Cell): c is Tilled {
   )
 }
 
+export function openCover(c: Extract<Plot, { kind: 'untilled' }>): boolean {
+  return c.cover.kind === 'bare' || c.cover.kind === 'grass'
+}
+
 export function isFenceSite(c: Cell): boolean {
-  if (c.kind === 'untilled') return c.cover.kind !== 'burrow'
+  if (c.kind === 'untilled') return openCover(c)
   return isSensor(c) && c.fenceable
 }
 
@@ -153,7 +147,7 @@ export function isSolid(c: Cell): boolean {
 }
 
 export function isPavingSite(c: Cell): boolean {
-  if (c.kind === 'untilled') return c.cover.kind !== 'burrow'
+  if (c.kind === 'untilled') return openCover(c)
   if (c.kind === 'rock' || c.kind === 'tree') return false
   return isSolid(c)
 }

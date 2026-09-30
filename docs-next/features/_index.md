@@ -6,6 +6,7 @@ One page per player-facing feature. Copy [[features/_template]].
 - [[features/trees]] — trees, grafting, wild apple
 - [[features/weeds]] — weeds, grass, Weed spray
 - [[features/burrow]] — burrows
+- [[features/mushrooms]] — Fly agaric and Truffle around trees
 - [[features/fences]] — fences and enclosures
 - [[features/water]] — pumps, wells, taps, pipes, valves, sprinklers, buckets
 - [[features/weather-day]] — phases, day change, weather, end-of-day summary

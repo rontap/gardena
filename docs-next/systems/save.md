@@ -14,7 +14,7 @@ Every feature with persistent state; [[systems/world]] (`World.hydrate`); [[feat
 
 ### Saved fields
 
-`dump(world)` returns a `Save` with: `game: 'gardena'`, `GAME_VERSION`, the save time, the seed and the number of `fruit` stream values used, the clock, money, reputation, contracts, purchases, prize counters, skill points, the Market (each good's `sat`, `stock` and `worth`), research, skills, the day tally, end-of-day summaries and the unread list, the loan payback days left (`loanDays`), grandma's letters, the tutorial, crop familiarity, every seat (player id, name, presence, position, hand, inventory), vehicles, trailers, routes, every tile of every owned chunk, pipes, sprinklers, wires, held valve signals, fences, paving, and items on the ground.
+`dump(world)` returns a `Save` with: `game: 'gardena'`, `GAME_VERSION`, the save time, the seed and the number of `fruit` stream values used, the clock, money, reputation, contracts, purchases, prize counters, the count of burrows dug since the last Rare one, skill points, the Market (each good's `sat`, `stock` and `worth`), research, skills, the day tally, end-of-day summaries and the unread list, the loan payback days left (`loanDays`), grandma's letters, the tutorial, crop familiarity, every seat (player id, name, presence, position, hand, inventory), vehicles, trailers, routes, every tile of every owned chunk, pipes, sprinklers, wires, held valve signals, fences, paving, and items on the ground.
 
 A building that covers several tiles is written once at its origin; its other tiles are written as `occ`.
 

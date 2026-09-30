@@ -130,7 +130,7 @@ describe('burrow.dig speed', () => {
       kind: 'untilled',
       ground: 'soft',
       hardness: 0,
-      cover: { kind: 'burrow', loot: { kind: 'treasure', coins: 4 } },
+      cover: { kind: 'burrow' },
     })
     w.seats[0].hand = { kind: 'hold', item: makeShovel('better-shovel') }
     w.seats[0].actor.x = AT.col + 0.5

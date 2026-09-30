@@ -14,7 +14,7 @@ Studies fruit to raise the farm's familiarity with a crop.
 
 ## Use
 
-Takes fruit of any crop. The first fruit fixes the crop and variety. It takes fruit only up to what is left to learn about that crop (`stationRoom`). Each fruit takes `stationSeconds(level)` = `STATION_SECONDS_BASE` + `STATION_SECONDS_STEP` × the crop's current familiarity; neither the `machinery` skill nor Furnaces speed it up. Each fruit studied adds `FAMILIARITY_GAIN` of its variety tier to the crop's familiarity, up to `familiarityMax(crop)`.
+Takes fruit of any crop. The first fruit fixes the crop and variety. It takes fruit only up to what is left to learn about that crop (`stationRoom`). Each fruit takes `stationSeconds(level)` = `STATION_SECONDS_BASE` + `STATION_SECONDS_STEP` × the crop's current familiarity; neither the `machinery` skill nor Furnaces speed it up. Each fruit studied adds `FAMILIARITY_GAIN` of its variety tier to the crop's familiarity, up to `familiarityMax(crop)`. Reaching that cap grants `FAMILIARITY_POINT` skill points, once ([[features/machines]]).
 
 Familiarity is stored on the farm, not on the station: several stations study the same numbers, and demolishing one loses nothing ([[features/machines]]).
 
@@ -26,7 +26,7 @@ Chest input on the left; no output. Vehicle loading spots; signal input ([[syste
 
 ## Screen
 
-Prompt: **Study**. Hover: **Crop Variety Station**, **{name} · {left} left · {n}%**, or **Nothing left to learn about {name}**. Panel: `station.tsx`.
+Prompt: **Study**. Hover: **Crop Variety Station**, **{name} · {left} left · {n}%**, or **Nothing left to learn about {name}**. Panel: `station.tsx`. A crop at `familiarityMax` shows a chip **{n} skill point** in the same row as the other study chips, with the skill-point icon. Hover: **Skill point**, **Studying this crop to its last level pays {n} skill point.**
 
 ## Art
 

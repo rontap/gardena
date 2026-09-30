@@ -5,7 +5,7 @@
 | item kind | `'tree-seed'` |
 | unit | 1 per item; no count |
 | stack limit | 1 |
-| obtained from | contract prize; [[items/buildings/grinder]] (Plain, from tree fruit); digging up a tree with a [[items/other/shovel]]; burrow loot |
+| obtained from | contract prize; [[items/buildings/grinder]] (Plain, from tree fruit); digging up a tree with a [[items/other/shovel]]; a Common burrow (Plain), an Uncommon burrow (Named) or a Rare burrow (Heirloom) ([[features/burrow]]) |
 | sold at | not sold |
 
 The seed of one tree: species, variety and quality. Name: **{Name} seed**.

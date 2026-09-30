@@ -52,5 +52,5 @@
   "skills_jam_blurb": "Fruit below half freshness rots slower. Each rank adds {pct}%.",
   "skills_jam_skillblurb": "Fruit below half freshness rots {pct}% slower.",
   "skills_lucky_name": "Lucky",
-  "skills_lucky_blurb": "A burrow that appears after you learn Lucky holds more money in treasure than a burrow that appeared without Lucky, and more often holds a seed or tree seed of a Variety the Seed silo does not sell as a pack. Each rank raises both. Burrows already on the farm do not change."
+  "skills_lucky_blurb": "Lucky has no effect yet. Its rank shows as Luck at the top of Family."
 }

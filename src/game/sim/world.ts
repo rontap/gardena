@@ -16,6 +16,7 @@ import { betterGain } from '../defs/skills.ts'
 import { WEATHER_THROUGH_DAY } from '../defs/weather.ts'
 import { CROPS, HAPPY_MAX, HAPPY_START } from '../defs/crops.ts'
 import {
+  FAMILIARITY_POINT,
   familiarityMax,
   qualityGain,
   type VarietyId
@@ -192,6 +193,10 @@ import type {
 
 export const POINTS_PER_DAY = 1
 
+export function pointsForEndedDay(day: number): number {
+  return day % 2 === 1 ? POINTS_PER_DAY : 0
+}
+
 export const STIPEND = [
   { through: 3, amount: 12 },
   { through: 6, amount: 6 },
@@ -237,6 +242,7 @@ export class World {
   purchases = 0
   prizeSlots = 0
   prizeFreezers = 0
+  sinceRare = 0
   readonly owned: ChunkId[] = [{ cx: 0, cy: 0 }]
   readonly pumps: Pump[]
   readonly taps: Tap[] = []
@@ -319,6 +325,7 @@ export class World {
   readonly empty = new Map<string, Coord>()
   readonly tilled = new Map<string, Coord>()
   readonly burrows = new Map<string, Coord>()
+  readonly mushrooms = new Map<string, Coord>()
   pumpLiters = 0
   private weatherTable: WeatherKind[] = []
   private readonly weatherPins = new Map<number, WeatherKind>()
@@ -395,6 +402,7 @@ export class World {
       this.purchases = h.purchases
       this.prizeSlots = h.prizeSlots
       this.prizeFreezers = h.prizeFreezers
+      this.sinceRare = h.sinceRare
       this.bigTicks = h.bigTicks
       this.done.clear()
       h.done.forEach(id => this.done.add(id))
@@ -673,6 +681,8 @@ export class World {
     else this.tilled.delete(k)
     if (cell.kind === 'untilled' && cell.cover.kind === 'burrow') this.burrows.set(k, here)
     else this.burrows.delete(k)
+    if (cell.kind === 'untilled' && cell.cover.kind === 'mushroom') this.mushrooms.set(k, here)
+    else this.mushrooms.delete(k)
     if (cell.kind === 'untilled' && cell.cover.kind === 'grass') this.tufts.set(k, here)
     else this.tufts.delete(k)
     if (cell.kind === 'rock' && origin) this.rocks.set(k, here)
@@ -711,6 +721,7 @@ export class World {
     this.empty.clear()
     this.tilled.clear()
     this.burrows.clear()
+    this.mushrooms.clear()
     this.tufts.clear()
     this.rocks.clear()
     this.dirtEdgeCache.clear()
@@ -884,7 +895,11 @@ export class World {
   }
 
   learn(crop: GrownCrop, n: number): void {
-    this.familiarity[crop] = Math.min(familiarityMax(crop), this.familiarity[crop] + n)
+    const cap = familiarityMax(crop)
+    const before = this.familiarity[crop]
+    const after = Math.min(cap, before + n)
+    this.familiarity[crop] = after
+    if (before < cap && after === cap) this.grantPoints(FAMILIARITY_POINT)
   }
 
   faces(): ExpandFace[] {

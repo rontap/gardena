@@ -44,13 +44,13 @@ export const COMPANY_PRIZES: { readonly [K in CompanyId]: readonly [PrizeTemplat
   ],
   'little-lid': [
     { kind: 'tree-seed', tree: 'apple', variety: 'base' },
-    { kind: 'tree-seed', tree: 'olive', variety: 'base' },
+    { kind: 'trees', trees: ['olive', 'cherry'] },
     { kind: 'pool', pool: 'plain-trees', count: 1 },
     { kind: 'pool', pool: 'named-trees', count: 1 },
   ],
   'trade-jo': [
     { kind: 'tree-seed', tree: 'apple', variety: 'base' },
-    { kind: 'tree-seed', tree: 'cherry', variety: 'base' },
+    { kind: 'skill-points', n: 1 },
     { kind: 'skill-points', n: 1 },
     { kind: 'tool' },
   ],

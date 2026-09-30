@@ -382,11 +382,11 @@ describe('contracts', () => {
     }
   })
 
-  test('Sugar and extract are stall goods but are never demanded by a contract.', () => {
+  test('Sugar is a stall good but is never demanded by a contract. Extract is neither a stall good nor a contract good.', () => {
     expect(CONTRACT_GOODS).not.toContain('sugar')
     expect(CONTRACT_GOODS).not.toContain('extract')
     expect(STALL_IDS).toContain('sugar')
-    expect(STALL_IDS).toContain('extract')
+    expect(STALL_IDS).not.toContain('extract')
     for (const seed of [1, 7, 99, 12345]) {
       const rng = new Rng(seed)
       for (let day = 0; day < 50; day++) {
@@ -845,6 +845,14 @@ describe('prizes', () => {
             expect(inPool(cell.pool, o.prize, cell.kind === 'from-cash' ? 'cash' : cell.count, o.reward)).toBe(true)
             return
           }
+          if (cell.kind === 'trees') {
+            expect(o.prize.kind).toBe('tree-seed')
+            if (o.prize.kind === 'tree-seed') {
+              expect(o.prize.variety).toBe('base')
+              expect(cell.trees.includes(o.prize.tree)).toBe(true)
+            }
+            return
+          }
           expect(
             (o.prize.kind === 'seeds' && o.prize.crop === 'vanilla' && o.prize.variety === 'base' && o.prize.count === cell.vanilla) ||
               inPool(cell.pool, o.prize, cell.count, o.reward),
@@ -966,6 +974,25 @@ describe('prizes', () => {
     const st = seeds.silo.seeds.find(s => s.crop === 'potato' && s.variety === 'bintje')
     if (st === undefined) throw new Error('bintje')
     expect(st.count).toBe(had + 4)
+  })
+
+  test('Little Lid at difficulty 8–19 pays one Plain olive or cherry tree seed. Trade Jo at 8–19 pays 1 skill point.', () => {
+    expect(COMPANY_PRIZES['little-lid'][1]).toEqual({ kind: 'trees', trees: ['olive', 'cherry'] })
+    expect(COMPANY_PRIZES['trade-jo'][1]).toEqual({ kind: 'skill-points', n: 1 })
+    const trees = new Set<string>()
+    let points = 0
+    for (let seed = 1; seed <= 80; seed++) {
+      rollBoardAtD(new Rng(seed), 12, CONTRACT_OFFERS).forEach(o => {
+        if (o.prize.kind === 'cash' || prizeBandOf(o.difficulty) !== 1) return
+        if (o.company === 'little-lid' && o.prize.kind === 'tree-seed') trees.add(o.prize.tree)
+        if (o.company === 'trade-jo') {
+          expect(o.prize).toEqual({ kind: 'skill-points', n: 1 })
+          points += 1
+        }
+      })
+    }
+    expect([...trees].sort()).toEqual(['cherry', 'olive'])
+    expect(points).toBeGreaterThan(0)
   })
 
   test('Bands split on final difficulty at 8 / 20 / 30.', () => {

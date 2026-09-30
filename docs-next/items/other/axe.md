@@ -20,7 +20,7 @@ Values from `AXES` in `defs/items.ts`.
 | uses | 30 | 90 | 360 |
 | work seconds | 5 | 3 | 1.5 |
 | shop | `buy-axe`, after `unlock-better-tools` | `buy-chainsaw`, after `unlock-hardened-tools` | not sold |
-| other sources | burrow loot | — | contract prize (`tool` cell) |
+| other sources | a Common burrow | — | contract prize (`tool` cell); a Rare burrow, with 20% of its uses |
 
 All three grades do the same actions; they differ only in uses and work seconds.
 

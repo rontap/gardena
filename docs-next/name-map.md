@@ -48,7 +48,9 @@ The words the game shows the player, and the words `docs-next` prose uses. Code 
 | drowning | Overwatered | red, too much water; **{Crop} is overwatered** |
 | starving for fertilizer, starve | No fertilizer | red; **{Crop} has no fertilizer** |
 | needs fertilizer | Needs fertilizer | orange |
-| grade, rarity, Common / Uncommon / Rare | Quality (the percentage); Plain / Named / Heirloom (the variety tier) | **Quality 72%**; **Tomato (San Marzano) · Heirloom** |
+| grade, rarity, Common / Uncommon / Rare, of fruit, seeds or trees | Quality (the percentage); Plain / Named / Heirloom (the variety tier) | **Quality 72%**; **Tomato (San Marzano) · Heirloom** |
+| bone meal, boost, fertilizer (for Extract) | Extract; speeds up growth | **Pour extract** |
+| spawn, forage (of a mushroom) | comes up; Pick up | "Mushrooms come up around trees after rain." |
 | Basic (variety tier) | Plain | |
 | path, purpose (in copy) | best for | **Best for Preserving: sells for {mul}× as jam or flour** |
 | yield (verb) | gives, makes | "A tree in season gives fruit for {days} days." |
@@ -56,6 +58,8 @@ The words the game shows the player, and the words `docs-next` prose uses. Code 
 | feeds itself | needs no watering or fertilizer | wild apple |
 
 Happiness stays: it is the name of the plant's meter, not a verb.
+
+Common, Uncommon and Rare name a burrow's rarity, and only that ([[features/burrow]]).
 
 ### Water
 

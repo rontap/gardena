@@ -1,5 +1,5 @@
 import { DAY_SECONDS } from '../sim/clock.ts'
-import type { AxeId, CaskId, ContainerId, JamCrop, PickaxeId, ShovelId, SpiritKind } from '../sim/ids.ts'
+import type { AxeId, CaskId, ContainerId, Infusable, JamCrop, PickaxeId, Reagent, ShovelId, SpiritKind } from '../sim/ids.ts'
 import type { VarietyTier } from './varieties.ts'
 
 export const DIG_HARD_SPAN = 1.25
@@ -75,6 +75,7 @@ export const COMPOST_VALUE = {
   ash: 4,
   wood: 6,
   'fly-agaric': 4,
+  truffle: 4,
 } as const
 
 export const FURNACE_CAP = 100
@@ -90,6 +91,7 @@ export const FURNACE_VALUE = {
   spirit: 26,
   wood: 32,
   'fly-agaric': 1,
+  truffle: 1,
 } as const
 
 export const FUEL_STORE = 10
@@ -129,11 +131,26 @@ export const MILL_VANILLA_IN = 1
 export const MILL_VANILLA_OUT = 4
 export const MILL_CHILLI_IN = 3
 export const MILL_CHILLI_OUT = 2
+export const MILL_TRUFFLE_IN = 1
+export const MILL_TRUFFLE_OUT = 5
 export const MILL_WORK = 10
 export const INFUSE_IN = 1
-export const INFUSE_FLAKES = 1
-export const INFUSE_EXTRACT = 1
+export const INFUSE_REAGENT = 1
 export const INFUSE_SECONDS = 90
+export const INFUSE_REAGENTS: { readonly [K in Infusable['kind']]: readonly [Reagent, Reagent] } = {
+  jam: ['vanilla-extract', 'flakes'],
+  cask: ['vanilla-extract', 'flakes'],
+  spirit: ['vanilla-extract', 'truffle-extract'],
+  oil: ['flakes', 'truffle-extract'],
+  extract: ['fly-agaric', 'truffle-extract'],
+}
+export const EXTRACT_BAG_LITERS = 5
+export const EXTRACT_POUR = 1
+export const EXTRACT_WORK = 0.6
+export const EXTRACT_GROWTH = 0.2
+export const EXTRACT_SECONDS = 40
+export const EXTRACT_INFUSED_SECONDS = 80
+export const EXTRACT_SEASON = 0.2
 export const JAM_IN = 5
 export const JAM_SUGAR = 0.4
 export const KETCHUP_SUGAR = 0.8
@@ -149,7 +166,6 @@ export const OIL = 72
 export const FLOUR = 54
 export const BREAD = 108
 export const FURNACE_BREAD_IN = 1
-export const EXTRACT = 8
 export const MIXED_MUL = 0.7
 export const CASK_SALE: { readonly [K in CaskId]: number } = {
   wine: 140,

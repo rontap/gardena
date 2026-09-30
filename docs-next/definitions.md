@@ -15,7 +15,9 @@ Every major concept, one row. The **term** is the word `docs-next/`, commits and
 | paving | Paving slab, Brickwork, Cobblestone | a decorative layer on untilled ground | `World.paving`, `TileId` | [[features/build]] |
 | grass | Grass, Cut grass | cover on untilled ground; the item picked from it | `cover.kind === 'grass'`, `turf` | [[features/weeds]] |
 | weed | Weed, Pulled weed | a plant that sprouts on empty plots | `weed` cell, `Weed` | [[features/weeds]] |
-| burrow | Burrow | a hole in untilled ground that gives items when dug | `cover.kind === 'burrow'` | [[features/burrow]] |
+| burrow | Burrow | a hole in untilled ground that gives one find when dug: an item, a skill point or an expansion permit | `cover.kind === 'burrow'` | [[features/burrow]] |
+| burrow rarity | Common, Uncommon, Rare | the group a dug burrow's find comes from, drawn at the dig | — | [[features/burrow]] |
+| mushroom | Fly agaric, Truffle | cover that comes up on an untilled tile around a grown tree at the end of a day, and is picked for its item | `cover.kind === 'mushroom'`, `MushroomId` | [[features/mushrooms]] |
 | fence | Wooden fence | a placed fence piece; closed rings form enclosures | `World.fences`, `Enclosure` | [[features/fences]] |
 
 ## Plants
@@ -35,6 +37,7 @@ Every major concept, one row. The **term** is the word `docs-next/`, commits and
 | dead plant | Dead plant | what a plant becomes when it dies too dry or with no fertilizer | `dead` cell | [[features/plants]] |
 | rotten produce | Rotten produce | what a plant becomes when it dies too wet, or fruit at 0 freshness | `rotten` cell and item | [[features/plants]] |
 | tend | Tend | a once-per-plant happiness boost with the Careful tending skill | `doTend` | [[features/plants]] |
+| extract (poured) | Pour extract | Extract poured on a growing plant, sapling or stump adds a share of the growth bar over a set time; on an out-of-season tree it adds to the season chance; once per plant or tree stage | `Plant.boost`, `Tree.boost`, `boosted` | [[features/plants]], [[features/trees]] |
 | tree | {Name} tree | a two-tile fruit tree with seasons | `Tree` | [[features/trees]] |
 | graft | {Crop} ({Variety}) graft | an item that changes a young plant's or tree's variety | `graft` item | [[features/trees]] |
 
@@ -71,7 +74,7 @@ Every major concept, one row. The **term** is the word `docs-next/`, commits and
 | input / output side | — | the chest tiles left and right of a machine's bottom row | `machineWest`, `machineEast`, `storePorts` | [[systems/building-io]] |
 | loading spot | → loading spot | the tiles above (unload) and below (load) a building where vehicles transfer items | `padPorts` | [[systems/building-io]] |
 | recipe | — | what a machine takes and makes | `Recipe` | [[features/machines]] |
-| infuse | Infuse | adding flakes or vanilla extract to jam, cask, spirit or oil | `Infuser`, `infused` | [[features/machines]] |
+| infuse | Infuse | the Infuser adding one reagent to jam, cask, spirit, oil or Extract, which sets `infused`; each good takes two of vanilla extract, flakes, Truffle extract and Fly agaric | `Infuser`, `infused`, `INFUSE_REAGENTS` | [[features/machines]] |
 
 ## Economy
 
@@ -92,7 +95,7 @@ Every major concept, one row. The **term** is the word `docs-next/`, commits and
 |---|---|---|---|---|
 | research | Research, Researching {name} | an unlock bought with money and time | `RESEARCH`, `ResearchId`, `World.job` | [[features/research]] |
 | skill | skill names | a family upgrade with ranks | `SKILLS`, `SkillId` | [[features/family]] |
-| skill point | Skill points | spent on skills; one per day | `World.points`, `POINTS_PER_DAY` | [[features/family]] |
+| skill point | Skill points | spent on skills; `POINTS_PER_DAY` on each odd ended day, and `FAMILIARITY_POINT` when a crop reaches `familiarityMax` | `World.points`, `pointsForEndedDay` | [[features/family]] |
 | familiarity | — | per-crop study level from the research station; raises variety chance and bought seed quality | `World.familiarity` | [[features/machines]] |
 | expansion | Expand, expansion permit | buying an adjacent chunk; needs a permit | `expand`, `expandSlots` | [[features/expansion]] |
 

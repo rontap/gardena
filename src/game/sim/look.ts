@@ -21,7 +21,7 @@ import {
 } from './prompt.ts'
 import { onCell } from './drop.ts'
 import { cropVariety } from '../defs/crops.ts'
-import { caskName, heldText, skuLabel, type Gauge, type Hand } from './item.ts'
+import { caskName, heldText, MUSHROOM_NAME, skuLabel, type Gauge, type Hand } from './item.ts'
 import { corners, incident } from './pipe.ts'
 import type { Cell } from './plot.ts'
 import { barrelNeed, caskAgeMul, caskAgeTop, feedUnits, feedVariety, meanQuality } from './feature-machines/machine.ts'
@@ -135,6 +135,7 @@ export function lookText(world: World, hit: PromptHit | undefined, plantStats: b
   else if (cell.kind === 'untilled') {
     const paving = world.pavingAt(at)
     if (cell.cover.kind === 'burrow') lines.push(m.names_ground_burrow())
+    else if (cell.cover.kind === 'mushroom') lines.push(MUSHROOM_NAME[cell.cover.id]())
     else if (paving !== 'none') lines.push(TILE_LABEL[paving]())
     else if (cell.ground === 'soft') lines.push(m.names_ground_grass())
     else if (cell.ground === 'hard') lines.push(m.names_ground_hard())

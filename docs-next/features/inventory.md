@@ -13,13 +13,13 @@ The gardener carries one item or stack in the hand and more in the inventory at 
 
 `Item` in `item.ts` is a union over `kind`. Three groups by how quantity is stored:
 
-- counted (`count`): seeds, fruit, grafts, processed goods, Rotten produce, dead plants, Pulled weed, Cut grass, wood, ash, Fly agaric;
-- litres (`liters` and `capacityLiters`): buckets (`container`), fertilizer, compost, Weed spray, sugar;
+- counted (`count`): seeds, fruit, grafts, processed goods, Rotten produce, dead plants, Pulled weed, Cut grass, wood, ash, Fly agaric, Truffle;
+- litres (`liters` and `capacityLiters`): buckets (`container`), fertilizer, compost, Weed spray, sugar, Extract;
 - uses (`usesLeft` and `workSeconds`): shovels, pickaxes, axes.
 
 A tree seed has no count; one tree seed is one item. Treasure holds coins.
 
-Fruit carries crop, variety, quality, `unitSale`, freshness and `cut`. Processed goods carry quality and `unitSale`; jam, cask, spirit and oil also carry `infused` ([[features/machines]]).
+Fruit carries crop, variety, quality, `unitSale`, freshness and `cut`. Processed goods carry quality and `unitSale`; jam, cask, spirit and oil also carry `infused` ([[features/machines]]). Extract carries `infused` and no quality or `unitSale`; Truffle extract carries only its count.
 
 ### Stacks
 

@@ -315,7 +315,7 @@ export function demandItem(demand: Demand, count: number): Item {
   }
   if (demand.kind === 'plain') {
     if (demand.good === 'sugar') return { kind: 'sugar', liters: count, capacityLiters: count, unitSale: SUGAR_MILL, quality: 0 }
-    if (demand.good === 'flour' || demand.good === 'extract' || demand.good === 'bread') {
+    if (demand.good === 'flour' || demand.good === 'bread') {
       return { kind: demand.good, quality: 0, count, unitSale: 1 }
     }
     if (demand.good === 'oil') {

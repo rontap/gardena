@@ -55,6 +55,7 @@ export function dump(world: World): Save {
     purchases: world.purchases,
     prizeSlots: world.prizeSlots,
     prizeFreezers: world.prizeFreezers,
+    sinceRare: world.sinceRare,
     points: world.points,
     clearance: world.clearance,
     loanDays: world.loanDays,
@@ -265,6 +266,8 @@ function dumpCell(c: Cell, at: Coord, owned: readonly ChunkId[]): SaveCell {
         fruit: c.fruit,
         yield: c.yield,
         tended: c.tended,
+        boost: c.boost,
+        boosted: c.boosted,
         trunk: c.trunk,
         variety: c.variety,
         happiness: c.happiness,
@@ -348,8 +351,7 @@ function dumpCell(c: Cell, at: Coord, owned: readonly ChunkId[]): SaveCell {
         quality: c.quality,
         unitSale: c.unitSale,
         units: c.units,
-        flakes: c.flakes,
-        extract: c.extract,
+        reagents: { ...c.reagents },
         progress: c.progress,
         inn: c.inn,
       }
@@ -473,6 +475,8 @@ function dumpPlant(p: Plant): SavePlant {
     freshness: p.freshness,
     happiness: p.happiness,
     tended: p.tended,
+    boost: p.boost,
+    boosted: p.boosted,
   }
 }
 

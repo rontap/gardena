@@ -5,7 +5,7 @@ Unlocked: `unlock-expand` ([[features/research]]).
 
 ## Purpose
 
-The farm starts on one chunk of land. Expanding buys a neighbouring chunk: more ground to plant and build on, with its own soil, rocks and burrows. Each chunk makes the daily land tax higher, and each expansion needs a permit as well as money, so land is gained a few chunks at a time through research, a skill and contract prizes, not bought with money alone.
+The farm starts on one chunk of land. Expanding buys a neighbouring chunk: more ground to plant and build on, with its own soil, rocks and burrows. Each chunk makes the daily land tax higher, and each expansion needs a permit as well as money, so land is gained a few chunks at a time through research, a skill, contract prizes and Rare burrows, not bought with money alone.
 
 ## Rules
 
@@ -39,11 +39,11 @@ The price is 40 + 15 × `purchases` (`expandPrice`), so each chunk costs 15 more
 ```
 expandSlots = 1 for each of unlock-expand, expand-land, eminent-domain
             + the inherit-land skill rank (up to 3)
-            + prizeSlots (expansion permits won from contracts)
+            + prizeSlots (expansion permits won from contracts or dug from burrows)
 expandLeft  = expandSlots − purchases, not below 0
 ```
 
-Permits come from research ([[features/research]]), the `inherit-land` skill ([[features/family]]) and contract prizes ([[features/contracts]]). `expandLeft` is computed, not stored.
+Permits come from research ([[features/research]]), the `inherit-land` skill ([[features/family]]), contract prizes ([[features/contracts]]) and Rare burrows ([[features/burrow]]). A permit from a contract or a burrow counts as soon as it is won, also before `unlock-expand`. `expandLeft` is computed, not stored.
 
 ### Land tax
 
@@ -89,7 +89,7 @@ Saved: `owned`, `purchases`, `prizeSlots`, and every tile of every owned chunk. 
 
 ## When you change this
 
-- Permit sources: `expandSlots` reads research, the `inherit-land` rank and `prizeSlots`; the research and skill descriptions promise one permit each ([[features/research]], [[features/family]]).
+- Permit sources: `expandSlots` reads research, the `inherit-land` rank and `prizeSlots`, which contract prizes and Rare burrows raise; the research and skill descriptions promise one permit each ([[features/research]], [[features/family]], [[features/contracts]], [[features/burrow]]).
 - What new land contains: `gen.ts`; burrows on later days are minted by [[features/burrow]], wild grass by [[features/weeds]].
 - Chunk size: `CHUNK` also sizes the grass limit ([[features/weeds]]) and the chunk key used by indexes ([[systems/world]]).
 - Ground quality: `goodness` drives soil fertilizer in [[features/plants]], dig time in [[items/other/shovel]], and ground art in [[art/variants]].

@@ -12,7 +12,7 @@ export type VfxDef = {
   anchor: VfxAnchor
 }
 
-function def(n: 2 | 3 | 4, rest: 0 | 2 | 4, dur: number, span: number, tall: number, anchor: VfxAnchor): VfxDef {
+function def(n: 2 | 3 | 4 | 6 | 8, rest: 0 | 2 | 4, dur: number, span: number, tall: number, anchor: VfxAnchor): VfxDef {
   return { frames: n, slots: n + rest, dur, span, tall, anchor }
 }
 
@@ -22,6 +22,7 @@ export const VFX: Record<VfxId, VfxDef> = {
   'sprinkler-spray-vert': def(2, 0, 1.2, 96, 48, 'vertex'),
   tend: def(2, 0, 0.7, 24, 24, 'cell'),
   pour: def(2, 0, 0.5, 24, 24, 'cell'),
+  'pour-green': def(2, 0, 0.5, 24, 24, 'cell'),
   brew: def(4, 4, 3.2, 24, 24, 'cell'),
   dust: def(2, 0, 1.1, 24, 24, 'cell'),
   steam: def(4, 4, 4, 48, 24, 'cell'),
@@ -32,12 +33,15 @@ export const VFX: Record<VfxId, VfxDef> = {
   age: def(4, 2, 2.4, 24, 24, 'cell'),
   grind: def(4, 0, 0.9, 24, 24, 'cell'),
   station: def(4, 0, 1.1, 24, 24, 'cell'),
+  'station-lights': def(6, 0, 1.8, 24, 24, 'cell'),
+  compost: def(6, 0, 1.8, 24, 48, 'cell'),
   exhaust: def(4, 0, 1.4, 24, 24, 'vertex'),
   'burrow-pop': def(3, 0, 0.6, 24, 24, 'cell'),
 }
 
-const MOTION_QUERY = matchMedia('(prefers-reduced-motion: reduce)')
+let motionQuery: MediaQueryList | undefined
 
 export function vfxReduced(): boolean {
-  return MOTION_QUERY.matches || settings().reducedMotion
+  motionQuery ??= matchMedia('(prefers-reduced-motion: reduce)')
+  return motionQuery.matches || settings().reducedMotion
 }

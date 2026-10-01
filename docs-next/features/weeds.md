@@ -23,11 +23,12 @@ On a new game no weed sprouts at first: `ramped` increases the chance linearly f
 |---|---|
 | till fresh ground | `WEED_CHANCE` |
 | pull by hand | 0 |
-| shovel | −0.3 |
-| Weed spray | −1 |
+| shovel | `WEED_DUG` (−0.3) |
+| Infused Extract poured on the growing plant | `WEED_DUG`, only when the chance is higher ([[items/produce/extract]]) |
+| Weed spray, by hand or from the Sprayer | `WEED_SPRAYED` (−1) |
 | a side neighbour weed reaches full growth | +0.05, once per weed |
 
-Below `WEED_CHANCE`, the chance rises by 0.15 per day until it is back at `WEED_CHANCE`. Above it, from neighbour weeds, it stays until pulled, dug or sprayed.
+Below `WEED_CHANCE`, the chance rises by 0.15 per day until it is back at `WEED_CHANCE`, on every tilled plot except a growing one (`recovers`). Above it, from neighbour weeds, it stays until pulled, dug or sprayed.
 
 ### Growth
 
@@ -43,13 +44,14 @@ From the moment it sprouts, a weed uses `WEED_WATER_PER_SEC` and `WEED_FERT_PER_
 | **Dig weed** | shovel | nothing drops; one shovel use |
 | **Spray** | Weed spray with at least 1 L | 1 L used |
 | Harvester trailer | tractor with the boom down | Pulled weed into the trailer; weed chance unchanged |
+| Sprayer trailer with Weed spray | tractor with the boom down | 1 L used, as **Spray** ([[items/other/trailers]]) |
 
 Each leaves an empty plot with the same soil. Spray works on any tilled plot, weed or not, so a planted plot can be sprayed before harvest. A bag leaves the hand when it drops below 1 L.
 
 ### Items
 
 **Pulled weed** stacks. The Compost box and the Furnace take it, and a burrow can drop it.
-**Weed spray** is a `WEED_SPRAY_BAG` litre bag from the Additive store, used by hand.
+**Weed spray** is a `WEED_SPRAY_BAG` litre bag from the Additive store or a Pot still ([[items/buildings/still]]), used by hand or carried by the Sprayer.
 
 ### Grass
 
@@ -89,6 +91,8 @@ Weed cells (look, growth, full-grown day) and `Soil.weedChance` are saved. The d
 | `weeds.outbreak` | full growth raises the four side neighbours once | `plants.test.ts` |
 | `weeds.spray` | spray sets −1 and clears a standing weed | `plants.test.ts` |
 | `weeds.pull` | pulling drops a Pulled weed and sets 0; a shovel drops nothing and sets −0.3 | `plants.test.ts` |
+| `weeds.sprayer` | the Sprayer with Weed spray sprays a weed or a tilled plot at 0 or above for 1 L; a plot below 0 with no weed is passed over | `vehicle.test.ts` |
+| `weeds.infused` | Infused Extract on a growing plant lowers the plot's chance to `WEED_DUG` and never raises it; plain Extract leaves it | `extract.test.ts` |
 | `weeds.gone` | a full-grown weed turns to grass `WEED_GONE_DAYS` day changes later; a younger one survives | `weeds.test.ts` |
 | `weeds.ramp` | weed and grass chance ramp up over the first day | `world.test.ts` |
 | `notices.weed` | one Command Center row for all weeds | `notices.test.ts` |

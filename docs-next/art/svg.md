@@ -59,7 +59,7 @@ A file with several states draws each as a sibling `<g id>`. The atlas makes one
 | count | `s0` … `s4` | Counter |
 | mode | `or`, `and` | Logic gate |
 | button | `idle`, `hover`, `selected`, `disabled` | `ui-btn-*`, chosen with `btnFace` |
-| frames | `f0` … `f3` | `vfx-*` ([[art/vfx]]) |
+| frames | `f0` … `f7` | `vfx-*` ([[art/vfx]]) |
 | part | `body`, `sails` | `prop-mill`; the view turns `sails` |
 | part | `hat` | actor, quad, tractor: tinted per player |
 

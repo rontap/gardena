@@ -1,9 +1,8 @@
 import { describe, expect, test } from 'vitest'
 import { m } from '../../paraglide/messages.js'
 import type { SkillId } from '../sim/ids.ts'
-import { luckOf } from '../sim/family.ts'
-import { World } from '../sim/world.ts'
-import { LUCK_CAP } from './burrow.ts'
+import { burrowDayChance } from './burrow.ts'
+import { mushroomChance } from './mushroom.ts'
 import { BULK_UP_CRAFTED_STEP, BULK_UP_STEP, STACK_MAX, STACK_MAX_CRAFTED } from './items.ts'
 import { BETTER_IDS, JAM_ROT, SKILLS, betterGain, skillBlurb } from './skills.ts'
 import { BETTER_QUALITY } from './varieties.ts'
@@ -33,7 +32,7 @@ describe('skills i18n', () => {
     expect(SKILLS.jam.blurb).toBe(m.skills_jam_blurb({ pct: Math.round(JAM_ROT * 100) }))
     expect(SKILLS.grafting.blurb).toBe(m.skills_grafting_blurb())
     expect(SKILLS.specialty.blurb).toBe(m.skills_specialty_blurb({ pct: 5 }))
-    expect(SKILLS.lucky.blurb).toBe(m.skills_lucky_blurb())
+    expect(SKILLS.mycologist.blurb).toBe(m.skills_mycologist_blurb())
   })
 
   test('Hover uses `skillBlurb(id, tier)` — jam names the rank’s slower rot; seed-bank names the rank’s shop pack odds.', () => {
@@ -61,24 +60,21 @@ describe('skills i18n', () => {
   })
 })
 
-describe('family.lucky', () => {
-  test("`lucky` one id, maxTier 3, parent `boots`, gate none, effect `{ kind: 'lucky' }`; luck is `min(LUCK_CAP, skillTier('lucky'))`; not a World field; no HUD chip; icon is the `stat-luck` clover — [[art/skills]] [[mechanics/burrow]].", () => {
-    expect(SKILLS.lucky.maxTier).toBe(3)
-    expect(SKILLS.lucky.parent).toBe('boots')
-    expect(SKILLS.lucky.gate).toEqual({ kind: 'none' })
-    expect(SKILLS.lucky.effect).toEqual({ kind: 'lucky' })
-    expect(SKILLS.lucky.name).toBe('Lucky')
-    expect('lucky-husband' in SKILLS).toBe(false)
-    expect('lucky-daughter' in SKILLS).toBe(false)
-    const w = new World(1)
-    expect('luck' in w).toBe(false)
-    expect(luckOf(w)).toBe(0)
-    w.family.owned.set('lucky', 1)
-    expect(luckOf(w)).toBe(1)
-    w.family.owned.set('lucky', 3)
-    expect(luckOf(w)).toBe(3)
-    w.family.owned.set('lucky', 99)
-    expect(luckOf(w)).toBe(LUCK_CAP)
+describe('family.mycologist', () => {
+  test("`mycologist` is one skill with three ranks, parent `boots`, no research, effect `{ kind: 'mycologist' }`; `lucky` is gone; the rank's description names the Rain mushroom chance at half happiness and both daily burrow chances.", () => {
+    expect(SKILLS.mycologist.maxTier).toBe(3)
+    expect(SKILLS.mycologist.parent).toBe('boots')
+    expect(SKILLS.mycologist.gate).toEqual({ kind: 'none' })
+    expect(SKILLS.mycologist.effect).toEqual({ kind: 'mycologist' })
+    expect(SKILLS.mycologist.name).toBe('Mycologist')
+    expect('lucky' in SKILLS).toBe(false)
+    expect(skillBlurb('mycologist', 2)).toBe(
+      m.skills_mycologist_skillblurb({
+        rain: Math.round(mushroomChance('rain', 2, HAPPY_MAX / 2) * 100),
+        start: Math.round(burrowDayChance('start', 2) * 100),
+        other: Math.round(burrowDayChance('other', 2) * 100),
+      }),
+    )
   })
 })
 

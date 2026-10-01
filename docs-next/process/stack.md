@@ -1,0 +1,28 @@
+# Stack
+
+Applies to: every agent choosing a library or a tool.
+
+Locked for this game.
+
+| Layer | Choice |
+|---|---|
+| Bundler | Vite |
+| UI | React |
+| Style | Tailwind |
+| Language | TypeScript |
+| Tests | Vitest (sim), Playwright (e2e) |
+| i18n | Paraglide JS. English only. Strings live in `messages/en/`. |
+
+Do not add Vue, CSS-in-JS, a second bundler, or a CSS framework.
+
+One exception: `mermaid`, for the `#debug-techtree` unlock graph only (`src/game/ui/techtree.ts`). Dynamically imported in `main.tsx`, so it lands in its own chunk and never in the game bundle. Vite `optimizeDeps.exclude` lists it: a lockfile change otherwise re-bundles every mermaid diagram at `npm run dev` and the server looks hung. Package entry is `mermaid.core.mjs`, which imports CJS (`dayjs`, `@braintree/sanitize-url`) with no ESM named export. `resolve.alias` points `mermaid` at `mermaid/dist/mermaid.esm.min.mjs`, the bundled build that inlines those. Do not reach for mermaid in game UI.
+
+`chart.js` is the same kind of exception for the `#debug-balance` planted-income chart only. Dynamic `import('chart.js/auto')` from that page, not the game bundle.
+
+`tone` is the same kind of exception for sound, imported only from `src/game/sim/feature-sound/sound.utils.ts`.
+
+Renderer: **PixiJS v8 canvas world**. HUD/panels are React + Tailwind, not Pixi. No `@pixi/react`. Chrome SVGs stay in React. Where the code lives: [[code-map]].
+
+App lives at repo root: `package.json`, `vite.config.ts`, `src/`. Tailwind v4 via `@tailwindcss/vite`. `npm run dev` / `npm run build`. Project `.npmrc` sets `audit=false`: electron-builder's tree makes the registry audit POST stall `npm i`.
+
+Vitest: `npm test` (sim). Playwright: `npm run e2e`, config `playwright.config.ts`, specs `e2e/`.

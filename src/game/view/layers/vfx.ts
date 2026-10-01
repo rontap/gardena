@@ -10,11 +10,14 @@ import {
   millDustAt,
   grinderWorking,
   stationWorking,
+  stationStateVfx,
+  compostWorking,
+  compostStateVfx,
 } from '../../sim/feature-machines/machine.ts'
 import { BARREL_MATURE } from '../../defs/items.ts'
 import type { Cell } from '../../sim/plot.ts'
 import type { Burst, World } from '../../sim/world.ts'
-import type { VfxId } from '../../sim/ids.ts'
+import { VFX_FRAMES, type VfxId } from '../../sim/ids.ts'
 import { TILE, tileVariant } from '../camera.ts'
 import { atlasTex, vfxKey } from '../atlas.ts'
 import { SpritePool } from '../app.ts'
@@ -34,20 +37,13 @@ function sprayId(variant: 'basic' | 'large' | 'vert'): VfxId {
 }
 
 function busyVfx(cell: Cell, at: { col: number; row: number }): VfxId | undefined {
-  if (
-    cell.kind !== 'jam' &&
-    cell.kind !== 'still' &&
-    cell.kind !== 'barrel' &&
-    cell.kind !== 'grinder' &&
-    cell.kind !== 'station'
-  ) {
+  if (cell.kind !== 'jam' && cell.kind !== 'still' && cell.kind !== 'barrel' && cell.kind !== 'grinder') {
     return undefined
   }
   if (cell.base.col !== at.col || cell.base.row !== at.row) return undefined
   if (cell.kind === 'jam') return jamWorking(cell) ? 'dust' : undefined
   if (cell.kind === 'still') return stillWorking(cell) ? 'steam' : undefined
   if (cell.kind === 'grinder') return grinderWorking(cell) ? 'grind' : undefined
-  if (cell.kind === 'station') return stationWorking(cell) ? 'station' : undefined
   if (!barrelWorking(cell)) return undefined
   return cell.age >= BARREL_MATURE ? 'age' : 'brew'
 }
@@ -145,6 +141,19 @@ export class VfxLayer {
         }
         continue
       }
+      if (cell.kind === 'station') {
+        if (stationWorking(cell)) {
+          stationStateVfx(at).forEach(m => this.draw(m.id, m.col, m.row, 0, false, now, undefined))
+        }
+        continue
+      }
+      if (cell.kind === 'compost-box') {
+        if (compostWorking(cell)) {
+          const m = compostStateVfx(at)
+          this.draw(m.id, m.col, m.row, 0, false, now, undefined)
+        }
+        continue
+      }
       const id = busyVfx(cell, at)
       if (id === undefined) continue
       this.draw(id, at.col, at.row, 0, false, now, undefined)
@@ -200,8 +209,7 @@ export class VfxLayer {
       p = age / def.dur
       wrap = age / def.dur < 0.7 ? 1 : Math.max(0, 1 - (age / def.dur - 0.7) / 0.3)
     }
-    const frames = [0, 1, 2, 3] as const
-    for (const i of frames) {
+    for (const i of VFX_FRAMES) {
       if (i >= def.frames) break
       const delay = burst ? i / def.slots : i / def.slots - 1
       const local = burst ? p - delay : (((p - delay) % 1) + 1) % 1

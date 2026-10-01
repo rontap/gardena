@@ -1,4 +1,4 @@
-import { MUSHROOM_CHANCE, MUSHROOM_DAYS, MUSHROOM_TRUFFLE, type MushroomId } from '../../defs/mushroom.ts'
+import { MUSHROOM_DAYS, MUSHROOM_TRUFFLE, mushroomChance, type MushroomId } from '../../defs/mushroom.ts'
 import { tierOf } from '../../defs/varieties.ts'
 import type { Coord, Tree } from '../building.ts'
 import { onCell } from '../drop.ts'
@@ -29,11 +29,12 @@ export function mushroomSeam(w: World): void {
     if (ended - c.cover.day < MUSHROOM_DAYS) return
     w.setCell(at, { kind: 'untilled', ground: c.ground, hardness: c.hardness, cover: { kind: 'bare' } })
   })
-  const chance = MUSHROOM_CHANCE[w.weather(ended)]
+  const weather = w.weather(ended)
+  const rank = w.skillTier('mycologist')
   const stream = w.rng.stream('mushroom')
   grownTrees(w).forEach(t => {
     const draw = (i: number) => stream.at(t.base.col, t.base.row, ended, i)
-    if (draw(0) >= chance) return
+    if (draw(0) >= mushroomChance(weather, rank, t.happiness)) return
     const open = treeArea(t).flatMap(at => {
       const c = site(w, at)
       return c === undefined ? [] : [{ at, c }]

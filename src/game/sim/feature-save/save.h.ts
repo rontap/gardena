@@ -7,6 +7,7 @@ import type {
   Facing,
   RectBase,
   SiloStack,
+  StillLoad,
   SugarBin,
   TreeYield,
 } from '../building.ts'
@@ -27,7 +28,6 @@ import type {
   RouteId,
   SkillId,
   StallGoodId,
-  StillCrop,
   SupperId,
   TrailerId,
   TreeId,
@@ -94,7 +94,7 @@ export type SaveCell =
   | { kind: 'compost-box'; base: RectBase; units: number; progress: number }
   | { kind: 'mill'; base: RectBase; recipe: MillRecipe | 'none'; variety: VarietyId; quality: number; units: number; progress: number; inn: 0 | 1 }
   | { kind: 'jam'; base: RectBase; crop: JamCrop | 'none'; variety: VarietyId; quality: number; fruit: number; sugar: number; progress: number; inn: 0 | 1 }
-  | { kind: 'still'; base: RectBase; feed: { crop: StillCrop; variety: VarietyId; quality: number; count: number }[]; progress: number; n: number; inn: 0 | 1 }
+  | { kind: 'still'; base: RectBase; load: StillLoad; progress: number; n: number; inn: 0 | 1 }
   | { kind: 'furnace'; base: RectBase; recipe: FurnaceRecipe; quality: number; units: number; progress: number; inn: 0 | 1; out: 0 | 1; hold: number }
   | { kind: 'refuel'; base: RectBase; buy: boolean; store: number; units: number; progress: number }
   | { kind: 'infuser'; base: RectBase; lock: Infusable | 'none'; quality: number; unitSale: number; units: number; reagents: { [K in Reagent]: number }; progress: number; inn: 0 | 1 }

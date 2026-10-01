@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { m } from '../../../paraglide/messages.js'
-import { MUSHROOM_CHANCE, MUSHROOM_DAYS, MUSHROOM_TRUFFLE, type MushroomId } from '../../defs/mushroom.ts'
+import { HAPPY_MAX } from '../../defs/crops.ts'
+import { MUSHROOM_CHANCE, MUSHROOM_DAYS, MUSHROOM_TRUFFLE, mushroomChance, type MushroomId } from '../../defs/mushroom.ts'
 import { TREE_HAPPY_START } from '../../defs/trees.ts'
 import { tierOf, type VarietyId } from '../../defs/varieties.ts'
 import { WEATHER_KINDS } from '../../defs/weather.ts'
@@ -58,7 +59,7 @@ function place(w: World, at: Coord, id: MushroomId, day: number): void {
 }
 
 describe('mushroom.day', () => {
-  test('At the end of each day each grown tree draws once against `MUSHROOM_CHANCE` of the ended day\'s weather and places at most one mushroom in its area; the kind is Truffle below `MUSHROOM_TRUFFLE` of the tree\'s variety tier.', () => {
+  test('At the end of each day each grown tree draws once against `mushroomChance` of the ended day\'s weather, the Mycologist rank and the tree\'s happiness, and places at most one mushroom in its area; the kind is Truffle below `MUSHROOM_TRUFFLE` of the tree\'s variety tier.', () => {
     const w = new World(3)
     const trees = [
       grownTree(w, { col: 4, row: 20 }, 'base'),
@@ -78,7 +79,7 @@ describe('mushroom.day', () => {
             const found = mushroomOf(w.cell(p))
             return found === undefined ? [] : [found]
           })
-          if (draw(0) >= MUSHROOM_CHANCE[kind]) {
+          if (draw(0) >= mushroomChance(kind, 0, t.happiness)) {
             expect(here).toEqual([])
             return
           }
@@ -90,6 +91,36 @@ describe('mushroom.day', () => {
     })
     expect(hits).toBeGreaterThan(0)
     expect(MUSHROOM_CHANCE.drought).toBe(0)
+  })
+})
+
+describe('mushroom.chance', () => {
+  test('`mushroomChance` is (`MUSHROOM_CHANCE` + `MUSHROOM_MYCOLOGIST` × Mycologist rank) × the happiness factor: ×0.5 at no happiness, ×1 at half, ×1.5 at full; the seam reads the farm\'s Mycologist rank.', () => {
+    expect(mushroomChance('clear', 0, HAPPY_MAX / 2)).toBeCloseTo(0.02)
+    expect(mushroomChance('clear', 3, HAPPY_MAX)).toBeCloseTo(0.075)
+    expect(mushroomChance('rain', 3, HAPPY_MAX)).toBeCloseTo(0.33)
+    expect(mushroomChance('dry', 3, HAPPY_MAX)).toBeCloseTo(0.06)
+    expect(mushroomChance('flood', 3, HAPPY_MAX)).toBeCloseTo(0.66)
+    expect(mushroomChance('drought', 3, HAPPY_MAX)).toBe(0)
+    expect(mushroomChance('rain', 0, 0)).toBeCloseTo(0.08)
+    expect(mushroomChance('rain', 1, HAPPY_MAX / 2)).toBeCloseTo(0.18)
+
+    const w = new World(3)
+    w.family.owned.set('mycologist', 3)
+    const tree = grownTree(w, AT)
+    tree.happiness = HAPPY_MAX
+    const stream = w.rng.stream('mushroom')
+    const ended = Array.from({ length: 400 }, (_, i) => i + 2).find(d => {
+      const u = stream.at(tree.base.col, tree.base.row, d, 0)
+      return u >= mushroomChance('flood', 0, TREE_HAPPY_START) && u < mushroomChance('flood', 3, HAPPY_MAX)
+    })
+    if (ended === undefined) throw new Error('day')
+    seamAfter(w, ended, 'flood')
+    expect(w.mushrooms.size).toBe(1)
+    const plain = new World(3)
+    grownTree(plain, AT)
+    seamAfter(plain, ended, 'flood')
+    expect(plain.mushrooms.size).toBe(0)
   })
 })
 

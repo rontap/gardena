@@ -27,7 +27,11 @@ import {
   JAM_SECONDS,
   STILL_CAP,
   STILL_SECONDS,
+  STILL_SPRAY_IN,
+  STILL_SPRAY_SECONDS,
+  STILL_SPRAY_WATER,
   STILL_WATER,
+  WEED_SPRAY_BAG,
 } from '../../defs/items.ts'
 import type { CropClass } from '../../defs/crops.ts'
 import { caskGroup, tierOf, VARIETIES, type VarietyId } from '../../defs/varieties.ts'
@@ -45,7 +49,7 @@ import {
   STILL_CROPS,
   TREE_IDS,
 } from '../ids.ts'
-import type { Barrel, CompostBox, Furnace, Grinder, Infuser, JamMachine, Mill, PotStill, Refuel } from '../building.ts'
+import type { Barrel, CompostBox, Furnace, Grinder, Infuser, JamMachine, Mill, PotStill, Refuel, StillBatch } from '../building.ts'
 import { faceName, makeExtract, type Face, type InfusedItem, type Item, type ReagentItem } from '../item.ts'
 import {
   bakeBreadSale,
@@ -65,7 +69,9 @@ import {
   millWork,
   millWorking,
   spiritKind,
+  stillNeed,
   stillReady,
+  stillUnits,
   stillWorking,
 } from './machine.ts'
 import type {
@@ -149,7 +155,11 @@ function units(n: number): Amount {
   return { kind: 'units', n }
 }
 
-const WATER: Ingredient = { kind: 'one', face: { kind: 'water' }, amount: { kind: 'liters', l: STILL_WATER } }
+function water(l: number): Ingredient {
+  return { kind: 'one', face: { kind: 'water' }, amount: { kind: 'liters', l } }
+}
+
+const WATER = water(STILL_WATER)
 
 export const MILL_PINS: readonly MillPin[] = MILL_RECIPES.flatMap((recipe): MillPin[] =>
   recipe === 'grass' || recipe === 'truffle' ? [{ recipe, variety: 'base' }] : VARIETIES[recipe].map(variety => ({ recipe, variety })),
@@ -534,7 +544,24 @@ export const BARREL_PINS: readonly Pin<BarrelCrop>[] = pins(BARREL_CROPS)
 
 const MILL_ROWS: readonly Recipe[] = MILL_PINS.map(millRecipe)
 const JAM_ROWS: readonly Recipe[] = JAM_PINS.map(jamRecipe)
-const STILL_ROWS: readonly Recipe[] = [...STILL_PINS.map(stillRecipe), MIXED_STILL]
+const STILL_SPRAY: Recipe = {
+  machine: 'still',
+  inputs: [
+    {
+      kind: 'any',
+      faces: CROP_CLASSES.map(cls => ({ kind: 'rotten' as const, cls, count: 1, createdAt: 0 })),
+      amount: units(STILL_SPRAY_IN),
+    },
+    water(STILL_SPRAY_WATER),
+  ],
+  out: {
+    kind: 'exact',
+    face: { kind: 'weed-spray', liters: WEED_SPRAY_BAG, capacityLiters: WEED_SPRAY_BAG },
+    amount: { kind: 'liters', l: WEED_SPRAY_BAG },
+  },
+  duration: { kind: 'fixed', seconds: STILL_SPRAY_SECONDS },
+}
+const STILL_ROWS: readonly Recipe[] = [...STILL_PINS.map(stillRecipe), MIXED_STILL, STILL_SPRAY]
 const BARREL_ROWS: readonly Recipe[] = BARREL_PINS.map(barrelRecipe)
 const FURNACE_ROWS: readonly Recipe[] = [FURNACE_GREEN, FURNACE_FRUIT, FURNACE_SUGAR, FURNACE_OIL, FURNACE_SPIRIT, FURNACE_WOOD, FURNACE_BREAD]
 
@@ -693,6 +720,10 @@ export function recipesUsing(face: Face): readonly Recipe[] {
   return MACHINE_IDS.flatMap(id => recipesOf(id).filter(r => r.inputs.some(input => takes(input, face))))
 }
 
+export function recipesMaking(face: Face): readonly Recipe[] {
+  return MACHINE_IDS.flatMap(id => recipesOf(id).filter(r => sameIdentity(yieldFace(r.out), face)))
+}
+
 export function clockText(seconds: number): string {
   return m.hud_clock_sec({ secs: Math.visualRound(seconds) })
 }
@@ -725,18 +756,20 @@ function jamCraft(c: JamMachine, mul: number, haste: number): Craft {
   return { kind: 'filling', recipe, at: 1, have: c.sugar, need: jamSugar(c.crop, c.variety) }
 }
 
+function stillRow(load: StillBatch): Recipe {
+  if (load.kind === 'spray') return STILL_SPRAY
+  if (spiritKind(load.feed) === 'mixed') return MIXED_STILL
+  return STILL_ROWS[STILL_PINS.findIndex(p => p.crop === load.feed[0].crop && p.variety === load.feed[0].variety)]
+}
+
 function stillCraft(c: PotStill, mul: number, haste: number): Craft {
-  const n = feedUnits(c.feed)
-  if (n === 0) return { kind: 'idle', machine: 'still' }
-  const kind = spiritKind(c.feed)
-  const recipe =
-    kind === 'mixed'
-      ? MIXED_STILL
-      : STILL_ROWS[STILL_PINS.findIndex(p => p.crop === c.feed[0].crop && p.variety === c.feed[0].variety)]
+  const load = c.load
+  if (load.kind === 'empty') return { kind: 'idle', machine: 'still' }
+  const recipe = stillRow(load)
   if (c.inn === 1) return { kind: 'paused', recipe }
   if (stillWorking(c)) return stage(recipe, c.progress, mul, haste)
   if (stillReady(c)) return { kind: 'thirsty', recipe }
-  return { kind: 'filling', recipe, at: 0, have: n, need: STILL_CAP }
+  return { kind: 'filling', recipe, at: 0, have: stillUnits(load), need: stillNeed(load) }
 }
 
 function barrelCraft(c: Barrel): Craft {

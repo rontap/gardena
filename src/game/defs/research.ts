@@ -409,7 +409,7 @@ export const SKUS: { readonly [K in SkuId]: Sku } = {
     'buy-fertilizer': {id: 'buy-fertilizer', price: 18, tab: 'utility', unlock: 'start', show: 'start', need: []},
     'buy-weed-spray': {
         id: 'buy-weed-spray',
-        price: 12,
+        price: 16,
         tab: 'utility',
         unlock: 'unlock-better-tools',
         show: 'unlock-better-tools',

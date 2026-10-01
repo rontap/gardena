@@ -31,7 +31,19 @@ import { extractBurrow } from '../feature-burrow/burrow.ts'
 import { goodness } from '../noise.ts'
 import { Plant, Turf, type Doom } from '../plant.ts'
 import { bare, isPlot, isTilled, type Cell, type Plot } from '../plot.ts'
-import { fertBand, makeTreeSoil, SOIL_TILL_WATER, SOIL_WATER_MID, Soil, TREE_FERT_MAX, TREE_WATER_MID, waterBand, type Band } from '../soil.ts'
+import {
+  fertBand,
+  makeTreeSoil,
+  SOIL_TILL_WATER,
+  SOIL_WATER_MID,
+  Soil,
+  TREE_FERT_MAX,
+  TREE_WATER_MID,
+  WEED_DUG,
+  WEED_SPRAYED,
+  waterBand,
+  type Band,
+} from '../soil.ts'
 import type { World } from '../world.ts'
 
 type Harm = { kind: 'none' } | { kind: 'hurt'; by: Doom }
@@ -261,7 +273,7 @@ export function doShovel(w: World, at: Coord): boolean {
       item: { kind: 'seeds', crop: c.plant.crop, variety: c.plant.variety, quality: c.plant.quality, count: 1 },
     })
   }
-  if (c.kind === 'weed') c.soil.weedChance = -0.3
+  if (c.kind === 'weed') c.soil.weedChance = WEED_DUG
   w.setCell(at, { kind: 'empty', soil: isTilled(c) ? c.soil : freshSoil(w, at) })
   const cost = c.kind === 'untilled' && c.ground === 'hard' ? 2 : 1
   s.item.usesLeft -= cost
@@ -469,6 +481,7 @@ export function doExtract(w: World, at: Coord): void {
   if (c.kind === 'growing') {
     c.plant.boost = seconds
     c.plant.boosted = true
+    if (bag.item.infused && c.soil.weedChance > WEED_DUG) c.soil.weedChance = WEED_DUG
   }
   if (c.kind === 'tree') {
     if (c.juvenile < 1) c.boost = seconds
@@ -537,7 +550,7 @@ export function doWeedSpray(w: World, at: Coord): void {
   const c = w.cell(at)
   if (!isTilled(c)) return
   const s = w.act.hand as { kind: 'hold'; item: Extract<Item, { kind: 'weed-spray' }> }
-  c.soil.weedChance = -1
+  c.soil.weedChance = WEED_SPRAYED
   if (c.kind === 'weed') w.setCell(at, { kind: 'empty', soil: c.soil })
   else w.track(at, c)
   s.item.liters -= 1

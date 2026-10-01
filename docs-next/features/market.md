@@ -122,6 +122,10 @@ The digest carries each good's `stock` and `sat` (rounded) and `World.money` ([[
 
 `prop-produce-warehouse.svg`; `ui-btn-market.svg` (HUD button), `ui-price-arrow.svg` (Demand arrow, recoloured by `priceTint`).
 
+## Sound
+
+A drop-off whose sale pays money (`sellAllBody`) plays the sale chime, `sold` ([[systems/sound]]).
+
 ## Invariants
 
 | id | rule | test |

@@ -56,7 +56,7 @@ SVG only, for vehicles, the hangar, field silos, the Pumpjack, sensors, and the 
 
 ## Inspect bars
 
-Only in the bars of the inspect column (`STAT_COLOR`, `GROWTH_BLUE`, `GROWTH_EMPTY` in `status.tsx`), never in an SVG.
+Only in the bars of the inspect column (`STAT_COLOR`, `GROWTH_BLUE`, `GROWTH_EMPTY` in `status.tsx`), never in an SVG asset. The triangle marker over a range bar is drawn in the panel, filled with the colour of the range it points at and outlined in `ink`; the Extract sweep on the Growth bar is `house`.
 
 | token | hex | used for |
 |---|---|---|

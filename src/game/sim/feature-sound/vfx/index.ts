@@ -83,6 +83,20 @@ const pour = (): Layer[] => [
 
 const soak = (): Layer[] => [{ kind: 'noise', at: 0, len: 0.25, rise: 0.02, vol: 0.12, band: 'lowpass', hz: 400, to: 150, q: 0.7 }]
 
+const pourDeep = (): Layer[] => [
+  { kind: 'noise', at: 0, len: 0.5, rise: 0.08, vol: 0.2, band: 'bandpass', hz: 450, to: 900, q: 0.9 },
+  { kind: 'noise', at: 0, len: 0.45, rise: 0.06, vol: 0.16, band: 'lowpass', hz: 280, to: 200, q: 0.7 },
+  { kind: 'tone', at: vary(0.14, 0.2), len: 0.06, rise: 0.004, vol: 0.07, wave: 'sine', hz: vary(520, 0.1), to: 780 },
+  { kind: 'tone', at: vary(0.27, 0.15), len: 0.06, rise: 0.004, vol: 0.07, wave: 'sine', hz: vary(580, 0.1), to: 860 },
+  { kind: 'tone', at: vary(0.38, 0.1), len: 0.06, rise: 0.004, vol: 0.06, wave: 'sine', hz: vary(480, 0.1), to: 720 },
+]
+
+const spray = (): Layer[] => [
+  { kind: 'noise', at: 0, len: 0.22, rise: 0.008, vol: 0.2, band: 'bandpass', hz: vary(5200, 0.06), to: 4200, q: 0.8 },
+  { kind: 'noise', at: 0, len: 0.18, rise: 0.005, vol: 0.1, band: 'highpass', hz: 7000, to: 7000, q: 0.7 },
+  { kind: 'noise', at: 0, len: 0.03, rise: 0.002, vol: 0.08, band: 'bandpass', hz: 1800, to: 1500, q: 2 },
+]
+
 // A bag of fertilizer or compost: thicker and lower than water, with a gulp on each rise.
 const pourBag = (): Layer[] => [
   { kind: 'noise', at: 0, len: 0.6, rise: 0.1, vol: 0.2, band: 'bandpass', hz: 500, to: 900, q: 0.9 },
@@ -140,6 +154,48 @@ const click = (): Layer[] => [
   { kind: 'tone', at: 0, len: 0.025, rise: 0.001, vol: 0.06, wave: 'triangle', hz: 1400, to: 900 },
 ]
 
+function bell(at: number, hz: number, len: number, vol: number): Layer[] {
+  return [
+    { kind: 'tone', at, len, rise: 0.004, vol, wave: 'sine', hz, to: hz },
+    { kind: 'tone', at, len: len * 0.5, rise: 0.004, vol: vol * 0.3, wave: 'sine', hz: hz * 2.76, to: hz * 2.76 },
+  ]
+}
+
+function strings(at: number, hz: number, rise: number, len: number): Layer[] {
+  return [-7, 7].map((cents): Layer => ({ kind: 'saw', at, len, rise, vol: 0.018, hz, cents, cut: 1400 }))
+}
+
+const researched = (): Layer[] => [...bell(0, 523.25, 0.9, 0.1), ...bell(0.11, 659.26, 1.1, 0.1)]
+
+const contractDone = (): Layer[] => [
+  ...bell(0, 523.25, 0.8, 0.1),
+  ...bell(0.1, 659.26, 0.8, 0.1),
+  ...bell(0.2, 783.99, 0.9, 0.1),
+  ...bell(0.32, 1046.5, 1.6, 0.11),
+  { kind: 'tone', at: 0.32, len: 1.4, rise: 0.01, vol: 0.05, wave: 'triangle', hz: 261.63, to: 261.63 },
+]
+
+const chaChing = (): Layer[] => [
+  { kind: 'noise', at: 0, len: 0.025, rise: 0.002, vol: 0.14, band: 'bandpass', hz: 3000, to: 2600, q: 3 },
+  { kind: 'noise', at: 0.045, len: 0.03, rise: 0.002, vol: 0.16, band: 'bandpass', hz: 3400, to: 2800, q: 3 },
+  ...bell(0.09, 659.26, 0.35, 0.09),
+  ...bell(0.16, 880, 0.55, 0.1),
+]
+
+const contractMissed = (): Layer[] => [
+  ...bell(0, 392, 0.7, 0.11),
+  ...bell(0.16, 311.13, 0.7, 0.11),
+  ...bell(0.32, 261.63, 1.4, 0.12),
+  { kind: 'tone', at: 0.32, len: 1.2, rise: 0.01, vol: 0.06, wave: 'sine', hz: 130.81, to: 130.81 },
+]
+
+const dawn = (): Layer[] => [
+  ...[174.61, 220, 261.63, 349.23].flatMap(hz => strings(0, hz, 1.1, 2.6)),
+  ...[130.81, 196, 329.63, 392, 587.33].flatMap(hz => strings(1.5, hz, 1.2, 4)),
+  ...bell(1.7, 659.26, 2, 0.04),
+  ...bell(2, 783.99, 2, 0.035),
+]
+
 const LOAD: Hit = { every: Infinity, play: () => sfx(load) }
 
 const HITS: Partial<Record<Intent['act'], Hit>> = {
@@ -148,7 +204,8 @@ const HITS: Partial<Record<Intent['act'], Hit>> = {
   chop: { every: 0.7, play: () => sfx(knock) },
   water: { every: Infinity, play: () => sfx(pour) },
   fertilize: { every: Infinity, play: () => sfx(pourBag) },
-  extract: { every: Infinity, play: () => sfx(pour) },
+  extract: { every: Infinity, play: () => sfx(pourDeep) },
+  'weed-spray': { every: Infinity, play: () => sfx(spray) },
   harvest: { every: Infinity, play: () => sfx(rustle) },
   compost: LOAD,
   grind: LOAD,
@@ -175,9 +232,26 @@ const OPEN = sfx(lidOpen)
 const SHUT = sfx(lidShut)
 const CHIME = sfx(chime)
 const CLICK = sfx(click)
+const RESEARCHED = sfx(researched)
+const CONTRACT_DONE = sfx(contractDone)
+const CONTRACT_MISSED = sfx(contractMissed)
+const DAWN = sfx(dawn)
+const SOLD = sfx(chaChing)
 
 export function burrowOnce(): OnceFn {
   return CHIME
+}
+
+export function soldOnce(): OnceFn {
+  return SOLD
+}
+
+export function dayOnce(): OnceFn {
+  return DAWN
+}
+
+export function missedOnce(): OnceFn {
+  return CONTRACT_MISSED
 }
 
 export function clickOnce(): OnceFn {
@@ -200,6 +274,8 @@ export function closeOnce(_building: OpenBuilding): OnceFn | undefined {
   return SHUT
 }
 
-export function noticeOnce(_notice: SoundCue & { kind: 'notice' }): OnceFn | undefined {
+export function noticeOnce(c: SoundCue & { kind: 'notice' }): OnceFn | undefined {
+  if (c.notice === 'research-done') return RESEARCHED
+  if (c.notice === 'contract-done') return CONTRACT_DONE
   return undefined
 }

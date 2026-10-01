@@ -1,11 +1,11 @@
 # Burrow
 
-Code: `feature-burrow/` (`mintStart`, `mintSeam`, `extractBurrow`, `digBurrow`, `burrowOdds`, `rarityOf`), numbers and the item table per rarity (`BURROW_ENTRIES`) in `defs/burrow.ts`, the cover on `plot.ts`, the count `World.sinceRare`, the Almanac card in `ui/almanac.tsx`; see [[code-map]].
+Code: `feature-burrow/` (`mintStart`, `mintSeam`, `extractBurrow`, `digBurrow`, `burrowOdds`, `rarityOf`), numbers, the daily chance (`burrowDayChance`) and the item table per rarity (`BURROW_ENTRIES`) in `defs/burrow.ts`, the cover on `plot.ts`, the count `World.sinceRare`, the Almanac card in `ui/almanac.tsx`; see [[code-map]].
 Unlocked: from the start.
 
 ## Purpose
 
-A burrow is a hole in untilled ground. Digging it with a shovel gives one find: seeds, tree seeds, tools, a Pulled weed, money, a Fly agaric, a skill point, and at times an expansion permit or a Truffle. Burrows appear on the farm's land every day, so they are a small, steady source of items the player does not buy. The item's rarity is drawn at the dig: burrows farther from the house door and later in the game give Uncommon and Rare items more often, and every dig that is not Rare makes the next Rare more likely.
+A burrow is a hole in untilled ground. Digging it with a shovel gives one find: seeds, tree seeds, tools, a Pulled weed, money, a Fly agaric, a skill point, and at times an expansion permit or a Truffle. Burrows appear on the farm's land at the end of most days, more often on the starting chunk than on chunks added later, so they are a small, steady source of items the player does not buy. The item's rarity is drawn at the dig: burrows farther from the house door and later in the game give Uncommon and Rare items more often, and every dig that is not Rare makes the next Rare more likely.
 
 ## Rules
 
@@ -15,7 +15,14 @@ A burrow is untilled cover, `{ kind: 'burrow' }`, on a tile with the same `groun
 
 **New game.** Generating chunk (0, 0) places `BURROW_START_N` burrows on tiles more than `BURROW_START_R` tiles from the house door. A tile qualifies when it is untilled, not very hard, and not reserved (`isReserved`). The tiles are picked from that list without repeats.
 
-**Each day.** At the end of each day (`mintSeam`, [[systems/tick]]), each owned chunk draws once against `BURROW_DAY_CHANCE`. On a hit, one burrow appears on one tile of that chunk that is:
+**Each day.** At the end of each day (`mintSeam`, [[systems/tick]]), each owned chunk draws once against `burrowDayChance`: `BURROW_DAY_CHANCE` + `BURROW_DAY_MYCOLOGIST` × the farm's `mycologist` rank ([[features/family]]), with the `start` values for chunk (0, 0) and the `other` values for every other chunk.
+
+| chunk | rank 0 | I | II | III |
+|---|---|---|---|---|
+| (0, 0), `start` | 66% | 69% | 72% | 75% |
+| every other, `other` | 33% | 44% | 55% | 66% |
+
+The rank changes only this chance, not the rarity or the item. On a hit, one burrow appears on one tile of that chunk that is:
 
 - untilled and not very hard;
 - bare or grass (the grass is removed);
@@ -98,10 +105,6 @@ Each rarity has five entries, so each entry is one dig in five of its rarity, an
 
 The expansion permit counts from the dig, also when `unlock-expand` is not done yet; buying land with it needs that research ([[features/expansion]]).
 
-### Luck
-
-The **Lucky** skill ([[features/family]]) has no effect on burrows: not on where or how often they appear, and not on the rarity or the item.
-
 ### Random draws
 
 Every draw is on the `burrow` stream ([[systems/rng]]). Where a burrow appears is drawn from the chunk, the day and an index (0 to 2, or `BURROW_DAY_SALT` for the daily chance). The rarity, the entry, the item and the treasure coins or tool uses are drawn from the tile, the dig day and `BURROW_DIG_SALT` + 0 to 3, which stays clear of the chunk indexes. A tile holds one burrow at a time and a new one appears only at the end of a day, so no two digs share a tile and a day.
@@ -135,7 +138,7 @@ Saved: every burrow tile (the cover, no item) and `sinceRare`, the farm's count 
 | id | rule | test |
 |---|---|---|
 | `burrow.start` | generating chunk (0, 0) places `BURROW_START_N` burrows more than `BURROW_START_R` tiles from the door; none on reserved, rock, tree or very hard tiles; no other chunk gets burrows when generated | `burrow.test.ts` |
-| `burrow.day` | at the end of each day each owned chunk draws once against `BURROW_DAY_CHANCE` and gets at most one burrow, on an untilled, not very hard, bare or grass tile that is not reserved, paved or under an item | `burrow.test.ts` |
+| `burrow.day` | at the end of each day each owned chunk draws once against `burrowDayChance` and gets at most one burrow, on an untilled, not very hard, bare or grass tile that is not reserved, paved or under an item | `burrow.test.ts` |
 | `burrow.block` | a burrow is untilled cover and holds no item; it is walkable; placing, paving, fencing and planting a tree seed on it are refused | `burrow.test.ts` |
 | `burrow.dig` | any shovel digs it in work seconds × `BURROW_MUL`, one use, hardness ignored; the tile becomes bare untilled ground with the same ground and hardness; the item drops on `nearSite`; a pickaxe does nothing | `burrow.test.ts` |
 | `burrow.rarity` | Uncommon = 10 + 20 × distance share + 20 × days share (32 tiles, 32 days); Rare = 1 + 5 × count + 10 × distance share + 10 × days share (32 tiles, 64 days), at most 50; Common is the rest | `burrow.test.ts` |
@@ -143,7 +146,7 @@ Saved: every burrow tile (the cover, no item) and `sinceRare`, the farm's count 
 | `burrow.items` | each rarity's entries are equally likely, and each entry's items; seeds and tree seeds have quality 0; the special tool has 20% of its uses; Common Treasure is 10 to 150 coins, Uncommon 70 to 140 | `burrow.test.ts` |
 | `burrow.permit` | a Rare expansion permit adds one permit and drops nothing | `burrow.test.ts` |
 | `burrow.point` | an Uncommon skill point adds `SKILL_POINT_LOOT` skill points and drops nothing | `burrow.test.ts` |
-| `burrow.luck` | Lucky changes neither the daily chance nor the rarity nor the item | `burrow.test.ts` |
+| `burrow.mycologist` | chunk (0, 0) draws against 66% + 3% per `mycologist` rank, every other chunk against 33% + 11% per rank | `burrow.test.ts` |
 
 ## When you change this
 
@@ -151,6 +154,7 @@ Saved: every burrow tile (the cover, no item) and `sinceRare`, the farm's count 
 - The expansion permit: permits are counted in [[features/expansion]].
 - Fly agaric and Truffle: they also come up around trees ([[features/mushrooms]]).
 - The skill point: skill points are spent in [[features/family]].
+- The daily chance: the **Mycologist** description (`skillBlurb`) quotes both chances from `burrowDayChance` ([[features/family]]).
 - The count: it is saved ([[systems/save]]) and in the digest ([[systems/net]]).
 - A new draw: keep it on the `burrow` stream with integers that name it uniquely ([[systems/rng]]).
 

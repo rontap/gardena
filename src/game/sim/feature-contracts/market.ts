@@ -927,6 +927,7 @@ function resolveMiss(w: World, a: Active): void {
     lines: a.offer.lines,
     outcome: { kind: 'missed', sold, penalty },
   })
+  w.cue({ kind: 'contract-missed' })
   w.ping()
 }
 

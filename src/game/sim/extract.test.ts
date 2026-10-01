@@ -27,7 +27,7 @@ import { makeAxe, makeExtract, type Item } from './item.ts'
 import { Plant } from './plant.ts'
 import { readPrompt } from './prompt.ts'
 import { HARDNESS } from '../defs/rules.ts'
-import { makeTreeSoil, Soil, SOIL_WATER_MID, STUNT, TREE_FERT_MAX, TREE_WATER_MID } from './soil.ts'
+import { makeTreeSoil, Soil, SOIL_WATER_MID, STUNT, TREE_FERT_MAX, TREE_WATER_MID, WEED_DUG, WEED_SPRAYED } from './soil.ts'
 
 const WEED_CHANCE = HARDNESS.normal.weedChance
 import { DT_MAX, World } from './world.ts'
@@ -124,6 +124,25 @@ describe('plants.extract', () => {
     expect(ripe.kind === 'ripe' && ripe.plant.boost).toBe(0)
     w.seats[0].hand = { kind: 'hold', item: makeExtract(false) }
     expect(canExtract(w, AT)).toBe(false)
+  })
+
+  test('Infused Extract on a growing plant lowers its plot\'s weed chance to `WEED_DUG`, as digging a weed does, and never raises it; plain Extract leaves it.', () => {
+    const w = new World(2)
+    sow(w, AT)
+    sow(w, NEXT)
+    pour(w, AT, makeExtract(true))
+    pour(w, NEXT, makeExtract(false))
+    const infused = w.cell(AT)
+    const plain = w.cell(NEXT)
+    expect(infused.kind === 'growing' && infused.soil.weedChance).toBe(WEED_DUG)
+    expect(plain.kind === 'growing' && plain.soil.weedChance).toBe(WEED_CHANCE)
+    const sprayed = new World(2)
+    sow(sprayed, AT)
+    const cell = sprayed.cell(AT)
+    if (cell.kind !== 'growing') throw new Error('growing')
+    cell.soil.weedChance = WEED_SPRAYED
+    pour(sprayed, AT, makeExtract(true))
+    expect(cell.soil.weedChance).toBe(WEED_SPRAYED)
   })
 })
 

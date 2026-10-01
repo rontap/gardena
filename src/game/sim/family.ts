@@ -1,12 +1,6 @@
-import { LUCK_CAP } from '../defs/burrow.ts'
 import { SKILLS, SKILL_IDS, type SkillDef } from '../defs/skills.ts'
 import type { SkillId } from './ids.ts'
 import type { World } from './world.ts'
-
-export function luckOf(w: World): number {
-  const n = w.skillTier('lucky')
-  return n < LUCK_CAP ? n : LUCK_CAP
-}
 
 export function initFamily(w: World): void {
   w.family.owned.clear()

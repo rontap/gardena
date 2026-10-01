@@ -30,7 +30,7 @@ Prompt: **Study**. Hover: **Crop Variety Station**, **{name} · {left} left · {
 
 ## Art
 
-`prop-research-station.svg`, groups `off` and `on`.
+`prop-research-station.svg`, groups `off` and `on`. While it studies (`stationWorking`), `station` plays on the screen and `station-lights` on the three lights: two green and one blue, the blue stepping from light to light ([[art/vfx]]).
 
 ## Sound
 

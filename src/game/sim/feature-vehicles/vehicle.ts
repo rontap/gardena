@@ -67,7 +67,7 @@ import { Act, type Cmd } from '../log.ts'
 import { statsOf } from '../modifiers.ts'
 import { Plant, Turf } from '../plant.ts'
 import { isSolid, isTilled, type Cell } from '../plot.ts'
-import { FERT_PLOT_MAX } from '../soil.ts'
+import { FERT_PLOT_MAX, WEED_SPRAYED } from '../soil.ts'
 import { stepHold, type Sensor } from '../sensor.ts'
 import type { SeatId, World } from '../world.ts'
 import { ANY, pickTakes, type PadGoods, type Pick } from './pick.ts'
@@ -506,6 +506,10 @@ function compactCargo(cargo: Cargo): void {
   if (cargo.kind === 'quad' || cargo.kind === 'harvest') compactSlots(cargo.slots)
 }
 
+function sprayBag(item: Item): item is Extract<Item, { kind: 'fertilizer' | 'compost' | 'weed-spray' }> {
+  return item.kind === 'fertilizer' || item.kind === 'compost' || item.kind === 'weed-spray'
+}
+
 function cargoCouldTake(cargo: Cargo, item: Item): boolean {
   if (cargo.kind === 'quad') return slotsCouldTake(cargo.slots, item, VEHICLE_SLOTS, undefined)
   if (cargo.kind === 'harvest') return slotsCouldTake(cargo.slots, item, HARVEST_SLOTS, TRAILER_CAP)
@@ -516,7 +520,7 @@ function cargoCouldTake(cargo: Cargo, item: Item): boolean {
     if (h.crop !== item.crop || h.variety !== item.variety) return false
     return h.count < TRAILER_CAP
   }
-  if (item.kind !== 'fertilizer' && item.kind !== 'compost') return false
+  if (!sprayBag(item)) return false
   if (cargo.trailer.hopper.kind === 'empty') return item.liters > 0
   if (cargo.trailer.hopper.item.kind !== item.kind) return false
   return Math.floor(cargo.trailer.hopper.item.liters) < TRAILER_CAP
@@ -545,7 +549,7 @@ function giveCargo(cargo: Cargo, item: Item): boolean {
     item.count -= n
     return item.count <= 0
   }
-  if (item.kind !== 'fertilizer' && item.kind !== 'compost') return false
+  if (!sprayBag(item)) return false
   const have = cargo.trailer.hopper.kind === 'empty' ? 0 : cargo.trailer.hopper.item.liters
   if (cargo.trailer.hopper.kind === 'hold' && cargo.trailer.hopper.item.kind !== item.kind) return false
   const room = TRAILER_CAP - Math.floor(have)
@@ -923,7 +927,7 @@ export function swapTrailerBody(w: World, u: TrailerId, i: HarvestSlot): void {
     if (i !== 0) return
     const hand = w.act.hand
     if (hand.kind === 'hold') {
-      if (hand.item.kind !== 'fertilizer' && hand.item.kind !== 'compost') return
+      if (!sprayBag(hand.item)) return
       if (Math.floor(hand.item.liters) > TRAILER_CAP) return
       w.act.hand = t.hopper.kind === 'empty' ? { kind: 'empty' } : { kind: 'hold', item: t.hopper.item }
       t.hopper = { kind: 'hold', item: hand.item }
@@ -1339,9 +1343,18 @@ function boomCell(w: World, t: Trailer, at: Coord): boolean {
   }
   if (t.kind === 'spray') {
     if (t.hopper.kind === 'empty') return false
+    const bag = t.hopper.item
+    if (bag.kind === 'weed-spray') {
+      if (!isTilled(c) || (c.kind !== 'weed' && c.soil.weedChance < 0)) return false
+      c.soil.weedChance = WEED_SPRAYED
+      if (c.kind === 'weed') w.setCell(at, { kind: 'empty', soil: c.soil })
+      else w.track(at, c)
+      bag.liters -= 1
+      if (bag.liters < 1) t.hopper = { kind: 'empty' }
+      return true
+    }
     if (c.kind === 'tree') {
       if (c.soil.fertilizer >= c.soil.fertMax) return false
-      const bag = t.hopper.item
       const need = c.soil.fertMax - c.soil.fertilizer
       const use = need > bag.liters ? bag.liters : need
       c.soil.feed(use)
@@ -1350,7 +1363,6 @@ function boomCell(w: World, t: Trailer, at: Coord): boolean {
       return true
     }
     if (!isTilled(c) || c.soil.fertilizer >= FERT_PLOT_MAX) return false
-    const bag = t.hopper.item
     const need = FERT_PLOT_MAX - c.soil.fertilizer
     const use = need > bag.liters ? bag.liters : need
     c.soil.feed(use)

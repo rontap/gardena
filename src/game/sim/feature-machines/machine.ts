@@ -2,6 +2,7 @@ import {
   BARREL_AGE,
   BARREL_MATURE,
   BREAD,
+  COMPOST_NEED,
   FLOUR,
   FURNACE_BREAD_IN,
   FURNACE_NEED,
@@ -34,8 +35,10 @@ import {
   OIL,
   SPIRIT_SALE,
   STILL_CAP,
+  STILL_SPRAY_IN,
   SUGAR_BAG,
   SUGAR_MILL,
+  WEED_SPRAY_BAG,
   CASK_AGE_MAX,
   CASK_AGE_MIN,
   CASK_SALE,
@@ -58,6 +61,8 @@ import type {
   PotStill,
   RectBase,
   ResearchStation,
+  StillBatch,
+  StillLoad,
 } from '../building.ts'
 import { furnaceValue, makeExtract, type Item } from '../item.ts'
 
@@ -496,6 +501,17 @@ export function furnaceStateVfx(origin: Coord): readonly { id: 'furnace' | 'furn
   ]
 }
 
+export function stationStateVfx(origin: Coord): readonly { id: 'station' | 'station-lights'; col: number; row: number }[] {
+  return [
+    { id: 'station', col: origin.col, row: origin.row },
+    { id: 'station-lights', col: origin.col + 1, row: origin.row },
+  ]
+}
+
+export function compostStateVfx(origin: Coord): { id: 'compost'; col: number; row: number } {
+  return { id: 'compost', col: origin.col, row: origin.row - 1 }
+}
+
 function chebyshev(a: Coord, b: Coord): number {
   const dc = a.col < b.col ? b.col - a.col : a.col - b.col
   const dr = a.row < b.row ? b.row - a.row : a.row - b.row
@@ -566,6 +582,10 @@ export function stationWorking(c: ResearchStation): boolean {
   return c.inn !== 1 && c.crop !== 'none' && c.units >= 1
 }
 
+export function compostWorking(c: CompostBox): boolean {
+  return c.units >= COMPOST_NEED && c.progress < 1
+}
+
 export function millDustAt(origin: Coord): Coord {
   return { col: origin.col + MILL_DUST_X, row: origin.row + MILL_DUST_Y }
 }
@@ -582,8 +602,34 @@ export function jamWorking(c: JamMachine): c is JamMachine & { crop: JamCrop } {
   return c.inn !== 1 && c.crop !== 'none' && c.fruit >= JAM_IN && c.sugar >= jamSugar(c.crop, c.variety)
 }
 
+export function stillUnits(load: StillLoad): number {
+  if (load.kind === 'spirit') return feedUnits(load.feed)
+  if (load.kind === 'spray') return load.count
+  return 0
+}
+
+export function stillNeed(load: StillLoad): number {
+  return load.kind === 'spray' ? STILL_SPRAY_IN : STILL_CAP
+}
+
+export function stillFull(load: StillLoad): load is StillBatch {
+  return load.kind !== 'empty' && stillUnits(load) === stillNeed(load)
+}
+
+export function stillProduct(load: StillBatch): Item {
+  if (load.kind === 'spray') return { kind: 'weed-spray', liters: WEED_SPRAY_BAG, capacityLiters: WEED_SPRAY_BAG }
+  const kind = spiritKind(load.feed)
+  const variety = kind === 'mixed' ? 'base' : feedVariety(load.feed)
+  const quality = meanQuality(load.feed)
+  return { kind: 'spirit', spirit: kind, variety, quality, count: 1, unitSale: bakeSpiritSale(kind, variety, quality), infused: false }
+}
+
+export function copyStillLoad(load: StillLoad): StillLoad {
+  return load.kind === 'spirit' ? { kind: 'spirit', feed: load.feed.map(f => ({ ...f })) } : { ...load }
+}
+
 export function stillReady(c: PotStill): boolean {
-  return c.inn !== 1 && feedUnits(c.feed) === STILL_CAP
+  return c.inn !== 1 && stillFull(c.load)
 }
 
 export function stillWorking(c: PotStill): boolean {

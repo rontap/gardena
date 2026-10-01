@@ -1,6 +1,5 @@
 import {
   AGARIC_LOOT_COUNT,
-  BURROW_DAY_CHANCE,
   BURROW_DIST_FULL,
   BURROW_ENTRIES,
   BURROW_RARE_BASE,
@@ -19,6 +18,7 @@ import {
   SKILL_POINT_LOOT,
   TRUFFLE_LOOT_COUNT,
   WEED_LOOT_COUNT,
+  burrowDayChance,
   type BurrowEntry,
   type BurrowRarity,
   type BurrowTool,
@@ -198,8 +198,10 @@ export function mintStart(cells: Cell[][], rng: Rng): void {
 
 export function mintSeam(w: World): void {
   const day = w.clock.day
+  const rank = w.skillTier('mycologist')
   w.owned.forEach(id => {
-    if (w.rng.stream('burrow').at(id.cx, id.cy, day, BURROW_DAY_SALT) >= BURROW_DAY_CHANCE) return
+    const chance = burrowDayChance(id.cx === 0 && id.cy === 0 ? 'start' : 'other', rank)
+    if (w.rng.stream('burrow').at(id.cx, id.cy, day, BURROW_DAY_SALT) >= chance) return
     pickSites(w.rng, id.cx, id.cy, day, 1, eligibleSeam(w, id)).forEach(at => w.setCell(at, burrowOn(w.cell(at))))
   })
 }

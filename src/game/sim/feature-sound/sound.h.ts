@@ -19,6 +19,9 @@ export type SoundCue =
   | { kind: 'close'; building: OpenBuilding }
   | { kind: 'machine'; machine: MachineId }
   | { kind: 'notice'; notice: NoticeKind; id: string }
+  | { kind: 'day' }
+  | { kind: 'contract-missed' }
+  | { kind: 'sold' }
 
 export type Count = { n: number }
 export type Stop = () => void
@@ -31,5 +34,8 @@ export function soundKey(c: SoundCue): string {
   if (c.kind === 'open') return `open:${c.building}`
   if (c.kind === 'close') return `close:${c.building}`
   if (c.kind === 'machine') return `machine:${c.machine}`
+  if (c.kind === 'day') return 'day'
+  if (c.kind === 'contract-missed') return 'contract-missed'
+  if (c.kind === 'sold') return 'sold'
   return `notice:${c.notice}:${c.id}`
 }

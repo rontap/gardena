@@ -40,6 +40,10 @@ import {
   SORT_SECONDS,
   STILL_CAP,
   STILL_SECONDS,
+  STILL_SPRAY_IN,
+  STILL_SPRAY_SECONDS,
+  STILL_SPRAY_WATER,
+  STILL_WATER,
   SUGAR_SHOP,
   WEED_SPRAY_BAG,
 } from '../defs/items.ts'
@@ -58,7 +62,6 @@ import { applyClaim, pageClaim } from './feature-necronomicon/necronomicon.ts'
 import {
   addStillFeed,
   bakeBreadSale,
-  bakeSpiritSale,
   barrelNeed,
   feedUnits,
   feedVariety,
@@ -89,9 +92,10 @@ import {
   millWorking,
   mixQuality,
   sameInfusable,
-  spiritKind,
   stillCropOf,
-  stillReady,
+  stillFull,
+  stillProduct,
+  stillUnits,
 } from './feature-machines/machine.ts'
 import { emitProduct, emitSorted, pullSorted, pullStillWater } from './feature-machines/machines.emit.ts'
 import type { World } from './world.ts'
@@ -804,58 +808,63 @@ export class JamMachine extends Machine {
   }
 }
 
+export type StillFeed = { crop: StillCrop; variety: VarietyId; quality: number; count: number }
+export type StillLoad = { kind: 'empty' } | { kind: 'spirit'; feed: StillFeed[] } | { kind: 'spray'; count: number }
+export type StillBatch = Exclude<StillLoad, { kind: 'empty' }>
+
 export class PotStill extends Machine {
   readonly kind = 'still' as const
   override readonly ports = ['in'] as const
   override readonly hasted = true
-  feed: { crop: StillCrop; variety: VarietyId; quality: number; count: number }[] = []
+  load: StillLoad = { kind: 'empty' }
   progress = 0
   n = 0
   constructor(base: RectBase) {
     super({ shape: 'rect', col: base.col, row: base.row, w: 2, h: 1 })
   }
   override padGoods(role: 'in' | 'out'): PadGoods {
-    return role === 'in' ? slots('fruit', STILL_CROPS) : slots('alcohol', SPIRIT_KINDS)
+    return role === 'in'
+      ? slots('fruit', STILL_CROPS).concat(slots('compostable', ['rotten']))
+      : slots('alcohol', SPIRIT_KINDS).concat(slots('other', ['weed-spray']))
   }
   override accept(item: Item): number {
-    if (stillCropOf(item) === undefined) return 0
-    const room = STILL_CAP - feedUnits(this.feed)
+    if (item.kind === 'rotten') {
+      if (this.load.kind === 'spirit') return 0
+      const room = STILL_SPRAY_IN - stillUnits(this.load)
+      if (room <= 0 || item.count <= 0) return 0
+      return item.count < room ? item.count : room
+    }
+    if (stillCropOf(item) === undefined || this.load.kind === 'spray') return 0
+    const room = STILL_CAP - stillUnits(this.load)
     const n = fruitCount(item)
     if (room <= 0 || n <= 0) return 0
     return n < room ? n : room
   }
   override apply(item: Item, n: number): void {
+    if (item.kind === 'rotten') {
+      this.load = { kind: 'spray', count: stillUnits(this.load) + n }
+      return
+    }
     const crop = stillCropOf(item)
     const variety = fruitVariety(item)
     if (crop === undefined || variety === undefined || n <= 0) return
-    addStillFeed(this.feed, crop, variety, fruitQuality(item), n)
+    const load = this.load.kind === 'spirit' ? this.load : { kind: 'spirit' as const, feed: [] }
+    addStillFeed(load.feed, crop, variety, fruitQuality(item), n)
+    this.load = load
   }
   override tick(w: World, at: Coord, dt: number): boolean {
-    if (!stillReady(this)) return false
+    const load = this.load
+    if (this.inn === 1 || !stillFull(load)) return false
+    const spray = load.kind === 'spray'
     let dirty = false
     if (this.progress === 0) {
-      if (!pullStillWater(w, this)) return false
+      if (!pullStillWater(w, this, spray ? STILL_SPRAY_WATER : STILL_WATER)) return false
       dirty = true
     }
-    this.progress += (dt * furnaceMul(w.furnaceSnap, this.base)) / STILL_SECONDS
+    this.progress += (dt * furnaceMul(w.furnaceSnap, this.base)) / (spray ? STILL_SPRAY_SECONDS : STILL_SECONDS)
     if (this.progress < 1) return dirty
-    const kind = spiritKind(this.feed)
-    const quality = meanQuality(this.feed)
-    const variety = kind === 'mixed' ? 'base' : feedVariety(this.feed)
-    if (
-      !emitProduct(w, this.base, {
-        kind: 'spirit',
-        spirit: kind,
-        variety,
-        quality,
-        count: 1,
-        unitSale: bakeSpiritSale(kind, variety, quality),
-        infused: false,
-      })
-    ) {
-      return dirty
-    }
-    this.feed = []
+    if (!emitProduct(w, this.base, stillProduct(load))) return dirty
+    this.load = { kind: 'empty' }
     this.progress = 0
     w.cue({ kind: 'machine', machine: 'still' })
     this.n += 1

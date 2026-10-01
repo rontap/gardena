@@ -44,7 +44,7 @@ Prompt: **Compost**.
 
 ## Art
 
-`prop-compost-box.svg`. While working, a bar along the bottom of the footprint shows `progress` ([[features/machines]]).
+`prop-compost-box.svg`. While it works (`compostWorking`: it holds `COMPOST_NEED` points and the bag is not finished), brown particles rise from its lid (`compost`, [[art/vfx]]). While working, a bar along the bottom of the footprint shows `progress` ([[features/machines]]).
 
 ## Sound
 

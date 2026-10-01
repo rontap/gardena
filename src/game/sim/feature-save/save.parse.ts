@@ -66,6 +66,7 @@ import { makeTreeSoil, Soil } from '../soil.ts'
 import { STALL_IDS, StallGood, type StallMap } from '../stall.ts'
 import { World, type Family, type Hydrate, type Seat, type SeatId } from '../world.ts'
 import { makeQuad, makeTractor, type RouteStop, type Trailer, type Vehicle } from '../feature-vehicles/vehicle.ts'
+import { copyStillLoad } from '../feature-machines/machine.ts'
 import {
   type LoadResult,
   type Save,
@@ -408,7 +409,7 @@ function makeLive(cell: Exclude<SaveCell, { kind: 'occ' }>): Cell {
     }
     case 'still': {
       const still = new PotStill(cell.base)
-      still.feed = cell.feed.map(f => ({ ...f }))
+      still.load = copyStillLoad(cell.load)
       still.progress = cell.progress
       still.n = cell.n
       still.inn = cell.inn

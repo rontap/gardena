@@ -18,10 +18,10 @@
   "catalog_pickaxe": "Breaks rocks and very hard soil. {uses} uses, {workSeconds}s per mine.",
   "catalog_better_pickaxe": "Breaks rocks and very hard soil faster than a Pickaxe, and for more uses. {uses} uses, {workSeconds}s per mine.",
   "catalog_bucket": "Holds {n} L. Fill at a pump or well. {plot} L fills one plot.",
-  "catalog_weed_spray": "Holds {n} L. Click tilled soil to starve weeds there.",
+  "catalog_weed_spray": "Holds {n} L. Click tilled soil to starve weeds there. A Sprayer on a Tractor spreads it over every plot it drives across, and a Pot still makes it from Rotten produce.",
   "catalog_pumpjack": "Gathers {rate} L/day into a {cap} L tank. Fill a bucket straight from it, or run pipe out of any of its corners to feed taps and sprinklers. Litres it pumps are billed as Water at the end of the day.",
   "catalog_chest": "{n} slots. Walk up and store any item.",
-  "catalog_grinder": "Hopper. One fruit becomes {min}–{max} seeds of the same crop and rarity. {workSeconds}s per fruit.",
+  "catalog_grinder": "Grinds fruit back into seed. The seeds keep the crop, Variety and Quality of the fruit, so a Named or Heirloom fruit becomes seed of that Variety to plant again, and fruit of higher Quality gives more seeds. A tree fruit gives one Plain seed of its tree.",
   "catalog_pipe": "Lies on the edge between two tiles and carries water from a source to your taps and sprinklers. Drag while placing to lay a whole run at once. Any pipe touching a source at a corner is fed by it.",
   "catalog_sprinkler": "Waters a {w}×{h} area of plots, {day} L a day each. It pours only on plots with something growing, and only while pipe connects it to a source that still holds water.",
   "catalog_sprinkler_vert": "Waters a {w}×{h} strip, {day} L a day per plot. Rotate it while placing to lay the strip north-south or east-west.",
@@ -32,7 +32,7 @@
   "catalog_hangar": "{w}×{h} industrial shed. Buy Quads and tractors at a hangar.",
   "catalog_refuel": "Makes fuel in a batch of {batch} L, once {batch} units are in and it holds none. A route takes that fuel on the south side. Buy from market pays for the liters it is not holding, when you can pay for all of them.",
   "catalog_silo_seed": "A seed store for vehicles. A Tractor with a Seeder loads seeds here at the loading spots above and below the silo. It holds up to {cap} seeds; open it to buy seed packs into it, as at the Seed silo. With Auto-restock on, it buys back each pack a vehicle takes while you have the money. Named and Heirloom seeds are not restocked.",
-  "catalog_silo_spray": "A fertilizer store for vehicles. A Tractor with a Sprayer loads fertilizer or compost here at the loading spots above and below the silo. It holds up to {cap} L of fertilizer, compost, Weed spray and sugar; open it to buy bags into it, as at the Additive store. With Auto-restock on, it buys back each bag a vehicle takes while you have the money.",
+  "catalog_silo_spray": "A fertilizer store for vehicles. A Tractor with a Sprayer loads fertilizer, compost or Weed spray here at the loading spots above and below the silo. It holds up to {cap} L of fertilizer, compost, Weed spray and sugar; open it to buy bags into it, as at the Additive store. With Auto-restock on, it buys back each bag a vehicle takes while you have the money.",
   "catalog_silo_produce": "A harvest store for vehicles. A Tractor with a Harvester unloads fruit, Pulled weed and Cut grass here at the loading spots above and below the silo. It has {slots} slots; open it to take the harvest out, as from a Chest.",
   "catalog_lever": "A switch you flip by hand with Flip lever. It stays where you leave it, so whatever is wired to it stays on or off until someone flips it back.",
   "catalog_button": "A button you press with Press button. It sends one short signal per press. Wire it to a Lever's input to flip that Lever from where the button is.",
@@ -67,100 +67,70 @@
   "catalog_sku_buy_freezer": "{n} slots. Fruit in here rots {pct}% slower.",
   "catalog_sku_buy_freezer_large": "{n} slots. Fruit in here rots {pct}% slower. Earned from a contract, never sold.",
   "catalog_sku_buy_sugar": "{bag} L bag at {sale}/L.",
-  "catalog_fertilizer": "Holds {n} L. Tops a plot back up to full fertilizer, spending only what the soil is missing. Empty bags are thrown away.",
-  "catalog_compost": "Holds {liters} L. Tops a plot back up to full fertilizer, spending only what the soil is missing.",
-  "catalog_compost_box": "Drop any organic waste in. {need} units become {liters} L of compost in {seconds}s. A chest on the right takes the bag, else it drops beside the box. Seeds {seeds}, fruit {fruit}, heirloom fruit {heirloom}, rotten fruit {rotten}, dead plants and weeds {dead}.",
-  "catalog_soil": "Tilled soil holds water and fertilizer, and keeps them through planting, harvest and death. Water reads {min} to {max} L; plants want {mid} L and drown above it. Fertilizer runs from {fertMin} to {fertMax} and a growing plant empties a full plot in three days.",
-  "catalog_weed": "Takes over tilled soil left without seed. Full grown in {seconds}s and drinks water and fertilizer the whole time. Dig it out with a shovel.",
-  "catalog_rotten": [
+  "catalog_compost_box": "Turns organic waste from the farm into Compost, a bag that fertilizes a plot exactly as a Fertilizer bag does, without buying one. It takes a whole stack at a time, and each kind of item adds its own amount toward the next bag. The bag goes into a chest on its right, or onto the ground beside the box.",
+  "catalog_soil": "A plot holds its own water and fertilizer, up to {max} L of water, and keeps both through planting, harvest and a dead plant, so the next crop starts with what the last one left. A growing plant consumes both. Each crop is happy in its own range of each: point at a growing plant, and the green part of its Water and Fertilizer bars is that range.",
+  "catalog_weed": [
     {
       "declarations": [
-        "input n",
-        "local nPlural = n: plural"
+        "input days",
+        "local daysPlural = days: plural"
       ],
       "selectors": [
-        "nPlural"
+        "daysPlural"
       ],
       "match": {
-        "nPlural=one": "What is left when a plant drowns or a ripe crop is never picked. After Fermentation, Drop off at the Market. Worth {n} unit in the Compost box.",
-        "nPlural=other": "What is left when a plant drowns or a ripe crop is never picked. After Fermentation, Drop off at the Market. Worth {n} units in the Compost box."
+        "daysPlural=one": "Grows on a plot left empty, and consumes the plot's water and fertilizer while it grows. Pull it by hand for a Pulled weed, dig it out with a Shovel, or spray the plot with Weed spray: a dug plot stays clear longer than a pulled one, and a sprayed plot longer still. A full-grown weed left standing turns the plot back into Grass {days} day later, and the plot has to be dug again.",
+        "daysPlural=other": "Grows on a plot left empty, and consumes the plot's water and fertilizer while it grows. Pull it by hand for a Pulled weed, dig it out with a Shovel, or spray the plot with Weed spray: a dug plot stays clear longer than a pulled one, and a sprayed plot longer still. A full-grown weed left standing turns the plot back into Grass {days} days later, and the plot has to be dug again."
       }
     }
   ],
-  "catalog_dead": [
+  "catalog_rotten_dead": [
     {
       "declarations": [
-        "input n",
-        "local nPlural = n: plural"
+        "input days",
+        "input rotten",
+        "input water",
+        "input liters",
+        "local daysPlural = days: plural"
       ],
       "selectors": [
-        "nPlural"
+        "daysPlural"
       ],
       "match": {
-        "nPlural=one": "What is left when a plant dries out or starves. Worth nothing at market, worth {n} unit in the compost box.",
-        "nPlural=other": "What is left when a plant dries out or starves. Worth nothing at market, worth {n} units in the compost box."
+        "daysPlural=one": "Rotten produce is what is left when a plant drowns, or when fruit loses all its freshness; left on the ground, it is gone {days} day later. A Dead plant is what is left when a plant wilts or starves until its Happiness runs out. The Compost box and the Furnace take both. A Pot still turns {rotten} Rotten produce and {water} L of water into a {liters} L bag of Weed spray. The Market does not buy Dead plants.",
+        "daysPlural=other": "Rotten produce is what is left when a plant drowns, or when fruit loses all its freshness; left on the ground, it is gone {days} days later. A Dead plant is what is left when a plant wilts or starves until its Happiness runs out. The Compost box and the Furnace take both. A Pot still turns {rotten} Rotten produce and {water} L of water into a {liters} L bag of Weed spray. The Market does not buy Dead plants."
       }
     }
   ],
-  "catalog_grass": [
-    {
-      "declarations": [
-        "input n",
-        "local nPlural = n: plural"
-      ],
-      "selectors": [
-        "nPlural"
-      ],
-      "match": {
-        "nPlural=one": "Cut from untilled ground. Worth {n} unit in the compost box.",
-        "nPlural=other": "Cut from untilled ground. Worth {n} units in the compost box."
-      }
-    }
-  ],
-  "catalog_grass_seeds": "Sold in packs of {pack}. Sow on tilled soil. Roots in {seconds}s and drinks only {drink} L a day, then the plot turns back into untilled lawn.",
-  "catalog_fence": "Stands in the middle of an untilled tile and joins up with any fence beside it. Boundary marker only - the gardener walks straight through.",
-  "catalog_paving": "Laid on untilled ground. Keeps the garden walkable and tidy. Demolish lifts it again.",
+  "catalog_grass": "Picked by hand from Grass on untilled ground, which leaves the ground bare. The Mill presses it into Extract, which makes a plant grow faster, and the Compost box takes it.",
+  "catalog_grass_seeds": "Sown on a plot, grass roots in {seconds}s and consumes little water while it does; then the plot turns back into untilled Grass. Sold in packs of {pack}.",
+  "catalog_fence": "Stands on untilled ground and joins the fences beside it. A closed ring of fence makes a fenced area: a sensor that watches plants, or a Pressure plate, placed on that fence watches the whole area inside it instead of the ground around it. The gardener walks through fences.",
+  "catalog_paving": "Lays a surface on untilled ground. Vehicles drive faster on Asphalt and Paving slab than on any other ground, and drive on Brickwork and Cobblestone as fast as on bare ground. Demolish paving lifts it again.",
   "catalog_rotary_shovel": "Motorised. Digs everything a Shovel digs, faster than any other shovel. {uses} uses, {workSeconds}s per dig.",
   "catalog_diamond_pickaxe": "Breaks rocks and very hard soil faster than any other pickaxe. {uses} uses, {workSeconds}s per mine.",
-  "catalog_sugar": "{bag} L bag. Does not rot. Mill cane is cheaper per litre.",
-  "catalog_mill": "Hopper mill. {cane} cane or {vanilla} vanilla crush in {work}s. {cane} olive crushes in {olive}s and {cane} wheat in {wheat}s.",
-  "catalog_still": "Distills {cap} potato, wheat or apricot in {seconds}s.",
-  "catalog_barrel": "Grapes or apples, never mixed. Five grapes or four apples fill a barrel. Wine or cider, not whisky.",
-  "catalog_jam": "{fruit} fruit and sugar cook in {seconds}s. Tomato is ketchup, and San Marzano tomato is Passata, which takes no sugar.",
+  "catalog_mill": "Crushes what you grow and gather into goods: some the Market buys, some another machine needs, and Extract, which makes a plant grow faster. It works on one crop and Variety at a time until it is empty. Crushing a crop is a way to sell it without lowering the price of its fruit at the Market.",
+  "catalog_still": "Distills a full load of fruit into one bottle of spirit, with water it takes from the water network it touches at a corner. A load of one crop and Variety makes that crop's spirit; any other mix makes Mixed spirit. A load of {rotten} Rotten produce with {water} L of water makes a {liters} L bag of Weed spray, the same spray the Additive store sells. A load is fruit or Rotten produce, not both. With no water to take, it waits and shows Needs water.",
+  "catalog_barrel": "Ages grapes into Wine and apples into Cider. Fill it by hand with one crop and Variety, never mixed. A full barrel is maturing; once it has matured you can collect the bottle, or leave it Aging, and the bottle is worth more the longer it ages, up to a limit.",
+  "catalog_jam": "Cooks fruit and Sugar into jars. A jar does not lose freshness, so jam keeps a harvest you cannot sell today, and it sells without lowering the price of the fruit at the Market. It cooks one crop and Variety at a time, and keeps Sugar in a store of its own that you can fill ahead of the fruit.",
   "catalog_freezer": "Small {n} slots, large {m} slots. Fruit in here rots {pct}% slower. The large one is a contract prize, never sold.",
   "catalog_title_rotten": "Rotten produce",
   "catalog_title_dead": "Dead plant",
-  "catalog_furnace": "Burns a mixed load into Ash. {need} units burn in {seconds}s and yield {ash} Ash. A working Furnace makes nearby machines finish faster than they do without one. A chest on the right takes the Ash, else it drops in front.",
+  "catalog_furnace": "Burns what you do not need into Ash, or bakes Flour into Bread. The first item put in sets which, until the Furnace is empty. While it burns or bakes, every other machine near it finishes sooner than it would without a Furnace. The Ash or Bread goes into a chest on its right, or onto the ground in front.",
   "catalog_sku_buy_furnace": "Burns a mixed load into Ash. {need} units burn in {seconds}s and yield {ash} Ash. Holds {cap} units. A working Furnace makes nearby machines finish faster than they do without one. A chest on the right takes the Ash, else it drops in front.",
-  "catalog_station": "Studies one fruit at a time and writes down what it learns about that crop. A studied crop turns up a better Variety more often when it ripens, comes up better in seed you buy, and its stall price climbs back faster so you can sell more of it in a day. The first fruit takes {seconds}s and each one after takes longer. A plain fruit teaches one step, a named Variety two, an Heirloom three. How far a crop can go depends on how many Varieties it has.",
+  "catalog_station": "Studies fruit one at a time and records what it learns about that crop. The more the farm knows about a crop, the more often it ripens into a better Variety, the better the seed you buy for it, and the sooner its Market price comes back after you sell it, so you can sell more of it in a day. Each fruit takes longer to study than the one before, and a Named or Heirloom fruit teaches more than a Plain one. Studying a crop to its last level pays {n} skill point.",
   "catalog_sku_buy_research_station": "Studies one fruit at a time and writes down what it learns about that crop. A studied crop turns up a better Variety more often when it ripens, comes up better in seed you buy, and its stall price climbs back faster so you can sell more of it in a day. The first fruit takes {seconds}s and each one after takes longer. A plain fruit teaches one step, a named Variety two, an Heirloom three. How far a crop can go depends on how many Varieties it has.",
   "catalog_axe": "Chops a mature tree into Wood. The tree then grows a trunk and grows again before it fruits. {uses} uses, {workSeconds}s per chop.",
   "catalog_chainsaw": "Chops a mature tree into Wood. Lasts for more uses and each Chop takes fewer seconds than an Axe. {uses} uses, {workSeconds}s per chop.",
   "catalog_electric_chainsaw": "Chops a mature tree into Wood. Lasts for more uses and each Chop takes fewer seconds than a Chainsaw. {uses} uses, {workSeconds}s per chop.",
-  "catalog_wood": "Chopped from a mature tree with an Axe. Burns in a Furnace.",
-  "catalog_fly_agaric": "A red mushroom flecked with white. It comes up on untilled ground around a tree, most often after rain, and turns up in Uncommon burrows. Infuse {goods} with it at an Infuser. The Compost box and the Furnace take it and the Market will not buy it, but the Necronomicon asks for three.",
-  "catalog_truffle": "A dark, knobbly mushroom. It comes up on untilled ground around a tree, most often after rain, and turns up in Rare burrows. Named and Heirloom trees give a larger share of Truffles than Plain trees. Crush one at a Mill into {n} Truffle extract. The Compost box and the Furnace take it and the Market will not buy it.",
+  "catalog_wood": "Chopping a grown tree gives Wood, and the tree grows back from its trunk. Wood counts for more in a Furnace and in the Compost box than any other item, and a Refueling station makes fuel from it.",
+  "catalog_fly_agaric": "A red mushroom flecked with white that comes up on untilled ground around a tree, most often after rain, and turns up in Uncommon burrows. Infuse {goods} with it at an Infuser. The Compost box and the Furnace take it, the Market does not buy it, and a page of the Necronomicon asks for it.",
+  "catalog_truffle": "A dark, knobbly mushroom that comes up on untilled ground around a tree, most often after rain, and turns up in Rare burrows. A Named or Heirloom tree gives a larger share of Truffles than a Plain tree. The Mill crushes one into {n} Truffle extract, which the Infuser uses. The Compost box and the Furnace take it; the Market does not buy it.",
   "catalog_truffle_extract": "Crushed Truffle. Infuse {goods} with it at an Infuser.",
-  "catalog_extract": "Cut grass pressed at a Mill into a {liters} L bag. Pour {pour} L on a growing plant, a sapling or a stump and it grows faster for {seconds}s, adding up to {pct}% of its growth. Use it when a plant would ripen too late for a contract. On a grown tree out of season it adds {season}% to the chance that a new season starts. A plant takes it once. Infused Extract, made at an Infuser, keeps the plant growing faster for {infused}s. The Market does not buy it.",
-  "catalog_ash": [
-    {
-      "declarations": [
-        "input n",
-        "local nPlural = n: plural"
-      ],
-      "selectors": [
-        "nPlural"
-      ],
-      "match": {
-        "nPlural=one": "Left when a Furnace finishes a burn. Worth {n} unit in the Compost box.",
-        "nPlural=other": "Left when a Furnace finishes a burn. Worth {n} units in the Compost box."
-      }
-    }
-  ],
+  "catalog_ash": "What a Furnace leaves after it burns a load. The Compost box takes it, and a page of the Necronomicon asks for it.",
   "catalog_graft": "Cut from a grown tree with the axe. Hold it against a young plant or a sapling to turn that plant into this variety.",
-  "catalog_infuser": "Infuse {goods} in {seconds}s, and Extract in {extract}s. Each good takes one of two items, and the recipes show which. The good keeps its name, its Quality, and the money the Market pays for it, and shows a plus. Infused goods sell at Market at the percent shown for that good, and selling them does not change that percent. Finishing a contract with Infused goods raises Reputation more than the same contract without them. Infused Extract makes a plant grow faster for longer than Extract does.",
+  "catalog_infuser": "Infuses a finished good with one of two ingredients; the recipes show which. The good keeps its name, its Quality and its price, and shows a plus. Selling an infused good does not lower the Market price of that good, and finishing a contract with infused goods raises Reputation more than finishing it without them. Infused Extract keeps a plant growing faster for longer than Extract does.",
   "catalog_sku_buy_infuser": "Infuse {goods} in {seconds}s, and Extract in {extract}s. Each good takes one of two items, and the recipes show which. The good keeps its name, its Quality, and the money the Market pays for it, and shows a plus. Infused goods sell at Market at the percent shown for that good, and selling them does not change that percent. Finishing a contract with Infused goods raises Reputation more than the same contract without them. Infused Extract makes a plant grow faster for longer than Extract does.",
-  "catalog_sorter": "Takes seeds and fruit in on one side and puts them out on three, sorted by Variety: Plain out the first side, Named out the second, Heirloom out the third. Empty a mixed harvest into the chest that feeds it and each of the three leaves on a side of its own. A chest on a side takes what comes out, else it drops on the ground there. Rotate it before you build to choose which way it faces.",
+  "catalog_sorter": "Sorts seeds and fruit by Variety. Fill the chest at its input with a mixed harvest, and it puts Plain, Named and Heirloom into three chests of their own, so the rarer finds stay apart from the rest. When one of those chests is full, it waits. Rotate it while placing to choose which way it faces.",
   "catalog_sku_buy_sorter": "Takes seeds and fruit in on one side and puts them out on three, sorted by Variety: Plain out the first side, Named out the second, Heirloom out the third. Empty a mixed harvest into the chest that feeds it and each of the three leaves on a side of its own. A chest on a side takes what comes out, else it drops on the ground there. Rotate it before you build to choose which way it faces.",
   "catalog_flakes": "Crushed Chilli. Infuse {goods} with it at an Infuser.",
   "catalog_vanilla_extract": "Crushed Vanilla. Infuse {goods} with it at an Infuser.",

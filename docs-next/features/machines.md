@@ -43,7 +43,7 @@ The research station and the Sorter are buildings with a tick but no recipe: [[i
 ### Three ways a machine takes input
 
 - **Locked.** The first item put in fixes the recipe, the crop and the variety. The machine refuses anything else until it is empty. Quality is averaged over everything put in, weighted by count, and the product carries that quality.
-- **Mixed.** The Pot still takes any of its crops and varieties; the batch's result depends on what is in it ([[items/produce/spirit]]).
+- **Mixed.** The Pot still takes any of its crops and varieties; the batch's result depends on what is in it ([[items/produce/spirit]]). A load of Rotten produce is its second recipe, Weed spray, and is not mixed with fruit ([[items/buildings/still]]).
 - **Pooled.** Each accepted item adds points by a value table (`COMPOST_VALUE`, `FURNACE_VALUE`, `FUEL_WORTH`). When the points reach the batch size, one batch runs. The product does not depend on which items made the points.
 
 ### States
@@ -60,7 +60,7 @@ A machine's state (`Craft`, from `craftState`) is shown on its panel and hover l
                                                      next batch, or idle when empty
 
   ready     output waiting: chest full, no free plot, or a Barrel waiting to be collected
-  thirsty   Pot still full but its water network cannot give `STILL_WATER` L (shown as Needs water)
+  thirsty   Pot still full but its water network cannot give the load's water (shown as Needs water)
 ```
 
 While `craftState` is `working`, the Mill, Jam machine, Grinder, Pot still, Compost box, Furnace and Infuser draw a bar along the bottom of the footprint. The fill is that craft's `progress`. Idle, filling, paused, thirsty and ready draw no bar. The list is `METERED` in `view/meter.ts`. The bar is redrawn each frame.

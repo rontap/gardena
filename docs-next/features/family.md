@@ -1,6 +1,6 @@
 # Family
 
-Code: `SKILLS`, `betterGain`, `seedBankQuality`, `jamRotMul` in `defs/skills.ts`, `sim/family.ts` (picking, known and open, luck), `skillTier` and `hasSkill` on `World`, `ui/family.tsx` and `ui/tree-panel.tsx` (the panel); each effect is applied where its feature is computed; see [[code-map]].
+Code: `SKILLS`, `betterGain`, `seedBankQuality`, `jamRotMul` in `defs/skills.ts`, `sim/family.ts` (picking, known and open), `skillTier` and `hasSkill` on `World`, `ui/family.tsx` and `ui/tree-panel.tsx` (the panel); each effect is applied where its feature is computed; see [[code-map]].
 Unlocked: from the start. Some skills also need a research row.
 
 ## Purpose
@@ -11,7 +11,7 @@ The family is the farm's skill tree. Odd ended days earn a skill point, and poin
 
 ### Points
 
-`World.points` is one bank for the whole farm. It grows by `pointsForEndedDay`: `POINTS_PER_DAY` at the end of an odd day (ended days 1, 3, 5, …) and 0 at the end of an even day ([[features/weather-day]]). It also grows by `FAMILIARITY_POINT` when a crop's familiarity reaches `familiarityMax` ([[features/machines]]) by skill-point prizes from contracts ([[features/contracts]]), and by `SKILL_POINT_LOOT` from an Uncommon burrow ([[features/burrow]]). Rank *n* of any skill costs *n* points.
+`World.points` is one bank for the whole farm. It grows by `pointsForEndedDay`: `POINTS_PER_DAY` at the end of an odd day (ended days 1, 3, 5, …) and 0 at the end of an even day ([[features/weather-day]]). It also grows by `FAMILIARITY_POINT` when a crop's familiarity reaches `familiarityMax` ([[features/machines]]), by skill-point prizes from contracts ([[features/contracts]]), by `SKILL_POINT_LOOT` from an Uncommon burrow ([[features/burrow]]), and by `NECRO_PAGE_POINT` for each Necronomicon page a ritual closes ([[features/necronomicon]]). Rank *n* of any skill costs *n* points.
 
 ### The tree
 
@@ -21,7 +21,7 @@ Skills (`SkillId`, `SKILLS`) form three trees, one per family member, each start
 gardener   boots ─┬─ tending
                   ├─ seed-bank ── better-wheat, better-potato, better-tomato, better-grape, better-raspberry
                   ├─ grafting
-                  └─ lucky
+                  └─ mycologist
 husband    bulk-up ─┬─ machinery ── driving-classes
                     └─ inherit-land
 daughter   saleswoman ─┬─ jam
@@ -46,7 +46,7 @@ Percentages add per rank; they do not compound.
 | `seed-bank` | **Trusted seed bank** | 1 | | bought seeds come with quality `SEED_BANK_QUALITY` ([[features/inventory]]) |
 | `better-{crop}` | **Experienced {crop} grower** | 1 | `unlock-crop-variants` (wheat, potato), `unlock-advanced-plants` (tomato, grape), `unlock-raspberry` | that crop ripens with up to `BETTER_QUALITY` more quality, scaled by happiness (`betterGain`), and a higher chance of the next variety (`EXPERIENCED_VAR_BONUS`) ([[features/plants]]) |
 | `grafting` | **Tree Grafting** | 1 | | chopping a tree also drops `CHOP_GRAFTS` grafts of its species and variety ([[features/trees]]) |
-| `lucky` | **Lucky** | 3 | | none; the rank shows as **Luck** in the panel header, and burrows do not read it ([[features/burrow]]) |
+| `mycologist` | **Mycologist** | 3 | | each grown tree's mushroom chance + `MUSHROOM_MYCOLOGIST` per rank, before the happiness factor ([[features/mushrooms]]); each chunk's daily burrow chance + `BURROW_DAY_MYCOLOGIST` per rank ([[features/burrow]]) |
 | `bulk-up` | **Bulk up** | 3 | | hand and slot stack limits + `BULK_UP_STEP` raw, + `BULK_UP_CRAFTED_STEP` processed, per rank ([[features/inventory]]) |
 | `machinery` | **Machinery** | 3 | `unlock-grinder` | machines that run on time work + `MACHINE_PCT` % faster per rank (`machineMul`, [[features/machines]]) |
 | `driving-classes` | **Driving classes** | 3 | `unlock-vehicles` | vehicles + `DRIVE_PCT` % top speed and acceleration, − 5% fuel use per rank ([[features/vehicles]]) |
@@ -60,7 +60,7 @@ Percentages add per rank; they do not compound.
 
 ### Standing
 
-The panel's header shows two bars that belong to the farm, not to a skill: **Reputation** (from contracts, [[features/contracts]]) and **Luck**, the `lucky` rank out of its maximum (`luckOf`).
+The panel's header shows one bar that belongs to the farm, not to a skill: **Reputation** (from contracts, [[features/contracts]]).
 
 ## Screen
 
@@ -79,7 +79,7 @@ Saved: `family.owned` (skill and rank) and `points`. Skill `Modifier`s are rebui
 
 ## Art
 
-Skill icons `src/assets/skills/skill-{id}.svg`, one per skill for every rank; `skill-point.svg`, `skill-unknown.svg`, `skill-locked.svg`; standing icons `stat-reputation.svg`, `stat-luck.svg` ([[art/svg]]).
+Skill icons `src/assets/skills/skill-{id}.svg`, one per skill for every rank; `skill-point.svg`, `skill-unknown.svg`, `skill-locked.svg`; standing icon `stat-reputation.svg` ([[art/svg]]). `skill-mycologist.svg` is a Fly agaric with a Truffle at its foot.
 
 ## Invariants
 
@@ -90,7 +90,7 @@ Skill icons `src/assets/skills/skill-{id}.svg`, one per skill for every rank; `s
 | `family.jam-rot` | `jam` slows the loss of freshness below `JAM_ROT_FRESH` by `JAM_ROT` × rank | `family.test.ts` |
 | `family.grafting` | chopping drops `CHOP_GRAFTS` grafts only with `grafting`; wood always | `family.test.ts` |
 | `family.specialty` | `specialty` raises Named and Heirloom jam, spirit, wine and cider | `family.test.ts` |
-| `family.lucky` | `lucky` is one skill with three ranks; Luck is its rank, capped at `LUCK_CAP` | `skills.test.ts` |
+| `family.mycologist` | `mycologist` is one skill with three ranks under `boots`, no research; its description names the Rain mushroom chance at half happiness and both daily burrow chances for that rank | `skills.test.ts` |
 | `family.better-set` | `better-*` exists for potato, wheat, tomato, raspberry and grape only | `skills.test.ts` |
 
 ## When you change this

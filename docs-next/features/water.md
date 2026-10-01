@@ -72,7 +72,11 @@ A tap has no tank. It joins a network at any corner and fills buckets at `TAP_RA
 
 ### Pot still
 
-A Pot still joins a network like a tap. It starts a batch only if the network's tanks hold `STILL_WATER` litres, and takes them at the start ([[items/buildings/still]]).
+A Pot still joins a network like a tap. It starts a batch only if the network's tanks hold the load's water, `STILL_WATER` litres for a load of fruit or `STILL_SPRAY_WATER` for a load of Rotten produce, and takes them at the start ([[items/buildings/still]]).
+
+## Almanac
+
+**Water** tab: an Overview, then one card page each for the Pump, Well, Tap, Pipe and Valve, and one page for the three sprinklers ([[features/almanac]]).
 
 ## Screen
 

@@ -13,7 +13,14 @@ import {
   type BurrowEntry,
   type BurrowRarity,
 } from '../defs/burrow.ts'
-import { MUSHROOM_CHANCE, MUSHROOM_DAYS, MUSHROOM_TRUFFLE } from '../defs/mushroom.ts'
+import {
+  MUSHROOM_CHANCE,
+  MUSHROOM_DAYS,
+  MUSHROOM_HAPPY_MAX,
+  MUSHROOM_HAPPY_MIN,
+  MUSHROOM_MYCOLOGIST,
+  MUSHROOM_TRUFFLE,
+} from '../defs/mushroom.ts'
 import { WEATHER_KINDS, WEATHER_NAME } from '../defs/weather.ts'
 import { CROP_NAME, CROPS, varietyName } from '../defs/crops.ts'
 import {
@@ -59,6 +66,7 @@ import {
   counterArt,
   cropInner,
   daySensorArt,
+  DIRT,
   EXPAND_LAND,
   SKILL_POINT,
   faceGfx,
@@ -68,11 +76,6 @@ import {
   lampArt,
   leverArt,
   logicArt,
-  PIPE_I,
-  PIPE_L,
-  PIPE_STUB,
-  PIPE_T,
-  PIPE_X,
   PROP_NOT,
   pulserArt,
   ripeGroup,
@@ -87,7 +90,21 @@ import {
 import { CalloutHover } from './callout-hover.tsx'
 import { Coin, Label, Overlay, tabSelectClass, tabSelectListClass, tabTriggerClass } from './frame.tsx'
 import { useCycle } from './cycle.ts'
-import { MACHINE_IDS, recipesUsing, type MachineId, type Recipe } from '../sim/feature-machines/recipe.ts'
+import {
+  BAG_FACES,
+  BAG_IDS,
+  BLUE,
+  BROWN,
+  CardPane,
+  GREEN,
+  MACHINE_LOOK,
+  MACHINE_TAB_IDS,
+  MachineCard,
+  PipePane,
+  Portrait,
+  type MachineLook,
+} from './almanac-cards.tsx'
+import { MACHINE_IDS, recipesMaking, recipesUsing, type MachineId, type Recipe } from '../sim/feature-machines/recipe.ts'
 import { Recipes } from './recipe.tsx'
 
 type AlmanacTab = 'fruits' | 'utility' | 'water' | 'machines' | 'vehicles' | 'sensors' | 'concepts' | 'misc'
@@ -102,7 +119,6 @@ type ConceptId =
   | 'skills'
   | 'family'
   | 'research'
-  | 'luck'
   | 'burrow'
   | 'mushrooms'
   | 'infusion'
@@ -207,6 +223,7 @@ const LISTS: { readonly [K in AlmanacTab]: readonly ListItem[] } = {
     ...['chest', 'freezer', 'silo-seed', 'silo-spray', 'silo-produce'].map(sku),
   ],
   water: [
+    overview,
     ...['pumpjack', 'well', 'tap', 'pipe', 'valve'].map(sku),
     forms(() => m.names_building_sprinkler(), ['sprinkler', 'sprinkler-vert', 'sprinkler-large']),
   ],
@@ -214,9 +231,7 @@ const LISTS: { readonly [K in AlmanacTab]: readonly ListItem[] } = {
     overview,
     ...['grinder', 'mill', 'jam', 'still', 'barrel', 'infuser', 'compost-box', 'furnace', 'station', 'sorter'].map(sku),
   ],
-  vehicles: [
-    ...['hangar', 'refuel', 'dispatch', 'traffic-light'].map(sku),
-  ],
+  vehicles: [overview, ...['hangar', 'refuel', 'dispatch', 'traffic-light'].map(sku)],
   sensors: [
     overview,
     heading(() => m.almanac_group_signal()),
@@ -234,7 +249,6 @@ const LISTS: { readonly [K in AlmanacTab]: readonly ListItem[] } = {
     heading(() => m.almanac_group_family()),
     ...(['family', 'skills', 'research'] as const).map(concept),
     heading(() => m.almanac_group_other()),
-    concept('luck'),
     concept('burrow'),
     concept('mushrooms'),
     concept('infusion'),
@@ -248,7 +262,8 @@ const LISTS: { readonly [K in AlmanacTab]: readonly ListItem[] } = {
     heading(() => m.almanac_group_compostable()),
     sku('weed'),
     forms(() => m.names_ground_grass(), ['grass', 'grass-seeds']),
-    ...['rotten', 'dead', 'wood', 'ash', 'fly-agaric', 'truffle'].map(sku),
+    forms(() => m.almanac_forms_rotten(), ['rotten', 'rotten-root', 'dead']),
+    ...['wood', 'ash', 'fly-agaric', 'truffle'].map(sku),
   ],
 }
 
@@ -262,7 +277,6 @@ const CONCEPT_LABEL: { readonly [K in ConceptId]: () => string } = {
   skills: () => m.almanac_concept_skills(),
   family: () => m.family_title(),
   research: () => m.names_role_research(),
-  luck: () => m.almanac_concept_luck(),
   burrow: () => m.almanac_concept_burrow(),
   mushrooms: () => m.almanac_concept_mushrooms(),
   infusion: () => m.almanac_concept_infusion(),
@@ -281,7 +295,7 @@ const TABS: { id: AlmanacTab; label: () => string }[] = [
 
 const CROP_IDS: readonly GrownCrop[] = PLANT_CROPS
 
-type Tip = { title: string; recipe: Recipe } | undefined
+type Tip = { title: string; recipes: readonly Recipe[] } | undefined
 
 const AlmanacGo = createContext<(to: AlmanacNav) => void>(() => {
   throw new Error('AlmanacLink')
@@ -380,12 +394,12 @@ export function Almanac({ world, onClose }: { world: World; onClose: () => void 
         tip !== undefined ? (
           <CalloutHover
             title={tip.title}
-            description={
-              <>
-                <RecipeSale recipe={tip.recipe} />
-                <Recipes view={{ kind: 'one', recipe: tip.recipe }} size="sm" world={world} />
-              </>
-            }
+            description={tip.recipes.map((recipe, i) => (
+              <Fragment key={i}>
+                <RecipeSale recipe={recipe} />
+                <Recipes view={{ kind: 'one', recipe }} size="sm" world={world} />
+              </Fragment>
+            ))}
           />
         ) : undefined
       }
@@ -493,7 +507,7 @@ function RowPane({
     case 'sku':
       return <Pane entry={skuEntry(byId, row.id)} done={done} familiarity={familiarity} tab={tab} world={world} />
     case 'forms':
-      return <FormsPane title={row.title()} entries={row.ids.map(id => skuEntry(byId, id))} tab={tab} />
+      return <FormCards title={row.title()} entries={row.ids.map(id => skuEntry(byId, id))} />
     case 'tools':
       return <ToolPane title={row.title()} family={row.family} byId={byId} world={world} />
   }
@@ -516,9 +530,11 @@ function overviewBody(tab: AlmanacTab) {
       return <SensorsOverview />
     case 'machines':
       return <MachinesOverview />
-    case 'utility':
-    case 'water':
     case 'vehicles':
+      return <VehiclesOverview />
+    case 'water':
+      return <WaterOverview />
+    case 'utility':
     case 'concepts':
     case 'misc':
       throw new Error(tab)
@@ -625,6 +641,64 @@ function MachinesOverview() {
   )
 }
 
+function VehiclesOverview() {
+  return (
+    <>
+      <div>{m.almanac_vehicles_p1()}</div>
+      <div>
+        {m.almanac_vehicles_p2_a()}
+        <AlmanacLink to={{ tab: 'vehicles', id: 'hangar' }}>{m.names_building_hangar()}</AlmanacLink>
+        {m.almanac_vehicles_p2_b()}
+      </div>
+      <div>
+        {m.almanac_vehicles_p3_a()}
+        <AlmanacLink to={{ tab: 'vehicles', id: 'refuel' }}>{m.names_building_refuel()}</AlmanacLink>
+        {m.almanac_vehicles_p3_b()}
+      </div>
+      <div>
+        {m.almanac_vehicles_p4_a()}
+        <AlmanacLink to={{ tab: 'vehicles', id: 'dispatch' }}>{m.names_sensor_dispatch()}</AlmanacLink>
+        {m.almanac_vehicles_p4_b()}
+      </div>
+      <div>
+        {m.almanac_see()}
+        <AlmanacLink to={{ tab: 'vehicles', id: 'hangar' }}>{m.names_building_hangar()}</AlmanacLink>
+        {m.almanac_comma()}
+        <AlmanacLink to={{ tab: 'vehicles', id: 'refuel' }}>{m.names_building_refuel()}</AlmanacLink>
+        {m.almanac_and()}
+        <AlmanacLink to={{ tab: 'sensors', id: 'overview' }}>{m.almanac_sensors_overview_link()}</AlmanacLink>
+        {m.almanac_period()}
+      </div>
+    </>
+  )
+}
+
+function WaterOverview() {
+  return (
+    <>
+      <div>{m.almanac_water_p1()}</div>
+      <div>{m.almanac_water_p2()}</div>
+      <div>{m.almanac_water_p3()}</div>
+      <div>{m.almanac_water_p4()}</div>
+      <div>
+        {m.almanac_see()}
+        <AlmanacLink to={{ tab: 'water', id: 'pumpjack' }}>{m.names_building_pump()}</AlmanacLink>
+        {m.almanac_comma()}
+        <AlmanacLink to={{ tab: 'water', id: 'well' }}>{m.names_building_well()}</AlmanacLink>
+        {m.almanac_comma()}
+        <AlmanacLink to={{ tab: 'water', id: 'tap' }}>{m.names_building_tap()}</AlmanacLink>
+        {m.almanac_comma()}
+        <AlmanacLink to={{ tab: 'water', id: 'pipe' }}>{m.names_building_pipe()}</AlmanacLink>
+        {m.almanac_comma()}
+        <AlmanacLink to={{ tab: 'water', id: 'valve' }}>{m.names_building_valve()}</AlmanacLink>
+        {m.almanac_and()}
+        <AlmanacLink to={{ tab: 'water', id: 'sprinkler' }}>{m.names_building_sprinkler()}</AlmanacLink>
+        {m.almanac_period()}
+      </div>
+    </>
+  )
+}
+
 function ConceptPane({ id, rules }: { id: ConceptId; rules: Rules }) {
   return (
     <>
@@ -654,8 +728,6 @@ function conceptBody(id: ConceptId, rules: Rules) {
       return <FamilyConcept />
     case 'research':
       return <ResearchConcept />
-    case 'luck':
-      return <LuckConcept />
     case 'burrow':
       return <BurrowConcept />
     case 'mushrooms':
@@ -775,11 +847,11 @@ function HappinessConcept() {
       </div>
       <div>
         {m.almanac_happy_p4_a()}
-        <AlmanacLink to={{ tab: 'misc', id: 'dead' }}>{m.almanac_dead_plant()}</AlmanacLink>
+        <AlmanacLink to={{ tab: 'misc', id: 'rotten' }}>{m.almanac_dead_plant()}</AlmanacLink>
         {m.almanac_happy_p4_b()}
         <AlmanacLink to={{ tab: 'misc', id: 'rotten' }}>{m.almanac_rotten_produce()}</AlmanacLink>
         {m.almanac_happy_p4_c()}
-        <AlmanacLink to={{ tab: 'misc', id: 'dead' }}>{m.almanac_dead_plant()}</AlmanacLink>
+        <AlmanacLink to={{ tab: 'misc', id: 'rotten' }}>{m.almanac_dead_plant()}</AlmanacLink>
         {m.almanac_happy_p4_d()}
         <AlmanacLink to={{ tab: 'concepts', id: 'freshness' }}>{m.almanac_loses_freshness()}</AlmanacLink>
         {m.almanac_happy_p4_e()}
@@ -988,19 +1060,6 @@ function ResearchConcept() {
   )
 }
 
-function LuckConcept() {
-  return (
-    <>
-      <div>{m.almanac_luck_p1()}</div>
-      <div>
-        {m.almanac_see()}
-        <AlmanacLink to={{ tab: 'concepts', id: 'skills' }}>{m.almanac_concept_skills()}</AlmanacLink>
-        {m.almanac_period()}
-      </div>
-    </>
-  )
-}
-
 function BurrowConcept() {
   return (
     <>
@@ -1018,42 +1077,59 @@ const RARITY_NAME: { readonly [K in BurrowRarity]: () => string } = {
   rare: () => m.names_rarity_rare(),
 }
 
-type EntryCard = { caption: string; arts: readonly string[] }
+type EntryCard = { caption: string; arts: readonly string[]; fill: string }
 
-function oneCard(face: Face): EntryCard {
-  return { caption: faceName(face), arts: [itemInner(face)] }
+const ENTRY_SLOT: { readonly [K in BurrowEntry['kind']]: { order: number; fill: string } } = {
+  seeds: { order: 0, fill: BROWN },
+  'tree-seed': { order: 1, fill: BROWN },
+  weed: { order: 2, fill: BROWN },
+  'fly-agaric': { order: 2, fill: BROWN },
+  truffle: { order: 2, fill: BROWN },
+  treasure: { order: 3, fill: BLUE },
+  permit: { order: 3, fill: BLUE },
+  tool: { order: 4, fill: BLUE },
+  'special-tool': { order: 4, fill: BLUE },
+  'skill-point': { order: 4, fill: BLUE },
+}
+
+function oneCard(face: Face, fill: string): EntryCard {
+  return { caption: faceName(face), arts: [itemInner(face)], fill }
 }
 
 function entryCard(entry: BurrowEntry): EntryCard {
+  const fill = ENTRY_SLOT[entry.kind].fill
   switch (entry.kind) {
     case 'treasure':
       return {
         caption: m.almanac_caption_treasure({ min: entry.min, max: entry.max }),
         arts: [itemInner({ kind: 'treasure', coins: entry.min })],
+        fill,
       }
     case 'seeds':
       return {
         caption: m.almanac_caption_seeds({ tier: tierLabel(tierOf(entry.pool[0].variety)) }),
         arts: entry.pool.map(p => itemInner({ kind: 'seeds', crop: p.crop, variety: p.variety, quality: 0, count: entry.count })),
+        fill,
       }
     case 'tree-seed':
       return {
         caption: m.almanac_caption_tree_seed({ tier: tierLabel(tierOf(entry.pool[0].variety)) }),
         arts: entry.pool.map(p => itemInner({ kind: 'tree-seed', tree: p.tree, variety: p.variety, quality: 0 })),
+        fill,
       }
     case 'weed':
-      return oneCard({ kind: 'weed', count: WEED_LOOT_COUNT })
+      return oneCard({ kind: 'weed', count: WEED_LOOT_COUNT }, fill)
     case 'fly-agaric':
-      return oneCard({ kind: 'fly-agaric', count: AGARIC_LOOT_COUNT })
+      return oneCard({ kind: 'fly-agaric', count: AGARIC_LOOT_COUNT }, fill)
     case 'truffle':
-      return oneCard({ kind: 'truffle', count: TRUFFLE_LOOT_COUNT })
+      return oneCard({ kind: 'truffle', count: TRUFFLE_LOOT_COUNT }, fill)
     case 'skill-point':
-      return { caption: m.almanac_caption_skill_point(), arts: [SKILL_POINT] }
+      return { caption: m.almanac_caption_skill_point(), arts: [SKILL_POINT], fill }
     case 'tool':
     case 'special-tool':
-      return { caption: m.almanac_caption_tool(), arts: entry.pool.map(tool => itemInner(toolItem(tool, uses => uses))) }
+      return { caption: m.almanac_caption_tool(), arts: entry.pool.map(tool => itemInner(toolItem(tool, uses => uses))), fill }
     case 'permit':
-      return { caption: m.market_expansion_permit(), arts: [EXPAND_LAND] }
+      return { caption: m.market_expansion_permit(), arts: [EXPAND_LAND], fill }
   }
 }
 
@@ -1064,9 +1140,11 @@ function BurrowCard() {
         <div key={rarity} className="w-fit rounded-lg border-2 border-ink/25 px-2 pb-2">
           <Label>{RARITY_NAME[rarity]()}</Label>
           <div className="flex gap-2">
-            {BURROW_ENTRIES[rarity].map((entry, i) => (
-              <EntryPortrait key={i} card={entryCard(entry)} />
-            ))}
+            {BURROW_ENTRIES[rarity]
+              .toSorted((a, b) => ENTRY_SLOT[a.kind].order - ENTRY_SLOT[b.kind].order)
+              .map((entry, i) => (
+                <EntryPortrait key={i} card={entryCard(entry)} />
+              ))}
           </div>
         </div>
       ))}
@@ -1077,7 +1155,7 @@ function BurrowCard() {
 function EntryPortrait({ card }: { card: EntryCard }) {
   const art = card.arts[useCycle(card.arts.length)]
   return (
-    <Portrait caption={card.caption} fill="bg-dirt-dark">
+    <Portrait caption={card.caption} fill={card.fill}>
       <svg className="h-16 w-16" viewBox="0 0 24 24" dangerouslySetInnerHTML={{ __html: art }} />
     </Portrait>
   )
@@ -1101,11 +1179,20 @@ function MushroomsConcept() {
     <>
       <div>{m.almanac_mushrooms_p1()}</div>
       <div className="flex gap-2">
-        <EntryPortrait card={oneCard({ kind: 'fly-agaric', count: 1 })} />
-        <EntryPortrait card={oneCard({ kind: 'truffle', count: 1 })} />
+        <EntryPortrait card={oneCard({ kind: 'fly-agaric', count: 1 }, BROWN)} />
+        <EntryPortrait card={oneCard({ kind: 'truffle', count: 1 }, BROWN)} />
       </div>
-      <div>{m.almanac_mushrooms_p2()}</div>
-      <ShareGrid rows={WEATHER_KINDS.map(k => ({ key: k, label: WEATHER_NAME[k](), share: MUSHROOM_CHANCE[k] }))} />
+      <div>{m.almanac_mushrooms_p2({ skill: SKILLS.mycologist.name })}</div>
+      <div className="grid w-fit grid-cols-[auto_auto_auto] gap-x-6">
+        {WEATHER_KINDS.map(k => (
+          <Fragment key={k}>
+            <div>{WEATHER_NAME[k]()}</div>
+            <div className="text-right">{m.almanac_pct({ n: Math.round(MUSHROOM_CHANCE[k] * 100) })}</div>
+            <div className="text-right">{m.almanac_mushrooms_rank({ n: Math.round(MUSHROOM_MYCOLOGIST[k] * 100) })}</div>
+          </Fragment>
+        ))}
+      </div>
+      <div>{m.almanac_mushrooms_happy({ max: MUSHROOM_HAPPY_MAX, min: MUSHROOM_HAPPY_MIN })}</div>
       <div>{m.almanac_mushrooms_p3()}</div>
       <ShareGrid rows={VARIETY_TIERS.map(t => ({ key: t, label: tierLabel(t), share: MUSHROOM_TRUFFLE[t] }))} />
       <div>{m.almanac_mushrooms_p4({ days: MUSHROOM_DAYS })}</div>
@@ -1151,18 +1238,41 @@ function InfusionConcept() {
   )
 }
 
-const PIPE_JOINS = [PIPE_STUB, PIPE_I, PIPE_L, PIPE_T, PIPE_X] as const
-
 const SILO_IDS: readonly string[] = ['silo-seed', 'silo-spray', 'silo-produce']
 
-function CardPane({ entry, fill }: { entry: CatalogEntry; fill: string }) {
+function FormCards({ title, entries }: { title: string; entries: CatalogEntry[] }) {
+  const blurbs = [...new Set(entries.map(e => e.blurb))]
+  return (
+    <>
+      <div className="mb-2 text-lg leading-relaxed text-ink">{title}</div>
+      <div className="flex flex-col gap-4">
+        {blurbs.map(blurb => (
+          <div key={blurb}>
+            <p className="mb-4 text-base leading-relaxed text-ink/75">{blurb}</p>
+            <div className="flex flex-wrap gap-3">
+              {entries
+                .filter(e => e.blurb === blurb)
+                .map(e => (
+                  <Portrait key={e.id} caption={e.title} fill={skuFill(e.id)}>
+                    <svg className="h-16 w-16" viewBox="0 0 24 24" dangerouslySetInnerHTML={{ __html: itemInner(e.icon) }} />
+                  </Portrait>
+                ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
+  )
+}
+
+function MachinePane({ entry, look, world }: { entry: CatalogEntry; look: MachineLook; world: World }) {
+  const machine = MACHINE_IDS.find(x => x === entry.id)
   return (
     <>
       <div className="mb-2 text-lg leading-relaxed text-ink">{entry.title}</div>
       <p className="mb-4 text-base leading-relaxed text-ink/75">{entry.blurb}</p>
-      <Portrait caption={entry.title} fill={fill}>
-        <svg className="h-16 w-16" viewBox="0 0 24 24" dangerouslySetInnerHTML={{ __html: itemInner(entry.icon) }} />
-      </Portrait>
+      <MachineCard key={entry.id} look={look} />
+      {machine !== undefined && <MachineRecipes machine={machine} world={world} />}
     </>
   )
 }
@@ -1253,7 +1363,7 @@ const SENSOR_PAGE: { readonly [K in SensorId]: SensorPage } = {
 function SensorCard({ states }: { states: readonly SensorState[] }) {
   const state = states[useCycle(states.length)]
   return (
-    <Portrait caption={state.caption()} fill="bg-grass">
+    <Portrait caption={state.caption()} fill={GREEN}>
       <svg className="h-16 w-16" viewBox="0 0 24 24" dangerouslySetInnerHTML={{ __html: state.art }} />
     </Portrait>
   )
@@ -1277,16 +1387,19 @@ function SensorPane({ entry, page }: { entry: CatalogEntry; page: SensorPage }) 
   )
 }
 
-function skuFill(tab: AlmanacTab, id: string): string {
-  if (id === 'sugar' || id === 'ash') return 'bg-water'
-  if (tab === 'water' || tab === 'machines' || tab === 'vehicles' || tab === 'sensors') return 'bg-grass'
-  if (id === 'chest' || id === 'freezer' || id === 'necronomicon') return 'bg-grass'
-  return 'bg-dirt-dark'
+const MADE_IDS: readonly string[] = ['sugar', 'extract', 'ash']
+
+const GROWN_IDS: readonly string[] = ['soil', 'weed', 'grass', 'grass-seeds', 'rotten', 'rotten-root', 'dead', 'wood', 'fly-agaric', 'truffle']
+
+function skuFill(id: string): string {
+  if (MADE_IDS.includes(id)) return BLUE
+  if (GROWN_IDS.includes(id)) return BROWN
+  return GREEN
 }
 
-function Plate({ entry, tab }: { entry: CatalogEntry; tab: AlmanacTab }) {
+function Plate({ entry }: { entry: CatalogEntry }) {
   return (
-    <div className={`flex h-20 w-20 items-center justify-center ${skuFill(tab, entry.id)}`}>
+    <div className={`flex h-20 w-20 items-center justify-center ${skuFill(entry.id)}`}>
       <svg className="h-16 w-16" viewBox="0 0 24 24" dangerouslySetInnerHTML={{ __html: itemInner(entry.icon) }} />
     </div>
   )
@@ -1310,44 +1423,24 @@ function Pane({
   const crop = CROP_IDS.find(id => id === entry.id)
   if (crop !== undefined) return <CropPane key={crop} crop={crop} n={familiarity[crop]} done={done} rules={world.rules} />
   if (entry.id === 'pipe') return <PipePane title={entry.title} blurb={entry.blurb} />
-  if (SILO_IDS.includes(entry.id)) return <CardPane entry={entry} fill="bg-grass" />
+  if (SILO_IDS.includes(entry.id)) return <CardPane entry={entry} fill={GREEN} art={itemInner(entry.icon)} />
+  if (tab === 'misc') return <CardPane entry={entry} fill={skuFill(entry.id)} art={entry.id === 'soil' ? DIRT[0] : itemInner(entry.icon)} />
+  if (tab === 'water') return <CardPane entry={entry} fill={GREEN} art={itemInner(entry.icon)} />
+  const bag = BAG_IDS.find(id => id === entry.id)
+  if (bag !== undefined) return <BagPane entry={entry} faces={BAG_FACES[bag]} />
   const sensor = SENSOR_IDS.find(id => id === entry.id)
   if (sensor !== undefined) return <SensorPane key={sensor} entry={entry} page={SENSOR_PAGE[sensor]} />
+  const shown = MACHINE_TAB_IDS.find(id => id === entry.id)
+  if (shown !== undefined) return <MachinePane entry={entry} look={MACHINE_LOOK[shown]} world={world} />
   const machine = MACHINE_IDS.find(m => m === entry.id)
   return (
     <>
       <div className="mb-3 text-lg leading-relaxed text-ink">{entry.title}</div>
       <div className="mb-3">
-        <Plate entry={entry} tab={tab} />
+        <Plate entry={entry} />
       </div>
       <div className="text-base leading-relaxed text-ink">{entry.blurb}</div>
       {machine !== undefined && <MachineRecipes machine={machine} world={world} />}
-    </>
-  )
-}
-
-function FormsPane({ title, entries, tab }: { title: string; entries: CatalogEntry[]; tab: AlmanacTab }) {
-  const blurbs = [...new Set(entries.map(e => e.blurb))]
-  return (
-    <>
-      <div className="mb-3 text-lg leading-relaxed text-ink">{title}</div>
-      <div className="flex flex-col gap-4">
-        {blurbs.map(blurb => (
-          <div key={blurb}>
-            <div className="mb-2 flex flex-wrap gap-3">
-              {entries
-                .filter(e => e.blurb === blurb)
-                .map(e => (
-                  <div key={e.id} className="flex w-20 flex-col gap-1">
-                    <Plate entry={e} tab={tab} />
-                    <div className="text-sm leading-tight text-ink">{e.title}</div>
-                  </div>
-                ))}
-            </div>
-            <div className="text-base leading-relaxed text-ink">{blurb}</div>
-          </div>
-        ))}
-      </div>
     </>
   )
 }
@@ -1361,20 +1454,32 @@ function MachineRecipes({ machine, world }: { machine: MachineId; world: World }
   )
 }
 
-function PipePane({ title, blurb }: { title: string; blurb: string }) {
-  const stage = useCycle(PIPE_JOINS.length)
+function BagPane({ entry, faces }: { entry: CatalogEntry; faces: readonly Face[] }) {
   return (
     <>
-      <div className="mb-3 text-lg leading-relaxed text-ink">{title}</div>
-      <div className="mb-3 flex h-20 w-20 items-center justify-center bg-grass">
-        <svg
-          className="h-16 w-16"
-          viewBox="0 0 24 24"
-          dangerouslySetInnerHTML={{ __html: PIPE_JOINS[stage] }}
-        />
+      <div className="mb-2 text-lg leading-relaxed text-ink">{entry.title}</div>
+      <p className="mb-4 text-base leading-relaxed text-ink/75">{entry.blurb}</p>
+      <div className="flex flex-wrap gap-3">
+        {faces.map(face => (
+          <MadeCard key={faceName(face)} face={face} fill={skuFill(entry.id)} />
+        ))}
       </div>
-      <div className="text-base leading-relaxed text-ink">{blurb}</div>
     </>
+  )
+}
+
+function MadeCard({ face, fill }: { face: Face; fill: string }) {
+  const setTip = useContext(AlmanacTip)
+  const recipes = recipesMaking(face)
+  return (
+    <div
+      onPointerEnter={() => setTip(recipes.length === 0 ? undefined : { title: faceName(face), recipes })}
+      onPointerLeave={() => setTip(undefined)}
+    >
+      <Portrait caption={faceName(face)} fill={fill}>
+        <svg className="h-16 w-16" viewBox="0 0 24 24" dangerouslySetInnerHTML={{ __html: itemInner(face) }} />
+      </Portrait>
+    </div>
   )
 }
 
@@ -1575,18 +1680,6 @@ function varietyLabel(variety: VarietyId): string {
   return variety === 'base' ? m.almanac_variety_plain() : varietyName(variety)
 }
 
-function Portrait({ caption, fill, children }: { caption: string; fill: string; children: ReactNode }) {
-  return (
-    <div
-      className={`relative flex h-32 w-24 shrink-0 items-start justify-center overflow-hidden rounded-lg border-2 border-ink/25 pt-3 shadow-sm shadow-ink/15 ${fill}`}
-    >
-      {children}
-      <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-ink/75 to-transparent px-1 pt-5 pb-1.5 text-center text-sm leading-tight font-semibold text-white">
-        {caption}
-      </div>
-    </div>
-  )
-}
 
 function PlantGrowing({ crop, variety }: { crop: GrownCrop; variety: VarietyId }) {
   const stage = STAGES[useCycle(STAGES.length)]
@@ -1677,7 +1770,7 @@ function CropShell({
       <div className="mb-2 text-lg leading-relaxed text-ink">{CROP_NAME[crop]()}</div>
       <p className="mb-4 text-base leading-relaxed text-ink/75">{CROPS[crop].desc()}</p>
       <div className="mb-4 flex flex-wrap items-center gap-3">
-        <Portrait caption={m.almanac_caption_fruit()} fill="bg-dirt-dark">
+        <Portrait caption={m.almanac_caption_fruit()} fill={BROWN}>
           <svg className="h-16 w-16" viewBox="0 0 24 24" dangerouslySetInnerHTML={{ __html: faceGfx(fruit(variety)) }} />
         </Portrait>
         <Portrait caption={m.almanac_caption_growing()} fill={ground}>
@@ -1730,7 +1823,7 @@ function CropPane({ crop, n, done, rules }: { crop: GrownCrop; n: number; done: 
       crop={crop}
       n={n}
       done={done}
-      ground="bg-dirt-dark"
+      ground={BROWN}
       growing={v => <PlantGrowing crop={crop} variety={v} />}
       lines={v => plantLines(crop, v, n, rules)}
     />
@@ -1743,7 +1836,7 @@ function TreePane({ tree, n, done, rules }: { tree: TreeId; n: number; done: Alm
       crop={tree}
       n={n}
       done={done}
-      ground="bg-grass"
+      ground={GREEN}
       growing={v => <TreeGrowing tree={tree} variety={v} />}
       lines={v => treeLines(tree, v, n, rules)}
     />
@@ -1808,7 +1901,7 @@ function ToolPane({ title, family, byId, world }: { title: string; family: ToolF
         {ids.map(id => {
           const entry = skuEntry(byId, id)
           return (
-            <Portrait key={id} caption={entry.title} fill="bg-dirt-dark">
+            <Portrait key={id} caption={entry.title} fill={BLUE}>
               <svg className="h-16 w-16" viewBox="0 0 24 24" dangerouslySetInnerHTML={{ __html: itemInner(entry.icon) }} />
             </Portrait>
           )
@@ -1885,8 +1978,8 @@ function ProductPortrait({ recipe }: { recipe: Recipe }) {
   const setTip = useContext(AlmanacTip)
   const face = yieldFace(recipe)
   return (
-    <div onPointerEnter={() => setTip({ title: faceName(face), recipe })} onPointerLeave={() => setTip(undefined)}>
-      <Portrait caption={faceName(face)} fill="bg-water">
+    <div onPointerEnter={() => setTip({ title: faceName(face), recipes: [recipe] })} onPointerLeave={() => setTip(undefined)}>
+      <Portrait caption={faceName(face)} fill={BLUE}>
         <svg className="h-16 w-16" viewBox="0 0 24 24" dangerouslySetInnerHTML={{ __html: faceGfx(face) }} />
       </Portrait>
     </div>

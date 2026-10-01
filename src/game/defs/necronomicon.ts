@@ -12,6 +12,7 @@ export const NECRO_CROP = 20
 export const NECRO_ASH = 66
 export const NECRO_GOLD = 666
 export const NECRO_AGARIC = 3
+export const NECRO_PAGE_POINT = 1
 
 export const NECRO_RESEARCH: ResearchId = 'unlock-necronomicon'
 

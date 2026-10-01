@@ -4,9 +4,15 @@ import type { VarietyId } from './varieties.ts'
 export const BURROW_MUL = 3
 export const BURROW_START_N = 3
 export const BURROW_START_R = 8
-export const LUCK_CAP = 10
 
-export const BURROW_DAY_CHANCE = 0.75
+export type BurrowLand = 'start' | 'other'
+
+export const BURROW_DAY_CHANCE: { readonly [K in BurrowLand]: number } = { start: 0.66, other: 0.33 }
+export const BURROW_DAY_MYCOLOGIST: { readonly [K in BurrowLand]: number } = { start: 0.03, other: 0.11 }
+
+export function burrowDayChance(land: BurrowLand, rank: number): number {
+  return BURROW_DAY_CHANCE[land] + BURROW_DAY_MYCOLOGIST[land] * rank
+}
 
 export const BURROW_DIST_FULL = 32
 export const BURROW_UNCOMMON_BASE = 10
@@ -20,10 +26,10 @@ export const BURROW_RARE_DAYS = 10
 export const BURROW_RARE_DAYS_FULL = 64
 export const BURROW_RARE_MAX = 50
 
-export const BURROW_TREASURE_MIN = 10
-export const BURROW_TREASURE_MAX = 150
-export const BURROW_TREASURE_UNCOMMON_MIN = 70
-export const BURROW_TREASURE_UNCOMMON_MAX = 140
+export const BURROW_TREASURE_MIN = 20
+export const BURROW_TREASURE_MAX = 60
+export const BURROW_TREASURE_UNCOMMON_MIN = 50
+export const BURROW_TREASURE_UNCOMMON_MAX = 100
 export const BURROW_SPECIAL_SHARE = 0.2
 export const SEED_BASE_COUNT = 2
 export const SEED_VARIANT_COUNT = 1

@@ -15,7 +15,6 @@ import {
   SILO_W,
   JAM_BUFFER,
   JAM_IN,
-  STILL_CAP,
   FURNACE_BREAD_IN,
   FURNACE_CAP,
   FURNACE_NEED,
@@ -62,6 +61,8 @@ import {
   sameInfusable,
   stationAccept,
   stillCropOf,
+  stillNeed,
+  stillUnits,
 } from './feature-machines/machine.ts'
 import { aoe, type Edge, type Sprinkler, type Vertex } from './pipe.ts'
 import { CASK_OF, CROP_OF_CASK, CROP_OF_SPIRIT, SENSOR_CELL_SKUS } from './ids.ts'
@@ -1015,14 +1016,18 @@ export function grindLook(g: Grinder, hand: Hand): string {
 
 export function stillLook(still: PotStill, hand: Hand): string {
   const name = m.names_building_still()
-  const n = feedUnits(still.feed)
+  const n = stillUnits(still.load)
+  const cap = stillNeed(still.load)
   if (still.progress > 0) return labeled(name, m.prompt_working_pct({ n: Math.floor(still.progress * 100) }))
-  if (hand.kind === 'hold' && stillCropOf(hand.item) === undefined && fruitCrop(hand.item) !== undefined) {
-    return labeled(name, m.prompt_still_feed())
+  if (hand.kind === 'hold') {
+    const rotten = hand.item.kind === 'rotten'
+    const crop = stillCropOf(hand.item) !== undefined
+    if (!rotten && !crop && fruitCrop(hand.item) !== undefined) return labeled(name, m.prompt_still_feed())
+    if ((rotten && still.load.kind === 'spirit') || (crop && still.load.kind === 'spray')) return m.prompt_still_lock()
+    if ((rotten || crop) && still.accept(hand.item) === 0) return labeled(name, m.prompt_full())
   }
-  if (n === STILL_CAP && hand.kind === 'hold' && stillCropOf(hand.item) !== undefined) return labeled(name, m.prompt_full())
-  if (n === STILL_CAP) return labeled(name, m.prompt_n_cap_needs_water({ n, cap: STILL_CAP }))
-  return labeled(name, m.prompt_n_cap({ n, cap: STILL_CAP }))
+  if (n === cap) return labeled(name, m.prompt_n_cap_needs_water({ n, cap }))
+  return labeled(name, m.prompt_n_cap({ n, cap }))
 }
 
 export function barrelLook(barrel: Barrel, hand: Hand): string {

@@ -16,8 +16,12 @@ import {
   MILL_VANILLA_OUT,
   STILL_CAP,
   STILL_SECONDS,
+  STILL_SPRAY_IN,
+  STILL_SPRAY_SECONDS,
+  STILL_SPRAY_WATER,
   STILL_WATER,
   SUGAR_BAG,
+  WEED_SPRAY_BAG,
 } from '../../defs/items.ts'
 import { ANNUAL_IDS, BARREL_CROPS, JAM_CROPS, MILL_RECIPES, PLANT_CROPS, STILL_CROPS, TREE_IDS, type GrownCrop, type JamCrop, type MillRecipe } from '../ids.ts'
 import { tierOf, VARIETIES, type VarietyId } from '../../defs/varieties.ts'
@@ -66,7 +70,7 @@ describe('recipes.table', () => {
   test('row counts follow the collapsed products, not the variety count', () => {
     expect(recipesOf('mill').length).toBe(MILL_RECIPES.length)
     expect(recipesOf('jam').length).toBe(8)
-    expect(recipesOf('still').length).toBe(STILL_CROPS.length + 2)
+    expect(recipesOf('still').length).toBe(STILL_CROPS.length + 3)
     expect(recipesOf('barrel').length).toBe(BARREL_CROPS.length * 2)
     expect(recipesOf('grinder').length).toBe(2)
     expect(recipesOf('compost-box').length).toBe(5)
@@ -118,13 +122,15 @@ describe('recipes.table', () => {
     expect(JAM_CROPS).not.toContain('apple')
   })
 
-  test('every still recipe carries water and a full charge', () => {
+  test('every still recipe carries water and a full charge: fruit rows `STILL_CAP` with `STILL_WATER` in `STILL_SECONDS`; one Weed spray row, `STILL_SPRAY_IN` Rotten produce with `STILL_SPRAY_WATER` in `STILL_SPRAY_SECONDS`', () => {
+    const spray = (r: Recipe) => r.out.kind === 'exact' && r.out.face.kind === 'weed-spray'
     recipesOf('still').forEach(r => {
-      expect(litersOf(r.inputs)).toEqual([STILL_WATER])
-      expect(unitsOf(r.inputs[0])).toBe(STILL_CAP)
+      expect(litersOf(r.inputs)).toEqual([spray(r) ? STILL_SPRAY_WATER : STILL_WATER])
+      expect(unitsOf(r.inputs[0])).toBe(spray(r) ? STILL_SPRAY_IN : STILL_CAP)
       expect(r.inputs[1]).toMatchObject({ kind: 'one', face: { kind: 'water' } })
-      expect(r.duration).toEqual({ kind: 'fixed', seconds: STILL_SECONDS })
+      expect(r.duration).toEqual({ kind: 'fixed', seconds: spray(r) ? STILL_SPRAY_SECONDS : STILL_SECONDS })
     })
+    expect(recipesOf('still').filter(spray)).toHaveLength(1)
   })
 
   test('`machines.jam-sugar` — Sugar is per jar: `san-marzano` none, tomato twice a jam, everything else `JAM_SUGAR`. A jar at 0 carries no sugar input.', () => {
@@ -265,13 +271,13 @@ describe('recipes.state', () => {
 
   test('a full still with no progress is thirsty', () => {
     const still = new PotStill(BASE)
-    still.feed = [{ crop: 'potato', variety: 'base', quality: 0, count: STILL_CAP }]
+    still.load = { kind: 'spirit', feed: [{ crop: 'potato', variety: 'base', quality: 0, count: STILL_CAP }] }
     expect(craftState(still, 1).kind).toBe('thirsty')
   })
 
   test('a running still pins to its spirit', () => {
     const still = new PotStill(BASE)
-    still.feed = [{ crop: 'potato', variety: 'base', quality: 0, count: STILL_CAP }]
+    still.load = { kind: 'spirit', feed: [{ crop: 'potato', variety: 'base', quality: 0, count: STILL_CAP }] }
     still.progress = 0.5
     const craft = craftState(still, 1)
     expect(craft.kind).toBe('working')
@@ -283,16 +289,33 @@ describe('recipes.state', () => {
 
   test('a mixed still pins to the mixed row', () => {
     const still = new PotStill(BASE)
-    still.feed = [
-      { crop: 'potato', variety: 'base', quality: 0, count: 5 },
-      { crop: 'wheat', variety: 'base', quality: 0, count: 5 },
-    ]
+    still.load = {
+      kind: 'spirit',
+      feed: [
+        { crop: 'potato', variety: 'base', quality: 0, count: 5 },
+        { crop: 'wheat', variety: 'base', quality: 0, count: 5 },
+      ],
+    }
     still.progress = 0.5
     const craft = craftState(still, 1)
     expect(craft.kind === 'working' && craft.recipe.out).toMatchObject({
       kind: 'exact',
       face: { kind: 'spirit', spirit: 'mixed' },
     })
+  })
+
+  test('a still of Rotten produce pins to the Weed spray row and fills to `STILL_SPRAY_IN`', () => {
+    const still = new PotStill(BASE)
+    still.load = { kind: 'spray', count: 2 }
+    expect(craftState(still, 1)).toMatchObject({ kind: 'filling', have: 2, need: STILL_SPRAY_IN })
+    still.load = { kind: 'spray', count: STILL_SPRAY_IN }
+    still.progress = 0.5
+    const craft = craftState(still, 1)
+    expect(craft.kind === 'working' && craft.recipe.out).toMatchObject({
+      kind: 'exact',
+      face: { kind: 'weed-spray', liters: WEED_SPRAY_BAG },
+    })
+    expect(craft.kind === 'working' && craft.left).toBeCloseTo(STILL_SPRAY_SECONDS * 0.5)
   })
 
   test('jam short on sugar points at the sugar input; Passata never waits on sugar', () => {
@@ -350,7 +373,7 @@ describe('recipes.haste', () => {
     expect(hasted.kind === 'working' && hasted.left).toBeCloseTo(millWork('wheat') / (1.1 * 1.2))
 
     const still = new PotStill(BASE)
-    still.feed = [{ crop: 'potato', variety: 'base', quality: 0, count: STILL_CAP }]
+    still.load = { kind: 'spirit', feed: [{ crop: 'potato', variety: 'base', quality: 0, count: STILL_CAP }] }
     still.progress = 0.5
     const distilled = craftState(still, 1.1)
     expect(distilled.kind === 'working' && distilled.left).toBeCloseTo(STILL_SECONDS * 0.5)

@@ -1,4 +1,3 @@
-import { STILL_WATER } from '../../defs/items.ts'
 import { compactSlots, insertSlots, slotsCouldTake, type Item, type Slot } from '../item.ts'
 import { frontOfBase, type Coord, type RectBase, type Sorter } from '../building.ts'
 import { isPlot } from '../plot.ts'
@@ -38,12 +37,12 @@ export function emitProduct(w: World, base: RectBase, item: Item): boolean {
   return true
 }
 
-export function pullStillWater(w: World, still: { base: RectBase }): boolean {
+export function pullStillWater(w: World, still: { base: RectBase }, liters: number): boolean {
   const net = w.netOfCell(still.base)
   if (net === undefined) return false
   const held = net.sources.reduce((n, s) => n + s.stored, 0)
-  if (held < STILL_WATER) return false
-  w.pullWater(net.sources, STILL_WATER)
+  if (held < liters) return false
+  w.pullWater(net.sources, liters)
   return true
 }
 

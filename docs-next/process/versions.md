@@ -2,7 +2,7 @@
 
 Applies to: the orchestrator, when a task asks for a version number or release notes.
 
-2.9.4
+2.10.5
 
 The only version number in `docs-next/`. Every other note `[[process/versions]]`. Never write another version literal.
 

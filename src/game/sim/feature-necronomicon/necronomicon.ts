@@ -5,6 +5,7 @@ import {
   NECRO_ASH,
   NECRO_CROP,
   NECRO_GOLD,
+  NECRO_PAGE_POINT,
   PAGES,
   PAGE_IDS,
   SUPPER_VARIETY,
@@ -173,6 +174,7 @@ export function ritualBody(w: World): void {
   const ready = PAGE_IDS.filter(id => pageOpen(w, book, id) && !pageDone(book, id) && pageFull(book, id))
   if (ready.length === 0) return
   ready.forEach(id => book.done.push(id))
+  w.grantPoints(NECRO_PAGE_POINT * ready.length)
   w.ping()
 }
 

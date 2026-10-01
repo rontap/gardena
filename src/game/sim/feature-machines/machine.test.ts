@@ -24,6 +24,9 @@ import {
   SPIRIT_SALE,
   STILL_CAP,
   STILL_SECONDS,
+  STILL_SPRAY_IN,
+  STILL_SPRAY_SECONDS,
+  WEED_SPRAY_BAG,
   FAMILIARITY_GAIN,
   stationSeconds,
   STATION_SECONDS_BASE,
@@ -50,6 +53,8 @@ import {
   jamSale,
   millAccept,
   stillAccept,
+  stillProduct,
+  stillUnits,
   furnaceAccept,
   furnaceCoveringCells,
   furnaceMul,
@@ -251,7 +256,7 @@ describe('machines', () => {
       item: { kind: 'fruit', crop: 'potato', variety: 'base', quality: 0, count: 12, unitSale: 5, freshness: 1, cut: false },
     }
     ticks(w, BIG_TICK)
-    expect(still.feed.reduce((n, f) => n + f.count, 0)).toBe(STILL_CAP)
+    expect(stillUnits(still.load)).toBe(STILL_CAP)
     expect(sc.slots[0].kind === 'hold' && sc.slots[0].item.kind === 'fruit' && sc.slots[0].item.count).toBe(2)
     const boxAt = { col: AT.col, row: AT.row + 10 }
     const box = new CompostBox({ shape: 'rect', col: boxAt.col, row: boxAt.row, w: 1, h: 1 })
@@ -503,7 +508,7 @@ describe('machines.furnace-haste', () => {
     expect(mill.progress).toBeCloseTo((DT_MAX * (1 + FURNACE_HASTE)) / millWork('wheat'))
     const stillAt = { col: 8, row: 18 }
     const still = new PotStill({ shape: 'rect', col: stillAt.col, row: stillAt.row, w: 2, h: 1 })
-    still.feed = [{ crop: 'potato', variety: 'base', quality: 0, count: STILL_CAP }]
+    still.load = { kind: 'spirit', feed: [{ crop: 'potato', variety: 'base', quality: 0, count: STILL_CAP }] }
     still.progress = 0.01
     w.setCell(stillAt, still)
     w.setCell({ col: stillAt.col + 1, row: stillAt.row }, still)
@@ -771,7 +776,7 @@ describe('machines.variety-lock', () => {
 
     const still = new PotStill(CELL)
     expect(stillAccept(still, fruitOf('wheat', 'red-fife', 3))).toBe(3)
-    still.feed = [{ crop: 'wheat', variety: 'red-fife', quality: 0, count: 3 }]
+    still.load = { kind: 'spirit', feed: [{ crop: 'wheat', variety: 'red-fife', quality: 0, count: 3 }] }
     expect(stillAccept(still, fruitOf('wheat', 'base', 3))).toBe(3)
 
     const furnace = new Furnace(CELL)
@@ -1278,6 +1283,43 @@ describe('machines.tick-self', () => {
     expect(w.skuPrice('buy-research-station')).toBe(base + STATION_PRICE_STEP)
     w.setCell({ col: AT.col + 3, row: AT.row }, new ResearchStation({ shape: 'rect', col: AT.col + 3, row: AT.row, w: 1, h: 1 }))
     expect(w.skuPrice('buy-research-station')).toBe(base + 2 * STATION_PRICE_STEP)
+  })
+})
+
+describe('still.spray', () => {
+  test('`STILL_SPRAY_IN` Rotten produce with `STILL_SPRAY_WATER` L of water make one `WEED_SPRAY_BAG` L bag of Weed spray in `STILL_SPRAY_SECONDS`; a load is fruit or Rotten produce, not both.', () => {
+    const rotten = (count: number): Item => ({ kind: 'rotten', cls: 'root', count, createdAt: 1 })
+    const still = new PotStill(CELL)
+    expect(stillAccept(still, rotten(STILL_SPRAY_IN + 2))).toBe(STILL_SPRAY_IN)
+    still.apply(rotten(2), 2)
+    expect(still.load).toEqual({ kind: 'spray', count: 2 })
+    expect(stillAccept(still, fruitOf('potato', 'base', 3))).toBe(0)
+    expect(stillAccept(still, rotten(STILL_SPRAY_IN))).toBe(STILL_SPRAY_IN - 2)
+    const fruit = new PotStill(CELL)
+    fruit.apply(fruitOf('potato', 'base', 3), 3)
+    expect(stillAccept(fruit, rotten(1))).toBe(0)
+    expect(stillProduct({ kind: 'spray', count: STILL_SPRAY_IN })).toEqual({
+      kind: 'weed-spray',
+      liters: WEED_SPRAY_BAG,
+      capacityLiters: WEED_SPRAY_BAG,
+    })
+
+    const w = new World(1)
+    const at = { col: 8, row: 18 }
+    const s = new PotStill({ shape: 'rect', col: at.col, row: at.row, w: 2, h: 1 })
+    s.load = { kind: 'spray', count: STILL_SPRAY_IN }
+    s.progress = 0.01
+    w.setCell(at, s)
+    w.setCell({ col: at.col + 1, row: at.row }, s)
+    const east = machineEast(s.base)
+    const chest = new Chest({ shape: 'rect', col: east.col, row: east.row, w: 1, h: 1 })
+    w.setCell(east, chest)
+    w.tick(DT_MAX)
+    expect(s.progress - 0.01).toBeCloseTo(DT_MAX / STILL_SPRAY_SECONDS)
+    s.progress = 1 - 1e-9
+    w.tick(DT_MAX)
+    expect(s.load).toEqual({ kind: 'empty' })
+    expect(chest.slots[0]).toEqual({ kind: 'hold', item: { kind: 'weed-spray', liters: WEED_SPRAY_BAG, capacityLiters: WEED_SPRAY_BAG } })
   })
 })
 

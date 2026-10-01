@@ -18,6 +18,14 @@ One per crop class: **Rotten {class}**. Stacks merge only with the same class; m
 
 Rotten produce on the ground is removed at the end of the day once it has lain there for `ROTTEN_GROUND_DAYS`.
 
+## Use
+
+The Compost box and the Furnace take it. `STILL_SPRAY_IN` of any crop class make one Weed spray bag in a [[items/buildings/still]].
+
+## Almanac
+
+**Miscellaneous** tab, one page with [[items/other/dead-plant]] (`almanac_forms_rotten`): one shared description (`catalog_rotten_dead`) and one card each for Rotten produce (the fruit class), Rotten root and Dead plant, in a row (`FormCards`).
+
 ## Selling
 
 Refused until `unlock-fermentation` is researched. After that, Drop off at the Produce Warehouse pays 1 coin per unit, by hand or from a vehicle. Skills and the price drop do not apply (`World.clearance`).

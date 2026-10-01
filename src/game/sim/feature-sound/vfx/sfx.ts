@@ -12,10 +12,12 @@ white.getChannelData(0).forEach((_v, i, a) => {
 })
 
 // One layer of a sound. `at` and `len` are seconds from the start of the sound, `rise` its attack, `vol` its peak gain.
-// `hz` moves to `to` over `len`: the filter on white noise, the pitch on a tone. `len` stays under one second.
+// `hz` moves to `to` over `len`: the filter on white noise, the pitch on a tone. A noise `len` stays under one second.
+// `saw` is a sawtooth held at `hz`, detuned by `cents`, through a low-pass at `cut`.
 export type Layer =
   | { kind: 'noise'; at: number; len: number; rise: number; vol: number; band: BiquadFilterType; hz: number; to: number; q: number }
   | { kind: 'tone'; at: number; len: number; rise: number; vol: number; wave: OscillatorType; hz: number; to: number }
+  | { kind: 'saw'; at: number; len: number; rise: number; vol: number; hz: number; cents: number; cut: number }
 
 export function armEffects(): void {
   void ctx.resume()
@@ -53,6 +55,19 @@ function source(l: Layer, now: number): AudioScheduledSourceNode {
     osc.frequency.setValueAtTime(l.hz, t)
     osc.frequency.exponentialRampToValueAtTime(l.to, t + l.len)
     osc.connect(envelope(t, l))
+    osc.start(t)
+    osc.stop(t + l.len)
+    return osc
+  }
+  if (l.kind === 'saw') {
+    const osc = ctx.createOscillator()
+    osc.type = 'sawtooth'
+    osc.frequency.value = l.hz
+    osc.detune.value = l.cents
+    const f = ctx.createBiquadFilter()
+    f.type = 'lowpass'
+    f.frequency.value = l.cut
+    osc.connect(f).connect(envelope(t, l))
     osc.start(t)
     osc.stop(t + l.len)
     return osc

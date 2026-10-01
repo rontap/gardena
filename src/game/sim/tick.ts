@@ -186,6 +186,7 @@ export function tickWorld(world: World, dt: number): void {
     world.recapUnseen.push(recap.day)
     world.grantPoints(pointsForEndedDay(world.clock.day - 1))
     world.clock.banner = 4
+    world.cue({ kind: 'day' })
     world.seam = { kind: 'play' }
     world.tally = { died: 0, harvests: 0, research: [], contracts: [] }
     if (world.done.has('unlock-contracts') && world.contracts.takenToday.length === 0) addRep(world, -world.hard.repIdle)

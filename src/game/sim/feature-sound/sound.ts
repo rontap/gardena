@@ -10,7 +10,7 @@ import { farmMusic } from './music/index.ts'
 import { soundKey, type OnceFn, type SoundCue } from './sound.h.ts'
 import { VOLUME_DEFAULT } from '../settings.ts'
 import { armAudio, holdAudio, musicGain } from './sound.utils.ts'
-import { actHit, actOnce, burrowOnce, clickOnce, closeOnce, noticeOnce, openOnce } from './vfx/index.ts'
+import { actHit, actOnce, burrowOnce, clickOnce, closeOnce, dayOnce, missedOnce, noticeOnce, openOnce, soldOnce } from './vfx/index.ts'
 import { armEffects, effectsGain, holdEffects } from './vfx/sfx.ts'
 
 type Count = { n: number }
@@ -73,6 +73,9 @@ function onceOf(c: SoundCue) {
   if (c.kind === 'open') return openOnce(c.building)
   if (c.kind === 'close') return closeOnce(c.building)
   if (c.kind === 'machine') return machineOnce(c.machine)
+  if (c.kind === 'day') return dayOnce()
+  if (c.kind === 'contract-missed') return missedOnce()
+  if (c.kind === 'sold') return soldOnce()
   return noticeOnce(c)
 }
 

@@ -20,7 +20,7 @@ State and burst effects are frame animations from `src/assets/vfx/`. Flow is not
 
 ## Frames
 
-A `vfx-` file draws its frames as sibling groups `f0` … `fN`; the atlas makes one texture per frame. Exactly one frame is drawn at a time, cut, not blended: interpolating pixel art blurs it. A `VfxDef` has 2, 3 or 4 frames (the `def` signature allows only those), rest slots with no frame so a cycle can pause (`slots`), the cycle length in seconds (`dur`), its size, and its anchor: `vertex` centres it on a tile corner (sprinklers, exhaust), `cell` puts its origin at the tile's corner.
+A `vfx-` file draws its frames as sibling groups `f0` … `fN`; the atlas makes one texture per frame. Exactly one frame is drawn at a time, cut, not blended: interpolating pixel art blurs it. A `VfxDef` has 2, 3, 4, 6 or 8 frames (the `def` signature allows only those; `VFX_FRAMES` in `ids.ts` is the frame index type), rest slots with no frame so a cycle can pause (`slots`), the cycle length in seconds (`dur`), its size, and its anchor: `vertex` centres it on a tile corner (sprinklers, exhaust), `cell` puts its origin at the tile's corner.
 
 All instances of a state effect share one phase. A burst runs its frames once and fades over its last 30%.
 
@@ -33,12 +33,14 @@ All instances of a state effect share one phase. A burst runs its frames once an
 | `steam` | state | a Pot still is working |
 | `brew`, `age` | state | a Barrel is working: `brew` before `BARREL_MATURE`, `age` after; never both |
 | `grind` | state | a Grinder is working |
-| `station` | state | a research station is working |
+| `station`, `station-lights` | state | a Crop Variety Station is working: `station` on the screen in the west tile; `station-lights` on the three lights in the east tile, two green and one blue, the blue stepping west to east with a dimmer step between lights, six frames (`stationStateVfx`) |
+| `compost` | state | a Compost box is working (`compostWorking`): brown particles rise from the lid into the tile north of the box and fade, six frames, drawn from that north tile at 24 × 48 (`compostStateVfx`) |
 | `furnace`, `furnace-smoke` | state | a Furnace is working: fire at the opening in the south tile, smoke from the chimney in the north tile |
 | `exhaust` | state | a Tractor moves at `SMOKE_SPEED` or faster, drawn behind it; Quads do not smoke |
 | `dig` | state | a gardener's head job is `shovel` with work left |
 | `graft` | state | a gardener's head job is `graft` with work left |
 | `pour` | burst | a **Water** job finished |
+| `pour-green` | burst | a **Spray** or **Pour extract** job finished: the `pour` frames with the liquid in `leaf` green instead of `water` blue |
 | `tend` | burst | a **Tend** job finished |
 | `burrow-pop` | burst | a burrow is dug out |
 
@@ -54,6 +56,10 @@ A spray does not sweep: four frames cannot turn an arc without flicker. Droplets
 
 With **Reduced motion** on, or the system's reduced-motion setting ([[menu]]), `vfxReduced()` is true, read on every call: state effects show frame 0 and do not animate, bursts are not shown, flow shows its first position. Nothing is saved.
 
+## Outside the map
+
+The Almanac's machine cards play a machine's working effects over its art ([[features/almanac]]). There the frames are SVG from `atlasHtml`, each in a `vfx-frame` group whose CSS animation `vfx-cut-{slots}` shows it for one slot of the cycle; `src/index.css` holds those keyframes for 2, 4, 6 and 8 slots. Reduced motion shows frame 0 there too.
+
 ## Rules
 
 - A state effect is drawn only while its state is true; an idle machine has no sprite.
@@ -63,7 +69,8 @@ With **Reduced motion** on, or the system's reduced-motion setting ([[menu]]), `
 
 ## When you change this
 
-- A new effect: a `vfx-{id}.svg` with frame groups, an entry in `VFX`, its `VfxId`, and the condition in `layers/vfx.ts` or a `World.burst` at the outcome.
+- A new effect: a `vfx-{id}.svg` with frame groups, an entry in `VFX`, its `VfxId`, its file and frame count in `atlas.ts`, its file in `VFX_FILE` and a pair in `PAIRS` for `#atlas` (`atlas-view.tsx`), and the condition in `layers/vfx.ts` or a `World.burst` at the outcome.
+- A machine's working effect: also its `MACHINE_LOOK` in the Almanac, and a `vfx-cut-{slots}` keyframe if no effect has used that slot count before.
 - A machine's working state: the same `*Working` function drives the effect and the machine's sound cue ([[systems/sound]]).
 
 ## Decisions

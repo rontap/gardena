@@ -51,6 +51,7 @@
   "skills_jam_name": "Still good for jam",
   "skills_jam_blurb": "Fruit below half freshness rots slower. Each rank adds {pct}%.",
   "skills_jam_skillblurb": "Fruit below half freshness rots {pct}% slower.",
-  "skills_lucky_name": "Lucky",
-  "skills_lucky_blurb": "Lucky has no effect yet. Its rank shows as Luck at the top of Family."
+  "skills_mycologist_name": "Mycologist",
+  "skills_mycologist_blurb": "Grown trees get mushrooms more often, and new burrows appear on your land more often. Each rank raises both.",
+  "skills_mycologist_skillblurb": "After a day of Rain, a grown tree at half happiness gets a mushroom {rain}% of the time. Overnight, the land you started with gets a new burrow {start}% of the time, and every other piece of land you own {other}%."
 }

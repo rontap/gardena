@@ -3,6 +3,8 @@ import type { CropId, ResearchId, SkillId } from '../sim/ids.ts'
 import {BULK_UP_CRAFTED_STEP, BULK_UP_STEP, STACK_MAX, STACK_MAX_CRAFTED} from './items.ts'
 import {BETTER_QUALITY} from './varieties.ts'
 import {HAPPY_MAX} from './crops.ts'
+import {mushroomChance} from './mushroom.ts'
+import {burrowDayChance} from './burrow.ts'
 
 export const TEND_WORK = 0.7
 
@@ -22,7 +24,7 @@ export const SKILL_IDS: readonly SkillId[] = [
     'better-grape',
     'better-raspberry',
     'grafting',
-    'lucky',
+    'mycologist',
     'bulk-up',
     'driving-classes',
     'machinery',
@@ -83,7 +85,7 @@ export type SkillEffect =
     | { kind: 'better'; crop: CropId; saleMul: number }
     | { kind: 'jam' }
     | { kind: 'grafting' }
-    | { kind: 'lucky' }
+    | { kind: 'mycologist' }
     | { kind: 'seed-bank' }
 
 export type SkillDef = {
@@ -174,7 +176,7 @@ export const SKILLS: { readonly [K in SkillId]: SkillDef } = {
         {kind: 'research', id: 'unlock-raspberry'},
     ),
     grafting: row('grafting', m.skills_grafting_name(), m.skills_grafting_blurb(), 1, 'boots', {kind: 'grafting'}),
-    lucky: row('lucky', m.skills_lucky_name(), m.skills_lucky_blurb(), 3, 'boots', {kind: 'lucky'}),
+    mycologist: row('mycologist', m.skills_mycologist_name(), m.skills_mycologist_blurb(), 3, 'boots', {kind: 'mycologist'}),
     'bulk-up': row(
         'bulk-up',
         m.skills_bulk_up_name(),
@@ -303,6 +305,12 @@ export function skillBlurb(id: SkillId, tier: number): string {
             return m.skills_seed_bank_skillblurb({pct: Math.round(seedBankQuality(tier) * 100)})
         case 'jam':
             return m.skills_jam_skillblurb({pct: JAM_PCT * tier})
+        case 'mycologist':
+            return m.skills_mycologist_skillblurb({
+                rain: Math.round(mushroomChance('rain', tier, HAPPY_MAX / 2) * 100),
+                start: Math.round(burrowDayChance('start', tier) * 100),
+                other: Math.round(burrowDayChance('other', tier) * 100),
+            })
         default:
             return SKILLS[id].blurb
     }

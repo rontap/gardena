@@ -197,6 +197,13 @@ body,
   100% { opacity: 0 }
 }
 
+@keyframes vfx-cut-6 {
+  0% { opacity: 1 }
+  16.66% { opacity: 1 }
+  16.67% { opacity: 0 }
+  100% { opacity: 0 }
+}
+
 @keyframes vfx-cut-8 {
   0% { opacity: 1 }
   12.49% { opacity: 1 }
@@ -252,6 +259,25 @@ body,
 
 [data-reduced-motion] .vfx-frame[data-vfx-i='0'] {
   opacity: 1;
+}
+
+.bar-sweep {
+  animation: bar-sweep 1s linear infinite;
+}
+
+@keyframes bar-sweep {
+  from { transform: translateX(-100%) }
+  to { transform: translateX(250%) }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bar-sweep {
+    display: none;
+  }
+}
+
+[data-reduced-motion] .bar-sweep {
+  display: none;
 }
 
 /* Sprinkler output slider. `--fill` is the share of the track already poured. */

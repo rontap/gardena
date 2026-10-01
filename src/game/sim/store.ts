@@ -329,6 +329,7 @@ export function sellAllBody(world: World): number {
   world.money += quote.paid
   world.clearance = 0
   world.emit('sold')
+  world.cue({ kind: 'sold' })
   return quote.paid
 }
 

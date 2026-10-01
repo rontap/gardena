@@ -20,7 +20,7 @@ describe('meter', () => {
     expect(meterOf(mill, 1, 1)).toEqual({ show: false })
 
     const still = new PotStill(BASE)
-    still.feed = [{ crop: 'potato', variety: 'base', quality: 0, count: STILL_CAP }]
+    still.load = { kind: 'spirit', feed: [{ crop: 'potato', variety: 'base', quality: 0, count: STILL_CAP }] }
     expect(meterOf(still, 1, 1)).toEqual({ show: false })
     still.progress = 0.5
     expect(meterOf(still, 1, 1)).toEqual({ show: true, t: 0.5 })

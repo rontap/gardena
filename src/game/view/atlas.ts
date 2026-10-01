@@ -9,11 +9,12 @@ import type {
   TileId,
   TrailerKind,
   TreeId,
+  VfxFrame,
   VfxId,
 } from '../sim/ids.ts'
 import type { SeatId } from '../sim/world.ts'
 import type { Sensor } from '../sim/sensor.ts'
-import { PLANT_CROPS, TREE_IDS, type GrownCrop } from '../sim/ids.ts'
+import { PLANT_CROPS, TREE_IDS, VFX_FRAMES, type GrownCrop } from '../sim/ids.ts'
 import { ripeGroup, fruitGroup, jamArt, spiritArt, varietyGroup, graftSpecies, type JamArt, type SpiritArt, type VarietyGroup } from './svgs.ts'
 import { EDGE_PAD } from './camera.ts'
 import type { Item } from '../sim/item.ts'
@@ -220,6 +221,7 @@ import sprayLarge from '../../assets/vfx/vfx-spray-large.svg?raw'
 import sprayVert from '../../assets/vfx/vfx-spray-vert.svg?raw'
 import tend from '../../assets/vfx/vfx-tend.svg?raw'
 import pour from '../../assets/vfx/vfx-pour.svg?raw'
+import pourGreen from '../../assets/vfx/vfx-pour-green.svg?raw'
 import brew from '../../assets/vfx/vfx-brew.svg?raw'
 import dust from '../../assets/vfx/vfx-dust.svg?raw'
 import steam from '../../assets/vfx/vfx-steam.svg?raw'
@@ -230,6 +232,8 @@ import graftVfx from '../../assets/vfx/vfx-graft.svg?raw'
 import ageVfx from '../../assets/vfx/vfx-age.svg?raw'
 import grindVfx from '../../assets/vfx/vfx-grind.svg?raw'
 import stationVfx from '../../assets/vfx/vfx-station.svg?raw'
+import stationLightsVfx from '../../assets/vfx/vfx-station-lights.svg?raw'
+import compostVfx from '../../assets/vfx/vfx-compost.svg?raw'
 import exhaustVfx from '../../assets/vfx/vfx-exhaust.svg?raw'
 import burrowPopVfx from '../../assets/vfx/vfx-burrow-pop.svg?raw'
 
@@ -396,7 +400,7 @@ export type AtlasKey =
   | 'flakes'
   | 'truffle-extract'
   | 'bread'
-  | `vfx-${VfxId}:f${0 | 1 | 2 | 3}`
+  | `vfx-${VfxId}:f${VfxFrame}`
 
 type PipeFitKey = 'pipe-stub' | 'pipe-i' | 'pipe-l' | 'pipe-t' | 'pipe-x'
 type FenceFitKey = 'fence-post' | 'fence-stub' | 'fence-i' | 'fence-l' | 'fence-t' | 'fence-x'
@@ -793,6 +797,7 @@ async function load(): Promise<void> {
     ['sprinkler-spray-vert', sprayVert, 2],
     ['tend', tend, 2],
     ['pour', pour, 2],
+    ['pour-green', pourGreen, 2],
     ['brew', brew, 4],
     ['dust', dust, 2],
     ['steam', steam, 4],
@@ -803,11 +808,12 @@ async function load(): Promise<void> {
     ['age', ageVfx, 4],
     ['grind', grindVfx, 4],
     ['station', stationVfx, 4],
+    ['station-lights', stationLightsVfx, 6],
+    ['compost', compostVfx, 6],
     ['exhaust', exhaustVfx, 4],
     ['burrow-pop', burrowPopVfx, 3],
   ] as const).forEach(([id, raw, n]) => {
-    const frames = [0, 1, 2, 3] as const
-    for (const i of frames) {
+    for (const i of VFX_FRAMES) {
       if (i >= n) break
       put(`vfx-${id}:f${i}`, raw, `f${i}`)
     }
@@ -841,7 +847,7 @@ export function atlasSize(key: AtlasKey): { w: number; h: number } {
   return d
 }
 
-export function vfxKey(id: VfxId, frame: 0 | 1 | 2 | 3): AtlasKey {
+export function vfxKey(id: VfxId, frame: VfxFrame): AtlasKey {
   return `vfx-${id}:f${frame}`
 }
 

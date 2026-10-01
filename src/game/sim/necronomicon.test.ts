@@ -9,6 +9,7 @@ import {
   NECRO_CROP,
   NECRO_GOLD,
   NECRO_H,
+  NECRO_PAGE_POINT,
   NECRO_SECONDS,
   NECRO_W,
   PAGES,
@@ -351,6 +352,18 @@ describe('necronomicon.ritual', () => {
     expect(pageOpen(w, book, 'gold')).toBe(true)
     ritualBody(w)
     expect(book.done).toEqual(['crop', 'early-fruit'])
+  })
+
+  test('Each page the ritual closes grants `NECRO_PAGE_POINT` skill points, and a ritual that closes nothing grants none.', () => {
+    const { w, book } = farm()
+    w.clock.t = DAY_SECONDS * 0.95
+    const before = w.points
+    book.cropCount = NECRO_CROP
+    EARLY_FRUIT.forEach(c => book.fruit.push(c))
+    ritualBody(w)
+    expect(w.points).toBe(before + 2 * NECRO_PAGE_POINT)
+    ritualBody(w)
+    expect(w.points).toBe(before + 2 * NECRO_PAGE_POINT)
   })
 
   test('A book with a full page raises one `necronomicon` notice carrying its own cells, and none while nothing is ready.', () => {

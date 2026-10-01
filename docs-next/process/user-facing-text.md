@@ -218,7 +218,7 @@ Titles of things you can buy, hold, or place: `skuLabel` / catalog `title`. Do n
 | shared spendable                           | Skill points                                                                                                 |
 | store buys its own stock back              | Auto-restock                                                                                                 |
 | contract standing                          | Reputation                                                                                                   |
-| what Lucky sets on a new burrow             | Luck                                                                                                         |
+| mushroom and burrow skill                  | Mycologist                                                                                                   | Lucky, Luck                                               |
 | keep the armed tool after a click          | Hold Shift                                                                                                   | XP, points                                                |
 | expansion chip                             | Expansion                                                                                                    | land token                                                |
 | expansion body                             | farm expansion opportunities                                                                                 | permits (plate: **No permit left**)                       |

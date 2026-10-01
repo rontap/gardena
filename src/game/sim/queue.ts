@@ -583,11 +583,12 @@ export function finishWork(world: World): void {
   }
   if (i.act === 'weed-spray') {
     field.doWeedSpray(world, i.at)
+    world.burst('pour-green', i.at)
     world.cue({ kind: 'act', act: 'weed-spray' })
   }
   if (i.act === 'extract') {
     field.doExtract(world, i.at)
-    world.burst('pour', i.at)
+    world.burst('pour-green', i.at)
     world.cue({ kind: 'act', act: 'extract' })
   }
   if (i.act === 'chop') {

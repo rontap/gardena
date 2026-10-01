@@ -93,6 +93,7 @@ const VFX_FILE: Record<VfxId, string> = {
   'sprinkler-spray-vert': 'vfx-spray-vert',
   tend: 'vfx-tend',
   pour: 'vfx-pour',
+  'pour-green': 'vfx-pour-green',
   brew: 'vfx-brew',
   dust: 'vfx-dust',
   steam: 'vfx-steam',
@@ -103,6 +104,8 @@ const VFX_FILE: Record<VfxId, string> = {
   age: 'vfx-age',
   grind: 'vfx-grind',
   station: 'vfx-station',
+  'station-lights': 'vfx-station-lights',
+  compost: 'vfx-compost',
   exhaust: 'vfx-exhaust',
   'burrow-pop': 'vfx-burrow-pop',
 }
@@ -122,11 +125,14 @@ const PAIRS: readonly Pair[] = [
   { look: { kind: 'file', file: 'prop-sprinkler-vert' }, vfx: 'sprinkler-spray-vert', dx: 0.5, dy: 0.5 },
   { look: { kind: 'file', file: 'tile-dirt-0' }, vfx: 'dig', dx: 0, dy: 0 },
   { look: { kind: 'file', file: 'tile-dirt-0' }, vfx: 'pour', dx: 0, dy: 0 },
+  { look: { kind: 'file', file: 'tile-dirt-0' }, vfx: 'pour-green', dx: 0, dy: 0 },
   { look: { kind: 'file', file: 'tile-grass-0' }, vfx: 'tend', dx: 0, dy: 0 },
   { look: { kind: 'file', file: 'prop-burrow' }, vfx: 'burrow-pop', dx: 0, dy: 0 },
   { look: { kind: 'group', file: 'prop-apple-tree', id: 'unripe' }, vfx: 'graft', dx: 0, dy: 1 },
   { look: { kind: 'file', file: 'prop-grinder' }, vfx: 'grind', dx: 0, dy: 0 },
   { look: { kind: 'group', file: 'prop-research-station', id: 'on' }, vfx: 'station', dx: 0, dy: 0 },
+  { look: { kind: 'group', file: 'prop-research-station', id: 'on' }, vfx: 'station-lights', dx: 1, dy: 0 },
+  { look: { kind: 'file', file: 'prop-compost-box' }, vfx: 'compost', dx: 0, dy: -1 },
   { look: { kind: 'file', file: 'prop-tractor' }, vfx: 'exhaust', dx: 0.5, dy: 0.5 },
 ]
 

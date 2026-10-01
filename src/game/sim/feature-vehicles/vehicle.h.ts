@@ -35,7 +35,7 @@ export type TrailerPose =
 export type SeedHopper = { kind: 'empty' } | { kind: 'hold'; item: Extract<Item, { kind: 'seeds' }> }
 export type SprayHopper =
   | { kind: 'empty' }
-  | { kind: 'hold'; item: Extract<Item, { kind: 'fertilizer' | 'compost' }> }
+  | { kind: 'hold'; item: Extract<Item, { kind: 'fertilizer' | 'compost' | 'weed-spray' }> }
 
 export type Vehicle =
   | {

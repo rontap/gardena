@@ -279,11 +279,10 @@ import skillHeirloom from '../../assets/skills/skill-heirloom.svg?raw'
 import skillBetter from '../../assets/skills/skill-better.svg?raw'
 import skillIndustrial from '../../assets/skills/skill-industrial.svg?raw'
 import skillJam from '../../assets/skills/skill-jam.svg?raw'
-import skillLucky from '../../assets/skills/skill-lucky.svg?raw'
+import skillMycologist from '../../assets/skills/skill-mycologist.svg?raw'
 import skillSeedBank from '../../assets/skills/skill-seed-bank.svg?raw'
 import skillPoint from '../../assets/skills/skill-point.svg?raw'
 import statReputation from '../../assets/skills/stat-reputation.svg?raw'
-import statLuck from '../../assets/skills/stat-luck.svg?raw'
 import portraitPlayer from '../../assets/skills/portrait-player.svg?raw'
 import portraitHusband from '../../assets/skills/portrait-husband.svg?raw'
 import portraitDaughter from '../../assets/skills/portrait-daughter.svg?raw'
@@ -954,7 +953,6 @@ export const SKILL_POINT = svgInner(skillPoint)
 export const SKILL_UNKNOWN = svgInner(skillUnknown)
 export const CHEAT_FAST_RESEARCH = svgInner(skillResearchSpeed)
 export const STAT_REPUTATION = svgInner(statReputation)
-export const STAT_LUCK = svgInner(statLuck)
 
 export const EXPAND_LAND = svgInner(uiResearchExpand)
 export const PORTRAIT: { readonly [K in MemberId]: string } = {
@@ -982,7 +980,7 @@ const SKILL_ART: { readonly [K in SkillId]: string } = {
   'better-grape': svgInner(skillBetter),
   industrial: svgInner(skillIndustrial),
   jam: svgInner(skillJam),
-  lucky: svgInner(skillLucky),
+  mycologist: svgInner(skillMycologist),
   'seed-bank': svgInner(skillSeedBank),
 }
 

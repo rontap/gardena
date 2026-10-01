@@ -76,7 +76,7 @@ describe('family.lens', () => {
 })
 
 describe('family.skills', () => {
-  test("One pool: `boots` `tending` `seed-bank` `better-wheat` `better-potato` `better-tomato` `better-grape` `better-raspberry` `grafting` `lucky` `bulk-up` `driving-classes` `machinery` `industrial` `inherit-land` `saleswoman` `jam` `heirloom` `specialty` `broker`; parent known/open as this note; research lock as this note; cap III on the I–III ids; hangar-buys are not `skuPrice`; drought ×2 on `seeds` | `utility`.", () => {
+  test("One pool: `boots` `tending` `seed-bank` `better-wheat` `better-potato` `better-tomato` `better-grape` `better-raspberry` `grafting` `mycologist` `bulk-up` `driving-classes` `machinery` `industrial` `inherit-land` `saleswoman` `jam` `heirloom` `specialty` `broker`; parent known/open as this note; research lock as this note; cap III on the I–III ids; hangar-buys are not `skuPrice`; drought ×2 on `seeds` | `utility`.", () => {
     expect([...SKILL_IDS]).toEqual([
       'boots',
       'tending',
@@ -87,7 +87,7 @@ describe('family.skills', () => {
       'better-grape',
       'better-raspberry',
       'grafting',
-      'lucky',
+      'mycologist',
       'bulk-up',
       'driving-classes',
       'machinery',
@@ -103,7 +103,7 @@ describe('family.skills', () => {
     expect(SKILLS.tending.parent).toBe('boots')
     expect(SKILLS['seed-bank'].parent).toBe('boots')
     expect(SKILLS.grafting.parent).toBe('boots')
-    expect(SKILLS.lucky.parent).toBe('boots')
+    expect(SKILLS.mycologist.parent).toBe('boots')
     expect(SKILLS['better-wheat'].parent).toBe('seed-bank')
     expect(SKILLS['bulk-up'].parent).toBe(null)
     expect(SKILLS['driving-classes'].parent).toBe('machinery')
@@ -130,7 +130,7 @@ describe('family.skills', () => {
     expect(SKILLS.industrial.maxTier).toBe(3)
     expect(SKILLS['bulk-up'].maxTier).toBe(3)
     expect(SKILLS.boots.maxTier).toBe(3)
-    expect(SKILLS.lucky.maxTier).toBe(3)
+    expect(SKILLS.mycologist.maxTier).toBe(3)
     expect(SKILLS.tending.maxTier).toBe(1)
     expect(SKILLS.grafting.maxTier).toBe(1)
     const w = new World(1)

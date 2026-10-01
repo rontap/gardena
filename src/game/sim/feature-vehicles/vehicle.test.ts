@@ -54,7 +54,7 @@ import type { Item } from '../item.ts'
 import { isSolid } from '../plot.ts'
 import { Plant, Weed } from '../plant.ts'
 import { HARDNESS } from '../../defs/rules.ts'
-import { FERT_PLOT_MAX, makeTreeSoil, Soil, TREE_FERT_MAX, TREE_WATER_MID } from '../soil.ts'
+import { FERT_PLOT_MAX, makeTreeSoil, Soil, TREE_FERT_MAX, TREE_WATER_MID, WEED_SPRAYED } from '../soil.ts'
 
 const WEED_CHANCE = HARDNESS.normal.weedChance
 import { CROPS } from '../../defs/crops.ts'
@@ -655,6 +655,33 @@ describe('vehicles II', () => {
     expect(t.hopper.item.liters).toBe(5 - TREE_FERT_MAX)
   })
 
+  test('Boom Weed spray: a weed, or a tilled plot with weed chance 0 or above, takes 1 L and is set to `WEED_SPRAYED` with the weed removed; a plot below 0 with no weed is skipped; fertilizer is unchanged.', () => {
+    const w = farm()
+    w.buyVehicle(AT, 'tractor')
+    w.buyTrailer(AT, 'spray')
+    w.deploy(1, AT, 1)
+    parkSwap(w)
+    w.seats[0].hand = { kind: 'hold', item: { kind: 'weed-spray', liters: 5, capacityLiters: 30 } }
+    w.swapTrailer(1, 0)
+    expect(trailerUsed(w.trailers[0])).toBe(5)
+    const at = { col: 11, row: 16 }
+    w.setCell(at, { kind: 'weed', soil: new Soil(1, 0, 0.03), weed: new Weed(0) })
+    w.seats[0].actor.x = fieldTractor(w).pose.x
+    w.seats[0].actor.y = fieldTractor(w).pose.y
+    w.embark(1)
+    aimBoom(w, at)
+    w.tick(DT_MAX)
+    const c = w.cell(at)
+    expect(c.kind).toBe('empty')
+    if (c.kind !== 'empty') throw new Error('empty')
+    expect(c.soil.weedChance).toBeCloseTo(WEED_SPRAYED, 3)
+    expect(c.soil.fertilizer).toBe(0)
+    expect(trailerUsed(w.trailers[0])).toBe(4)
+    aimBoom(w, at)
+    w.tick(DT_MAX)
+    expect(trailerUsed(w.trailers[0])).toBe(4)
+  })
+
   test('Boom harvest bands. ripe fruit, growing seed/destroy/late fruit, dead, rotten, weed.', () => {
     const w = farm()
     w.buyVehicle(AT, 'tractor')
@@ -1126,10 +1153,12 @@ describe('vehicles II', () => {
     w.buy('buy-still')
     w.confirmPlace(stillAt)
     const stillOut = w.padGoodsAt({ col: 20, row: 19 })
-    expect(padTypesOf(stillOut)).toEqual(['alcohol'])
+    expect(padTypesOf(stillOut)).toEqual(['alcohol', 'other'])
     expect(padGoodsOf(stillOut, 'alcohol')).toEqual(SPIRIT_KINDS)
-    expect(padTypesOf(w.padGoodsAt({ col: 20, row: 17 }))).toEqual(['fruit'])
+    expect(padGoodsOf(stillOut, 'other')).toEqual(['weed-spray'])
+    expect(padTypesOf(w.padGoodsAt({ col: 20, row: 17 }))).toEqual(['fruit', 'compostable'])
     expect(padGoodsOf(w.padGoodsAt({ col: 20, row: 17 }), 'fruit')).toEqual(STILL_CROPS)
+    expect(padGoodsOf(w.padGoodsAt({ col: 20, row: 17 }), 'compostable')).toEqual(['rotten'])
     w.buyVehicle(AT, 'quad')
     const v = w.vehicles[0]
     if (v.kind !== 'quad') return

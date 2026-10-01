@@ -368,7 +368,7 @@ describe('1.2 machines', () => {
     expect(a.base.col).toBe(10)
     expect(a.base.row).toBe(16)
     expect(w.stills).toContain(a)
-    a.feed = [{ crop: 'potato', variety: 'base', quality: 0, count: 10 }]
+    a.load = { kind: 'spirit', feed: [{ crop: 'potato', variety: 'base', quality: 0, count: 10 }] }
     a.progress = 0.5
     w.tick(DT_MAX)
     expect(a.progress).toBeGreaterThan(0.5)
@@ -689,9 +689,9 @@ describe('1.5.2', () => {
     expect(adj.weedChance).toBe(again)
   })
 
-  test("Item `{ kind: 'weed-spray'; liters; capacityLiters }`. `WEED_SPRAY_BAG`. Illegal: `liters` 0 as held (empty bag leaves the hand). `buy-weed-spray` utility, unlock and show `unlock-better-tools`. Additive store. Click a tilled plot: need `>= 1` L, spend 1 L, `weedChance = −1`. Work `SPRAY_WORK`. Not untilled. Not spray-trailer.", () => {
+  test("Item `{ kind: 'weed-spray'; liters; capacityLiters }`. `WEED_SPRAY_BAG`. Illegal: `liters` 0 as held (empty bag leaves the hand). `buy-weed-spray` utility, unlock and show `unlock-better-tools`. Additive store. Click a tilled plot: need `>= 1` L, spend 1 L, `weedChance = −1`. Work `SPRAY_WORK`. Not untilled.", () => {
     expect(WEED_SPRAY_BAG).toBe(30)
-    expect(SKUS['buy-weed-spray'].price).toBe(12)
+    expect(SKUS['buy-weed-spray'].price).toBe(16)
     const w = new World()
     w.done.add('unlock-better-tools')
     w.money = 50
@@ -938,7 +938,7 @@ describe('1.5.2', () => {
     expect(SHOVELS.shovel.uses).toBe(60)
     expect(SHOVELS['better-shovel'].uses).toBe(120)
     expect(WEED_SPRAY_BAG).toBe(30)
-    expect(SKUS['buy-weed-spray'].price).toBe(12)
+    expect(SKUS['buy-weed-spray'].price).toBe(16)
     expect(COMPOST_SECONDS).toBe(60)
     expect(PLANT_FERT_PER_SEC).toBe(0.00085)
     expect(WEED_FERT_PER_SEC).toBeCloseTo((1 / 240) * 0.6 * 0.9, 12)

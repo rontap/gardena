@@ -8,6 +8,7 @@ import { STALL_IDS, type StallGood } from '../stall.ts'
 import { GAME_VERSION } from '../version.ts'
 import type { World } from '../world.ts'
 import type { RouteStop, Trailer, Vehicle } from '../feature-vehicles/vehicle.h.ts'
+import { copyStillLoad } from '../feature-machines/machine.ts'
 import type {
   Save,
   SaveCell,
@@ -313,7 +314,7 @@ function dumpCell(c: Cell, at: Coord, owned: readonly ChunkId[]): SaveCell {
     case 'jam':
       return { kind: 'jam', base: c.base, crop: c.crop, variety: c.variety, quality: c.quality, fruit: c.fruit, sugar: c.sugar, progress: c.progress, inn: c.inn }
     case 'still':
-      return { kind: 'still', base: c.base, feed: c.feed.map(f => ({ ...f })), progress: c.progress, n: c.n, inn: c.inn }
+      return { kind: 'still', base: c.base, load: copyStillLoad(c.load), progress: c.progress, n: c.n, inn: c.inn }
     case 'furnace':
       return {
         kind: 'furnace',

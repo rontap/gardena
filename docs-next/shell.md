@@ -43,7 +43,11 @@ Hovering a row outlines its tiles on the map. Left click runs the row's action (
 
 ## Inspect and hover
 
-`Status` shows, for the hovered tile: the name line from `lookText` (crop and variety, building name and state, sensor on or off, what the plot is waiting for), and bars from `status.tsx` (Growth, Happiness, Water, Fertilizer for a growing plant; Quality and Freshness for a ripe plot or fruit; Weed resistance for an empty plot). The hover line uses the same `readPrompt` result as a click ([[systems/commands]]). `Status` repaints every `REFRESH_MS` (`useRefresh`), so its name line and bars follow the tile while the pointer rests on it. Hovering a Build card or a disabled control shows its detail in the right-hand callout (`callout-hover.tsx`).
+`Status` shows, for the hovered tile: the name line from `lookText` (crop and variety, building name and state, sensor on or off, what the plot is waiting for), and bars from `status.tsx` (Growth, Happiness, Water, Fertilizer for a growing plant; Quality and Freshness for a ripe plot or fruit; Weed resistance for an empty plot). The hover line uses the same `readPrompt` result as a click ([[systems/commands]]).
+
+Two bar shapes, both 16 px tall (`BAR`). A fill bar (`FillBar`: Growth, Quality, gauges) fills blue (`GROWTH_BLUE`) up to the value. A range bar (`SegmentBar`: Happiness, Water, Fertilizer, Freshness, Weed resistance) shows its red, orange and green ranges, and a triangle above the bar points down at the value, filled with the colour of the range it points at (`segmentAt`), so the triangle says both where the value is and whether it is good. While a growing plant or a growing tree has Extract time left (`boost` > 0), a lighter band sweeps left to right across the blue part of its Growth bar once a second (`.bar-sweep` in `src/index.css`); with **Reduced motion** on it does not show.
+
+`Status` repaints every `REFRESH_MS` (`useRefresh`), so its name line and bars follow the tile while the pointer rests on it. Hovering a Build card or a disabled control shows its detail in the right-hand callout (`callout-hover.tsx`).
 
 ## Lens
 

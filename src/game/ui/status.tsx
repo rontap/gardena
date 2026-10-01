@@ -31,35 +31,46 @@ export const STAT_COLOR: Record<'green' | 'orange' | 'red', string> = {
 const GROWTH_BLUE = '#4b91c2'
 const GROWTH_EMPTY = '#8b887d'
 
+const BAR = 'h-4 min-w-0 flex-1 overflow-hidden rounded-sm border border-ink/50 bg-ink/20'
+
+function segmentAt(segments: readonly Segment[], value: number): Segment {
+  const segment = segments.findLast(s => s.from <= value)
+  if (segment === undefined) throw new Error('segment')
+  return segment
+}
+
 function SegmentBar({ value, segments }: { value: number; segments: readonly Segment[] }) {
   return (
-    <div className="relative flex h-3 min-w-0 flex-1 overflow-hidden rounded-sm border border-ink/50 bg-ink/20">
-      {segments.map(segment => (
-        <div
-          key={`${segment.from}-${segment.to}`}
-          className="h-full"
-          style={{ width: `${(segment.to - segment.from) * 100}%`, backgroundColor: STAT_COLOR[segment.color] }}
-        />
-      ))}
-      <div
-        className="absolute -top-1 z-10 h-5 w-1 -translate-x-1/2 rounded-sm border border-ink bg-[#fff6d5] shadow-[0_0_0_1px_#fff6d5]"
-        style={{ left: `${value * 100}%` }}
-      />
+    <div className="relative flex min-w-0 flex-1">
+      <div className={`flex ${BAR}`}>
+        {segments.map(segment => (
+          <div
+            key={`${segment.from}-${segment.to}`}
+            className="h-full"
+            style={{ width: `${(segment.to - segment.from) * 100}%`, backgroundColor: STAT_COLOR[segment.color] }}
+          />
+        ))}
+      </div>
+      <svg className="absolute bottom-full h-2 w-3 -translate-x-1/2" style={{ left: `${value * 100}%` }} viewBox="0 0 12 8">
+        <path d="M1 1H11L6 7Z" fill={STAT_COLOR[segmentAt(segments, value).color]} className="stroke-ink" strokeLinejoin="round" />
+      </svg>
     </div>
   )
 }
 
-function FillBar({ value }: { value: number }) {
+function FillBar({ value, sweep }: { value: number; sweep?: boolean }) {
   return (
-    <div className="relative h-3 min-w-0 flex-1 overflow-hidden rounded-sm border border-ink/50 bg-ink/20">
-      <div className="h-full" style={{ width: `${value * 100}%`, backgroundColor: GROWTH_BLUE }} />
+    <div className={`relative ${BAR}`}>
+      <div className="relative h-full overflow-hidden" style={{ width: `${value * 100}%`, backgroundColor: GROWTH_BLUE }}>
+        {sweep && <div className="bar-sweep absolute inset-y-0 left-0 w-2/5 bg-linear-to-r from-transparent via-house/80 to-transparent" />}
+      </div>
       <div className="absolute inset-y-0 right-0" style={{ width: `${(1 - value) * 100}%`, backgroundColor: GROWTH_EMPTY }} />
     </div>
   )
 }
 
 function Rows({ children }: { children: ReactNode }) {
-  return <div className="space-y-1.5 bg-dirt/25 px-3 py-2.5">{children}</div>
+  return <div className="space-y-2.5 bg-dirt/25 px-3 py-2.5">{children}</div>
 }
 
 function Row({ label, bar, text }: { label: string; bar: ReactNode; text: string }) {
@@ -72,8 +83,8 @@ function Row({ label, bar, text }: { label: string; bar: ReactNode; text: string
   )
 }
 
-function FillRow({ label, value, text }: { label: string; value: number; text: string }) {
-  return <Row label={label} bar={<FillBar value={value} />} text={text} />
+function FillRow({ label, value, text, sweep }: { label: string; value: number; text: string; sweep?: boolean }) {
+  return <Row label={label} bar={<FillBar value={value} sweep={sweep} />} text={text} />
 }
 
 function StatRow({ label, value, text, segments }: { label: string; value: number; text: string; segments: readonly Segment[] }) {
@@ -174,7 +185,7 @@ function PlantStats({ world, hover }: { world: World; hover: PromptHit }) {
     const fertFloor = cell.soil.fertMax - stats.fertTolerance
     return (
       <Rows>
-        <FillRow label={m.hud_growth()} value={value} text={pct(value)} />
+        <FillRow label={m.hud_growth()} value={value} text={pct(value)} sweep={cell.boost > 0} />
         <StatRow label={m.hud_happiness()} value={cell.happiness} text={pct(cell.happiness)} segments={HAPPY_SEGMENTS} />
         <StatRow
           label={m.hud_fertilizer()}
@@ -197,7 +208,7 @@ function PlantStats({ world, hover }: { world: World; hover: PromptHit }) {
     const fertFloor = FERT_PLOT_MAX - stats.fertTolerance
     return (
       <Rows>
-        <FillRow label={m.hud_growth()} value={cell.plant.maturity} text={pct(cell.plant.maturity)} />
+        <FillRow label={m.hud_growth()} value={cell.plant.maturity} text={pct(cell.plant.maturity)} sweep={cell.plant.boost > 0} />
         <StatRow label={m.hud_happiness()} value={cell.plant.happiness} text={pct(cell.plant.happiness)} segments={HAPPY_SEGMENTS} />
         <StatRow
           label={m.hud_fertilizer()}

@@ -1,6 +1,6 @@
 # Sound
 
-Code: `sim/feature-sound/`, the one-shot list on `World` in `world.ts`, pushes from `queue.ts`, `building.ts` and `feature-field/field.helpers.ts`, the rail buttons in `ui/hud.tsx`; see [[code-map]].
+Code: `sim/feature-sound/`, the one-shot list on `World` in `world.ts`, pushes from `queue.ts`, `building.ts`, `feature-field/field.helpers.ts`, `tick.ts`, `store.ts` and `feature-contracts/market.ts`, the rail buttons in `ui/hud.tsx`; see [[code-map]].
 
 ## Job
 
@@ -17,7 +17,10 @@ Four triggers play at the same time. One does not wait on another, mute another,
 - [[features/inventory]] — putting an item down on a plot; opening and closing a chest, freezer, produce silo, postbox, Seed silo, Additive store, Seeding silo or Additive silo ([[items/buildings/chest]], [[items/buildings/freezer]], [[items/buildings/field-silos]], [[items/buildings/postbox]], [[items/buildings/seed-silo]], [[items/buildings/additive-store]]).
 - [[shell]] — a new Command Center row, and a rail button pressed. With **Pause when this tab is not in front** on, leaving the window suspends both contexts; pause does not.
 - [[menu]] — the **Music** and **Effects** volume sliders.
-- [[systems/tick]] — the end-of-day summary row is the end-of-day sound. The day change itself does not play.
+- [[systems/tick]] — the day change plays the new-day sound.
+- [[features/research]] — the research-completed row plays a chime.
+- [[features/contracts]] — the contract-completed row plays a chime, and a missed contract plays a lower one.
+- [[features/market]] — a drop-off that pays money plays the sale chime.
 
 ## Contract
 
@@ -35,8 +38,13 @@ Lookups return the function for that tune, or no function. `farmMusic` plays `mu
 | chest-type building opened, closed | `openOnce`, `closeOnce` | `vfx/index.ts` | one sound each for all eight buildings |
 | machine working | `machineLoop(machine)` | `machines/index.ts` | no function for any machine |
 | batch put out | `machineOnce(machine)` | `machines/index.ts` | no function for any machine |
-| new Command Center row | `noticeOnce(cue)` | `vfx/index.ts` | no function |
+| new Command Center row | `noticeOnce(cue)` | `vfx/index.ts` | `research-done`: `researched`, two bells, C5 then E5 0.11 s later, about 1.2 s; `contract-done`: `contractDone`, bells C5, E5, G5, then C6 held 1.6 s over a soft C4 triangle, about 1.9 s; every other row: no function |
+| a sale paid | `soldOnce()` | `vfx/index.ts` | `chaChing`: two short band-passed noise ticks, then bells E5 and A5 0.07 s apart, about 0.7 s |
+| a contract missed | `missedOnce()` | `vfx/index.ts` | `contractMissed`: bells G4, E♭4, C4 falling, the last held 1.4 s over a soft C3 sine |
+| the day changes | `dayOnce()` | `vfx/index.ts` | `dawn`: strings, an F major chord swelling for 1.1 s and fading by 2.6 s, then from 1.5 s a C major chord with an added D swelling for 1.2 s and fading by 5.5 s, two soft bells (E5, G5) on top |
 | rail button pressed | `clickOnce()` | `vfx/index.ts` | `click`: 30 ms of band-passed noise at 3.2 kHz over a short triangle tone |
+
+A bell (`bell`) is a sine at the note and a quieter sine at 2.76 times the note, which fades in half the time. A string note (`strings`) is two `saw` layers, 7 cents below and 7 cents above the note, each through a low-pass at 1.4 kHz.
 
 A cue with no function stays silent. A loop function is `(count) => stop`. A one-shot function is `(done) => stop`. `done` runs when that one-shot has ended. Leaving the farm calls `stop` on the music, on each loop, and on each one-shot that is still sounding.
 
@@ -56,7 +64,7 @@ Song 7 is a score in `music/song-7.ts`: B minor, quarter = 75.21 (the track is 9
 
 `playMidi` gives each General MIDI program in the file one voice from `PATCH`, keyed by program number (`GM` names them). A program with no entry plays `OTHER`, a triangle wave. `GM.rhodes` (4) is an `FMSynth` at harmonicity 1 whose modulation fades in 0.6 s, holding at 0.25 and released over 1.5 s, so held notes fade out after they end; `GM.electricPiano` (5) stays the short pluck song 5 uses. `GM.sawBass` (39) is a sawtooth through a fixed 600 Hz low-pass with a 0.08 s release; `GM.sawLead` (81) a sawtooth through 3 kHz; `GM.warmPad` (89) a sawtooth through 900 Hz with a 0.05 s attack and a chorus. A patch sets the synth, its volume in dB, its polyphony, its own effects (a fixed low-pass filter on sawtooth and square voices, vibrato, chorus, tremolo), and `send`, the share of its output that also goes to the song's room, one chain shared by every voice of that song. The rest goes to the output directly. Song 2 sends 0.6 of every voice through `ROOM.hall`, the same share as song 1. A score keeps each patch's own `send`. `stop` disposes the voices, their effects, and the room. `playSong` (song 1) is one triangle `PolySynth`. The whole voice goes to the shared mix, and 0.6 of it also goes through `ROOM.hall` into that mix. Its envelope attack is 0.05 s, decay 0.6 s, sustain 0.3, release 1.4 s. The parser reads channel 10 as any other channel, so General MIDI drums play as pitched notes.
 
-Music runs on Tone's global context, set in `sound.utils.ts` on the browser's own `AudioContext` with `latencyHint: 'playback'` and `lookAhead: 0.1`; Tone derives `updateInterval` 0.05 from it. It is not Tone's default context from `standardized-audio-context`. That library connects every `ConstantSourceNode`, `OscillatorNode` and `AudioBufferSourceNode` it creates to the destination through a `GainNode` at gain 0 (its Bug #175, a Safari workaround), in every browser, so Chrome processes each running source and that gain on every 128-frame block. Tone's `Signal` is a `ConstantSourceNode` that runs until it is disposed, about ten per voice. On that context song 5 used at least 89% of the audio thread in its drop and underran from bar 14 to the end. A `PolySynth` holds a voice from the moment its note is scheduled until the note is silent, so `lookAhead` adds to the voices held, and a patch's `poly` covers the notes that start within `lookAhead` plus one note's length and release. Too few voices drops notes and logs **Max polyphony exceeded**. Notes are scheduled 0.1 s ahead; a main-thread stall longer than that starts notes late. Sound effects do not use that context. They share one browser `AudioContext` with `latencyHint: 'interactive'` in `vfx/sfx.ts`, and do not use Tone. A sound is a list of `Layer`s: white noise through one `BiquadFilterNode`, or one `OscillatorNode`, each through its own gain envelope, the filter or the pitch moving from `hz` to `to` over the layer's `len`. The nodes are created when the sound plays and stop with it, so no node runs between sounds. `vary` moves a value at random by a share of itself, so repeated hits are not identical. The click that runs `Tone.start()` also resumes this context, and leaving the window with `pauseWhenHidden` on suspends it with the music's.
+Music runs on Tone's global context, set in `sound.utils.ts` on the browser's own `AudioContext` with `latencyHint: 'playback'` and `lookAhead: 0.1`; Tone derives `updateInterval` 0.05 from it. It is not Tone's default context from `standardized-audio-context`. That library connects every `ConstantSourceNode`, `OscillatorNode` and `AudioBufferSourceNode` it creates to the destination through a `GainNode` at gain 0 (its Bug #175, a Safari workaround), in every browser, so Chrome processes each running source and that gain on every 128-frame block. Tone's `Signal` is a `ConstantSourceNode` that runs until it is disposed, about ten per voice. On that context song 5 used at least 89% of the audio thread in its drop and underran from bar 14 to the end. A `PolySynth` holds a voice from the moment its note is scheduled until the note is silent, so `lookAhead` adds to the voices held, and a patch's `poly` covers the notes that start within `lookAhead` plus one note's length and release. Too few voices drops notes and logs **Max polyphony exceeded**. Notes are scheduled 0.1 s ahead; a main-thread stall longer than that starts notes late. Sound effects do not use that context. They share one browser `AudioContext` with `latencyHint: 'interactive'` in `vfx/sfx.ts`, and do not use Tone. A sound is a list of `Layer`s: white noise through one `BiquadFilterNode`, one `OscillatorNode` (`tone`), or one sawtooth `OscillatorNode` held at `hz`, detuned by `cents`, through a low-pass at `cut` (`saw`), each through its own gain envelope; on `noise` and `tone` the filter or the pitch moves from `hz` to `to` over the layer's `len`. A `noise` layer is shorter than one second, the length of the noise buffer. The nodes are created when the sound plays and stop with it, so no node runs between sounds. `vary` moves a value at random by a share of itself, so repeated hits are not identical. The click that runs `Tone.start()` also resumes this context, and leaving the window with `pauseWhenHidden` on suspends it with the music's.
 
 ### Gardener
 
@@ -71,6 +79,8 @@ Dig time is the shovel's `workSeconds`, times `1 + DIG_HARD_SPAN × hardness` on
 | `chop` | 0.7 s | wooden knock | crack and a heavy thud |
 | `water` | once | pour, 0.4 s | soak |
 | `fertilize` | once | a bag of fertilizer or compost poured, 0.6 s | none |
+| `extract` | once | `pourDeep`: lower than the water pour, its noise band rising 450 to 900 Hz and its gurgles near 500 Hz, 0.5 s | none |
+| `weed-spray` | once | `spray`: a high hiss, 0.22 s, with a short click at its start | none |
 | `harvest` | once | leaves | the fruit coming off |
 | `compost`, `grind`, `mill`, `still`, `furnace`, `refuel`, `station`, `barrel`, `jam`, `infuse` | once | `load`: lid opens, item in, lid shuts; one sound for every machine | none |
 | `drop` | no hits | none | `thump`: low-passed noise and a low sine; pushed by `doDrop` once the item is on the plot, for any item |
@@ -89,7 +99,15 @@ Finished: one one-shot when a batch is put out (`progress = 0` after `emitProduc
 
 ### Command Center
 
-One one-shot when a row `id` from `noticeRows` is new. An `id` this client has not yet pushed, including each `id` in the first result after the `World` is bound, is pushed once. **Hide** moves the column off the right edge and does not stop the one-shot. The end-of-day sound is the new end-of-day summary row (`recap`). The day change does not play a second time.
+One one-shot when a row `id` from `noticeRows` is new. An `id` this client has not yet pushed, including each `id` in the first result after the `World` is bound, is pushed once. **Hide** moves the column off the right edge and does not stop the one-shot. Only `research-done` and `contract-done` rows have a sound; the end-of-day summary row has none.
+
+### Day and contracts
+
+The day change pushes `day` in `tickWorld`, after the end-of-day summary is recorded; the sound does not wait for the summary to be opened or closed. `resolveMiss` in `feature-contracts/market.ts` pushes `contract-missed` when a contract passes its due day unfinished; a missed contract has no Command Center row. Both can sound at once at a day change, and neither holds the other.
+
+### Sale
+
+`sellAllBody` in `store.ts` pushes `sold` when the Market's stock sells for more than 0, which is the last step of every **Drop off**, by hand or from a vehicle unloading at the Produce Warehouse ([[features/market]]). A drop-off that only fills contracts pays no Market money and plays no sale chime. Unloads that land while the chime sounds are dropped by the cap.
 
 ### One-shot list
 
@@ -105,6 +123,9 @@ Doing a job and a machine `working` are not list items. The view reads them ever
 | `close` | `building`: as `open` |
 | `machine` | `machine`: `MachineId` |
 | `notice` | `notice`: `NoticeKind`; `id`: the row `id` |
+| `day` | none |
+| `contract-missed` | none |
+| `sold` | none |
 
 ### Cap
 
@@ -141,7 +162,7 @@ All in `sound.ts`, called from outside `feature-sound/`:
 - `World.cue(c)` — the push onto the one-shot list, from simulation code.
 
 `stop` calls the function a lookup returned.
-- Pushes onto the list: `finishWork`; `doDrop`; the accepted `chest`, `silo` and `additives` walk-ups and `cueClose` in `queue.ts`; `doShovel` on a burrow in `field.helpers.ts`; `progress = 0` after `emitProduct` returns true, and a barrel `age` crossing `BARREL_MATURE`, in `building.ts`; a `noticeRows` `id` not yet pushed.
+- Pushes onto the list: `finishWork`; `doDrop`; the accepted `chest`, `silo` and `additives` walk-ups and `cueClose` in `queue.ts`; `doShovel` on a burrow in `field.helpers.ts`; `progress = 0` after `emitProduct` returns true, and a barrel `age` crossing `BARREL_MATURE`, in `building.ts`; the day change in `tickWorld` (`tick.ts`); `resolveMiss` in `feature-contracts/market.ts`; `sellAllBody` in `store.ts`; a `noticeRows` `id` not yet pushed.
 
 ## Data
 
@@ -161,7 +182,7 @@ The one-shot list lives on `World` and is drained by the view. It is not written
 
 - A new song: a file in `music/` and one entry in `music/index.ts`. The call at the outcome is already there.
 - A new one-shot: push one list item at that outcome. Leave the list out of [[systems/save]] and out of the snapshot and digest in [[systems/net]].
-- A new Command Center row: a new `id` from `noticeRows` is the one-shot. Do not add a call on the day change.
+- A new Command Center row: a new `id` from `noticeRows` is the one-shot; give it a sound in `noticeOnce`.
 - A picture effect: `vfx.ts` and `layers/vfx.ts`. Sound stays in `sim/feature-sound/`.
 
 ## Decisions
@@ -173,3 +194,5 @@ The one-shot list lives on `World` and is drained by the view. It is not written
 - `vfxReduced` does not change sound.
 - Sprinklers, tractor exhaust (`exhaust`), and `mill-sails` are picture effects with no lookup.
 - The **Load Save** label, the menu version line, and the changelog are not part of this system.
+- The new-day sound belongs to the day change, not to the end-of-day summary: the developer treats the summary as an optional dialog that has nothing to do with the day starting.
+- A missed contract plays without a Command Center row; the developer chose a sound only.

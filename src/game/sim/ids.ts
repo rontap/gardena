@@ -154,7 +154,7 @@ export type SkillId =
   | 'better-grape'
   | 'better-raspberry'
   | 'grafting'
-  | 'lucky'
+  | 'mycologist'
   | 'bulk-up'
   | 'driving-classes'
   | 'machinery'
@@ -363,6 +363,7 @@ export type VfxId =
   | 'sprinkler-spray-vert'
   | 'tend'
   | 'pour'
+  | 'pour-green'
   | 'brew'
   | 'dust'
   | 'steam'
@@ -373,5 +374,10 @@ export type VfxId =
   | 'age'
   | 'grind'
   | 'station'
+  | 'station-lights'
+  | 'compost'
   | 'exhaust'
   | 'burrow-pop'
+
+export const VFX_FRAMES = [0, 1, 2, 3, 4, 5, 6, 7] as const
+export type VfxFrame = (typeof VFX_FRAMES)[number]

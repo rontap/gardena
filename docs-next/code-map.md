@@ -55,7 +55,7 @@ Numbers and tables: crops, varieties, trees, items, research and SKUs, catalog, 
 
 ## Screen — `src/game/ui/`
 
-React. One file per panel, named after it: `market.tsx`, `research.tsx`, `family.tsx`, `store.tsx`, `build.tsx`, `almanac.tsx` (its cards in `almanac-cards.tsx`), `menu.tsx`, `new-game.tsx`, `settings.tsx`, `recap.tsx`, `necronomicon.tsx`, `station.tsx`, `hangar.tsx`, `vehicle.tsx`, `multiplayer.tsx`, `cheat.tsx`, `feature-contracts/`, `feature-vehicles/`.
+React. One file per panel, named after it: `market.tsx`, `research.tsx`, `family.tsx`, `store.tsx`, `build.tsx`, `feature-almanac/`, `menu.tsx`, `new-game.tsx`, `settings.tsx`, `recap.tsx`, `necronomicon.tsx`, `station.tsx`, `hangar.tsx`, `vehicle.tsx`, `multiplayer.tsx`, `cheat.tsx`, `feature-contracts/`, `feature-vehicles/`.
 
 Shared pieces: `hud.tsx` (rails), `notices.ts(x)` (Command Center), `status.tsx` (inspect rows), `callout-hover.tsx`, `objecthud.tsx` (small panels on map objects), `held.tsx` (item faces), `sku-card.tsx`, `frame.tsx` (buttons, bars, chrome, tab styles), `panel.ts` (which panel is open).
 

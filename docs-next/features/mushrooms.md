@@ -1,6 +1,6 @@
 # Mushrooms
 
-Code: `feature-mushroom/` (`mushroomSeam`, `grownTrees`), numbers and `mushroomChance` in `defs/mushroom.ts`, the cover on `plot.ts`, the index `World.mushrooms`, the tree's area `treeArea` in `feature-field/field.ts`, the Almanac page in `ui/almanac.tsx`; see [[code-map]].
+Code: `feature-mushroom/` (`mushroomSeam`, `grownTrees`), numbers and `mushroomChance` in `defs/mushroom.ts`, the cover on `plot.ts`, the index `World.mushrooms`, the tree's area `treeArea` in `feature-field/field.ts`, the Almanac page in `ui/feature-almanac/concepts.tsx`; see [[code-map]].
 Unlocked: from the start.
 
 ## Purpose

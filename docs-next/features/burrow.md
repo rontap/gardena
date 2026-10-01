@@ -1,6 +1,6 @@
 # Burrow
 
-Code: `feature-burrow/` (`mintStart`, `mintSeam`, `extractBurrow`, `digBurrow`, `burrowOdds`, `rarityOf`), numbers, the daily chance (`burrowDayChance`) and the item table per rarity (`BURROW_ENTRIES`) in `defs/burrow.ts`, the cover on `plot.ts`, the count `World.sinceRare`, the Almanac card in `ui/almanac.tsx`; see [[code-map]].
+Code: `feature-burrow/` (`mintStart`, `mintSeam`, `extractBurrow`, `digBurrow`, `burrowOdds`, `rarityOf`), numbers, the daily chance (`burrowDayChance`) and the item table per rarity (`BURROW_ENTRIES`) in `defs/burrow.ts`, the cover on `plot.ts`, the count `World.sinceRare`, the Almanac card in `ui/feature-almanac/concepts.tsx`; see [[code-map]].
 Unlocked: from the start.
 
 ## Purpose

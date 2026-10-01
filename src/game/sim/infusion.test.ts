@@ -26,7 +26,7 @@ import { skuItem, stackable, type Item } from './item.ts'
 import { millProductName } from './prompt.ts'
 import { STALL_IDS } from './stall.ts'
 import { catalogEntries } from '../defs/catalog.ts'
-import { CONCEPT_IDS } from '../ui/almanac.tsx'
+import { CONCEPT_IDS } from '../ui/feature-almanac/nav.tsx'
 import { itemInner, OVERLAY_INFUSED } from '../view/svgs.ts'
 
 const ASSETS = import.meta.glob('../../assets/**/*.svg', { query: '?raw', import: 'default', eager: true }) as Record<

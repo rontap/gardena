@@ -6,7 +6,10 @@ import { onCell } from './drop.ts'
 import type { GrownCrop, PlantCrop } from './ids.ts'
 import { makeShovel, type Item } from './item.ts'
 import { Plant, Weed } from './plant.ts'
-import { FERT_PLOT_MAX, SOIL_WATER_MAX, SOIL_WATER_MID, Soil, WEED_CHANCE } from './soil.ts'
+import { HARDNESS } from '../defs/rules.ts'
+import { FERT_PLOT_MAX, SOIL_WATER_MAX, SOIL_WATER_MID, Soil } from './soil.ts'
+
+const WEED_CHANCE = HARDNESS.normal.weedChance
 import { QUEUE_CAP, World } from './world.ts'
 
 const AT = { col: 10, row: 12 }

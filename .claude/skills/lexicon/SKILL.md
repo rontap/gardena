@@ -11,15 +11,15 @@ description: >
 
 # Lexicon
 
-Law is [[standards/lexicon]]. Read it. This is the gate.
+Law is [[process/lexicon]]. Read `docs-next/process/lexicon.md`. This is the gate.
 
 ## Bound
 
 | bound | free |
 |---|---|
-| text to the user, player copy, every `docs-next/**/*.md` and `docs/**/*.md`, commit / PR / review text | identifiers and locals in `src/` |
+| text to the user, player copy, every `docs-next/**/*.md`, commit / PR / review text | identifiers and locals in `src/` |
 
-Vault notes stay the vault term. Player copy: [[agents/game-text-writer]] pastes **say** from `docs/standards/user-facing-text.md`.
+Vault notes stay the vault term. Player copy: [[process/agents]] game-text-writer pastes **say** from `docs-next/process/user-facing-text.md`.
 
 Name a variable what you like. Backticked in bound text, that name is a citation; bare, it is a coinage.
 
@@ -34,13 +34,11 @@ Both forbid coining. The player register additionally forbids the vault's own co
 
 ## Check a word
 
-`docs-next/definitions.md` names the owning page of each concept, and `docs-next/name-map.md` lists words to replace. Then:
+`docs-next/definitions.md` names the owning page of each concept, `docs-next/name-map.md` lists words to replace, and `docs-next/process/user-facing-text.md` is the say column. Then:
 
 ```bash
 grep -rniE "\b<word>" docs-next/ src/game --include=*.md --include=*.ts --include=*.tsx | head
 ```
-
-Grep `docs/` only when `docs-next/` has no page for that area yet.
 
 | result | verdict |
 |---|---|
@@ -72,6 +70,6 @@ One word used across a whole shelf moves as a set. Propose it; do not fix one st
 
 ## Dispatch
 
-`game-text-writer` prompt carries `docs/standards/user-facing-text.md`. Vault writers follow this file.
+`game-text-writer` prompt carries `docs-next/process/user-facing-text.md`. Vault writers follow this file.
 
 A coined or borrowed word in a note, in copy, or in the reply is a failed run. Reject on the word, name it, re-spawn. Identifiers are not reviewed for it.

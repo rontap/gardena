@@ -31,6 +31,7 @@ import { GuestDialog, HostDialog, type MpFail } from './game/ui/multiplayer.tsx'
 import { arming, cued, type Panel } from './game/ui/panel.ts'
 import { Notices } from './game/ui/notices.tsx'
 import { rosterNotices, type Notice, type NoticeGo } from './game/ui/notices.ts'
+import type { Rules } from './game/defs/rules.ts'
 import type { ShelfId } from './game/defs/shelf.ts'
 import type { PromptHit } from './game/sim/prompt.ts'
 import type { Coord } from './game/sim/building.ts'
@@ -297,7 +298,7 @@ export default function App({ sink }: { sink: WorkerSink }) {
     let id = 0
     const loop = (now: number) => {
       const frameDt = (now - last) / 1000
-      const dt = Math.min(frameDt * world.cheatSpeed, DT_MAX * 2)
+      const dt = Math.min(frameDt * world.cheatSpeed * world.pace, DT_MAX * 2)
       last = now
       const inst = 1 / frameDt
       fpsEma = fpsEma === 0 ? inst : fpsEma * 0.9 + inst * 0.1
@@ -518,9 +519,9 @@ export default function App({ sink }: { sink: WorkerSink }) {
     setHudN(x => x + 1)
   }
 
-  function playNew(): void {
+  function playNew(rules: Rules): void {
     armSound()
-    const next = new World(undefined, sink)
+    const next = new World(undefined, sink, rules)
     next.tutorial = startTutorial('new', slotExists())
     session(next)
   }

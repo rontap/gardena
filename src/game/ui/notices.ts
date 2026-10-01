@@ -1,5 +1,5 @@
 import { m } from '../../paraglide/messages.js'
-import { CROP_NAME, CROPS, FRESH_FULL, HAPPY_MAX, type CropClass } from '../defs/crops.ts'
+import { CROP_NAME, CROPS, HAPPY_MAX, type CropClass } from '../defs/crops.ts'
 import { RESEARCH } from '../defs/research.ts'
 import type { VarietyId } from '../defs/varieties.ts'
 import { occupiedCells, type Coord } from '../sim/building.ts'
@@ -191,7 +191,7 @@ function plantRows(world: World): Notice[] {
       continue
     }
     if (c.kind === 'ripe') {
-      if (c.plant.freshness >= FRESH_FULL) continue
+      if (c.plant.freshness >= world.hard.freshFull) continue
       rows.push({
         id: `freshness:${key(at)}`,
         kind: 'freshness',

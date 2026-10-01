@@ -1,26 +1,41 @@
 # Menu, settings and changelog
 
-Code: `ui/menu.tsx` (both menus and the page switch), `ui/settings.tsx` and `sim/settings.ts` (settings), `ui/changelog.ts`, `ui/changelog.tsx` and `ui/changelog.md` (version history), the start-up and menu handlers in `App.tsx`; see [[code-map]].
+Code: `ui/menu.tsx` (both menus and the page switch), `ui/new-game.tsx` (the new-game page), `ui/settings.tsx` and `sim/settings.ts` (settings), `ui/changelog.ts`, `ui/changelog.tsx` and `ui/changelog.md` (version history), the start-up and menu handlers in `App.tsx`; see [[code-map]].
 
 The screen before a farm is loaded, the Gear menu during play, and the two pages both of them open: **Settings** and the version history. [[shell]] describes the screen around a running farm; this page describes everything the player reaches from the title.
 
 ## Main menu
 
-Shown when no farm is running. Behind it, a farm from `new World()` with a random seed is drawn full screen, not ticking, with no rails and no input (`backdrop` in `App.tsx`). It is not the farm **New Game** creates. The map fades and scales in once its first frame is drawn (`menu-canvas-in`); with reduced motion it appears without the animation.
+Shown when no farm is running. Behind it, a farm from `new World()` with a random seed is drawn full screen, not ticking, with no rails and no input (`backdrop` in `App.tsx`). It is not the farm **Play Now** creates. The map fades and scales in once its first frame is drawn (`menu-canvas-in`); with reduced motion it appears without the animation.
 
 The column, top to bottom: the `ui-menu.svg` picture, **Gardena**, the version number (a button, see Changelog), then:
 
 | button | does |
 |---|---|
-| **New Game** | starts a new farm; the tutorial is on only when the save slot is empty ([[features/tutorial]]) |
+| **New Game** | opens the new-game page, below |
 | **Load Save** / **Load Save ({stamp})** | loads the save slot; greyed when the slot is empty; `{stamp}` is the slot's save time |
 | **Upload Save…** | opens a file picker for a `.json` file, loads it, and writes it to the slot |
 | **Join Multiplayer** | opens the join fields in the same column ([[features/multiplayer]]) |
 | **Settings** | opens Settings |
 
-**New Game**, **Load Save**, **Upload Save…** and the join start sound (`armSound`, [[systems/sound]]). A load that fails leaves the menu up with one red line under the buttons, by `LoadFailReason`: **The file is in an unknown format.**, **The file is not a gardena format**, **This savefile is from an older Gardena version and could not be loaded**, **The savefile could not be loaded**. A cancelled file picker is not a failure. After a multiplayer session ends, its reason is shown in the same place.
+**Play Now**, **Load Save**, **Upload Save…** and the join start sound (`armSound`, [[systems/sound]]). A load that fails leaves the menu up with one red line under the buttons, by `LoadFailReason`: **The file is in an unknown format.**, **The file is not a gardena format**, **This savefile is from an older Gardena version and could not be loaded**, **The savefile could not be loaded**. A cancelled file picker is not a failure. After a multiplayer session ends, its reason is shown in the same place.
 
 The URL `#start_now` or `?start=now` skips this menu and starts a new farm with the tutorial off; the e2e tests start this way.
+
+### New-game page
+
+**New Game** replaces the buttons with `NewGamePage` in the same column. **Play Now** sits where **New Game** was and starts a new farm; the tutorial is on only when the save slot is empty ([[features/tutorial]]). Under it are **Difficulty** and **Speed**, each a full-width row of tabs with a one-line description of the selected tab below the row. Both start at **Normal**. **←** in the top-left corner returns to the main menu. The choices stay in `NewGamePage` state while the menu is open. **Play Now** calls `onPlay` with `{ difficulty, speed }`.
+
+| row | tab | description |
+|---|---|---|
+| **Difficulty** | **Peaceful** | For children and first-time players. |
+| | **Normal** | For players who have played farming games before. |
+| | **Hard** | For players who want a challenge. |
+| **Speed** | **Leisurely** | For relaxed play and for learning the game. |
+| | **Normal** | For most players. |
+| | **Fast** | For experienced players who already know the game. |
+
+The main-menu buttons and `NewGamePage` share one grid cell and are both always rendered; the one not shown is `invisible` and keeps its space. The box therefore has the same height on both pages, and because it is centred, **Play Now** is drawn at the position **New Game** had.
 
 ## Gear menu
 

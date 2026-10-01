@@ -105,6 +105,6 @@ test('view.infused-overlay — Infused face is the plain face plus one `overlay-
   expect(faceInfused({ ...oil, infused: true })).toBe(true)
   expect(infused).toBe(`${plain}${OVERLAY_INFUSED}`)
   expect(Object.keys(ASSETS).filter(f => f.includes('infused'))).toEqual(['../../assets/overlay-infused.svg'])
-  expect(catalogEntries().some(e => e.id === 'infusion')).toBe(false)
+  expect(catalogEntries(1).some(e => e.id === 'infusion')).toBe(false)
   expect(CONCEPT_IDS).toContain('infusion')
 })

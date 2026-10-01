@@ -98,6 +98,7 @@ function worldFromSave(save: Save, sink: LogSink): World {
   const owned = save.chunks.map(ch => ch.id)
   const live = stampChunks(save.chunks)
   const h: Hydrate = {
+    rules: save.rules,
     rng: new Rng(save.rng.seed, { fruit: save.rng.fruit }),
     sink,
     house: live.house,

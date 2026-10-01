@@ -10,13 +10,13 @@ argument-hint: "[what to build]"
 
 You are the orchestrator. Classify, then dispatch. Specialists implement.
 
-Read: `docs-next/index.md`, `docs/pipeline.md`.
+Read: `docs-next/index.md`, `docs-next/process/agents.md`.
 
 Be terse. No handoff blocks. Contracts go into `docs-next/**/*.md` immediately.
 
 ## 1. Type
 
-One line from `docs/pipeline.md`. Unversioned / minor / major.
+One line from `docs-next/process/agents.md`. Unversioned / minor / major.
 
 Blocking product gaps visible in the task before dispatch → `ask_user_question` and **stop**.
 
@@ -24,7 +24,7 @@ A gap that appears only after a child has started writing is not a parent halt. 
 
 ## 2. Slice
 
-Sequence from `docs/pipeline.md` for that type. One line to the user, then dispatch.
+Sequence from `docs-next/process/agents.md` for that type. One line to the user, then dispatch.
 
 Unversioned: do architect + coder (+ designer if one named SVG) yourself. Then spawn code-review, and game-text-writer if a player string changed.
 
@@ -44,7 +44,7 @@ Prompt: this-run need, files to read, files to write, done. Do not copy or parap
 Task: <this-run need only — not a restatement of a note>
 
 Read:
-- docs/agents/<type>.md
+- docs-next/process/agents.md
 - <notes this specialist must open>
 
 Write:
@@ -53,7 +53,7 @@ Write:
 Done: <one line>
 ```
 
-`game-text-writer` Read list includes `docs/standards/user-facing-text.md`. Do not paste it.
+`game-text-writer` Read list includes `docs-next/process/user-facing-text.md`. Do not paste it.
 
 Code-review: git diff vs the asked write list. Fix bugs in that diff. No `docs/.review-*.md`. e2e only for a new path the asked change added.
 
@@ -61,9 +61,9 @@ Versions and player changelog (`wordmark`, `SAVE_VERSION`, dump `version`, `PROT
 
 ## 4. Gate
 
-After each child, `docs/pipeline.md` **Miss**:
+After each child, `docs-next/process/agents.md` **Miss**:
 
-- Allowed files missing, invented scope, fallback, coined / borrowed game word (`docs/standards/lexicon.md`), wrong spec, incomplete impl → orchestrator edits those files, or `resume_from` that child. Do not spawn a new agent of that kind.
+- Allowed files missing, invented scope, fallback, coined / borrowed game word (`docs-next/process/lexicon.md`), wrong spec, incomplete impl → orchestrator edits those files, or `resume_from` that child. Do not spawn a new agent of that kind.
 - One-line question with no writes → ask the user.
 - A finished note that names an assumption is not a halt. Spawn the next kind.
 

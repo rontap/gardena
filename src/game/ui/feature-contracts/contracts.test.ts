@@ -1,7 +1,8 @@
 import { isValidElement, type ReactElement, type ReactNode } from 'react'
 import { describe, expect, test } from 'vitest'
 import { m } from '../../../paraglide/messages.js'
-import { CANCEL_MIN, DIFFICULTY_CEILING } from '../../sim/feature-contracts/market.ts'
+import { HARDNESS } from '../../defs/rules.ts'
+import { DIFFICULTY_CEILING } from '../../sim/feature-contracts/market.ts'
 import type { ContractOffer } from '../../sim/feature-contracts/market.h.ts'
 import { capFull, offerHover } from './contracts.tsx'
 
@@ -29,13 +30,13 @@ function child(node: ReactNode, i: number): ReactNode {
 
 describe('contracts hover', () => {
   test('The offer hover shows the difficulty ceiling, the fee for cancelling right after accepting, and the running limit.', () => {
-    const tip = offerHover(offer, true, 5)
+    const tip = offerHover(offer, true, 5, HARDNESS.normal.cancelMin)
     if (tip === undefined) throw new Error('tip')
     expect(String(child(tip.description, 0))).toContain(`${offer.difficulty}/${DIFFICULTY_CEILING}`)
     expect(String(child(tip.description, 0))).not.toContain('/40')
     const cancel = child(tip.description, 4)
     if (!isValidElement(cancel)) throw new Error('coin')
-    expect((cancel as ReactElement<{ n: number }>).props.n).toBe(Math.round(CANCEL_MIN * offer.clean))
+    expect((cancel as ReactElement<{ n: number }>).props.n).toBe(Math.round(HARDNESS.normal.cancelMin * offer.clean))
     expect((cancel as ReactElement<{ n: number }>).props.n).not.toBe(offer.penalty)
     const full = child(tip.description, 7)
     if (!isValidElement(full)) throw new Error('full')

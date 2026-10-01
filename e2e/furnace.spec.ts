@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
-import { COMPOST_VALUE, FURNACE_ASH, FURNACE_HASTE, FURNACE_NEED, FURNACE_SECONDS, FURNACE_VALUE, MILL_H, MILL_IN, MILL_W, MILL_WORK } from '../src/game/defs/items.ts'
+import { COMPOST_VALUE, FURNACE_ASH, FURNACE_HASTE, FURNACE_NEED, FURNACE_SECONDS, FURNACE_VALUE, MILL_H, MILL_IN, MILL_W } from '../src/game/defs/items.ts'
+import { millWork } from '../src/game/sim/feature-machines/machine.ts'
 import { DT_MAX } from '../src/game/sim/world.ts'
 import { armSku, gotoPlay, hoverWorld, tapWorld } from './helpers.ts'
 
@@ -307,8 +308,8 @@ test('two working furnaces overlapping a mill vs a control mill', async ({ page 
     { millAt: MILL_AT, ctrl: CTRL, dt: DT_MAX },
   )
   const n = 2
-  expect(delta.mill).toBeCloseTo((DT_MAX * (1 + FURNACE_HASTE * n)) / MILL_WORK)
-  expect(delta.ctrl).toBeCloseTo(DT_MAX / MILL_WORK)
+  expect(delta.mill).toBeCloseTo((DT_MAX * (1 + FURNACE_HASTE * n)) / millWork('wheat'))
+  expect(delta.ctrl).toBeCloseTo(DT_MAX / millWork('wheat'))
 })
 
 async function lookAt(page: Page, at: At): Promise<string> {

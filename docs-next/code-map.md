@@ -55,15 +55,15 @@ Numbers and tables: crops, varieties, trees, items, research and SKUs, catalog, 
 
 ## Screen — `src/game/ui/`
 
-React. One file per panel, named after it: `market.tsx`, `research.tsx`, `family.tsx`, `store.tsx`, `build.tsx`, `almanac.tsx`, `menu.tsx`, `settings.tsx`, `recap.tsx`, `necronomicon.tsx`, `station.tsx`, `hangar.tsx`, `vehicle.tsx`, `multiplayer.tsx`, `cheat.tsx`, `feature-contracts/`, `feature-vehicles/`.
+React. One file per panel, named after it: `market.tsx`, `research.tsx`, `family.tsx`, `store.tsx`, `build.tsx`, `almanac.tsx`, `menu.tsx`, `new-game.tsx`, `settings.tsx`, `recap.tsx`, `necronomicon.tsx`, `station.tsx`, `hangar.tsx`, `vehicle.tsx`, `multiplayer.tsx`, `cheat.tsx`, `feature-contracts/`, `feature-vehicles/`.
 
-Shared pieces: `hud.tsx` (rails), `notices.ts(x)` (Command Center), `status.tsx` (inspect rows), `callout-hover.tsx`, `objecthud.tsx` (small panels on map objects), `held.tsx` (item faces), `sku-card.tsx`, `frame.tsx` (buttons, bars, chrome), `panel.ts` (which panel is open).
+Shared pieces: `hud.tsx` (rails), `notices.ts(x)` (Command Center), `status.tsx` (inspect rows), `callout-hover.tsx`, `objecthud.tsx` (small panels on map objects), `held.tsx` (item faces), `sku-card.tsx`, `frame.tsx` (buttons, bars, chrome, tab styles), `panel.ts` (which panel is open).
 
 Developer pages: `debug-*.tsx`, `atlas-view.tsx`, `techtree.ts`.
 
 ## Map — `src/game/view/`
 
-Pixi. `world-view.ts` draws the world through `layers/` (ground, plots, props, pipes, actors, overlay, VFX). `atlas.ts` rasterizes SVG groups; `svgs.ts` serves SVGs to React. `map.tsx` is the canvas component and pointer input; `hit.ts` turns a pointer into a target; `camera.ts`, `cursor.ts`, `motion.ts`, `outline.ts`.
+Pixi. `world-view.ts` draws the world through `layers/` (ground, plots, props, pipes, actors, overlay, VFX). `atlas.ts` rasterizes SVG groups; `svgs.ts` serves SVGs to React. `map.tsx` is the canvas component and pointer input; `hit.ts` turns a pointer into a target; `camera.ts`, `cursor.ts`, `motion.ts`, `outline.ts`, `meter.ts` (the working bar on a machine).
 
 Picture effects stay here: `vfx.ts`, `layers/vfx.ts`. Sound is `sim/feature-sound/`.
 

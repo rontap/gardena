@@ -3,6 +3,7 @@ import '../defs/math.ts'
 import type { Amount, Craft, Ingredient, MachineId, Recipe, Yield } from '../sim/feature-machines/recipe.ts'
 import { clockText, craftMachine, recipesOf } from '../sim/feature-machines/recipe.ts'
 import type { Face } from '../sim/item.ts'
+import type { World } from '../sim/world.ts'
 import { faceName } from '../sim/item.ts'
 import { bindHud } from '../view/motion.ts'
 import { faceGfx, UI_ARROW_FILL, UI_ARROW_INK } from '../view/svgs.ts'
@@ -160,14 +161,14 @@ function stateLine(craft: Craft): string {
   return ''
 }
 
-function LiveRow({ craft, size }: { craft: Craft; size: Size }) {
+function LiveRow({ craft, size, world }: { craft: Craft; size: Size; world: World }) {
   const rows = recipesOf(craftMachine(craft))
   const cycled = useCycle(rows.length)
   const recipe = craft.kind === 'idle' ? rows[cycled] : craft.recipe
   const fill = craft.kind === 'working' ? craft.progress : craft.kind === 'ready' ? 1 : 0
   const short =
     craft.kind === 'filling' ? { at: craft.at, text: `${num(craft.have)}/${num(craft.need)}` } : NO_SHORT
-  const time = craft.kind === 'working' ? clockText(craft.left) : clockText(recipe.duration.seconds)
+  const time = craft.kind === 'working' ? clockText(world.realSeconds(craft.left)) : clockText(world.realSeconds(recipe.duration.seconds))
   const line = stateLine(craft)
   return (
     <div className="flex flex-col">
@@ -177,11 +178,11 @@ function LiveRow({ craft, size }: { craft: Craft; size: Size }) {
   )
 }
 
-export function Recipes({ view, size }: { view: RecipeView; size: Size }) {
+export function Recipes({ view, size, world }: { view: RecipeView; size: Size; world: World }) {
   if (view.kind === 'live') {
     return (
       <div className="pointer-events-none">
-        <LiveRow craft={view.craft} size={size} />
+        <LiveRow craft={view.craft} size={size} world={world} />
       </div>
     )
   }
@@ -192,7 +193,7 @@ export function Recipes({ view, size }: { view: RecipeView; size: Size }) {
           recipe={view.recipe}
           size={size}
           fill={1}
-          time={clockText(view.recipe.duration.seconds)}
+          time={clockText(world.realSeconds(view.recipe.duration.seconds))}
           short={NO_SHORT}
           live={false}
         />
@@ -207,7 +208,7 @@ export function Recipes({ view, size }: { view: RecipeView; size: Size }) {
           recipe={recipe}
           size={size}
           fill={1}
-          time={clockText(recipe.duration.seconds)}
+          time={clockText(world.realSeconds(recipe.duration.seconds))}
           short={NO_SHORT}
           live={false}
         />

@@ -99,7 +99,7 @@ describe('necronomicon.research', () => {
     })
     expect(SHELF_SKUS).toContain('buy-necronomicon')
     expect(skuItem('buy-necronomicon')).toEqual({ kind: 'necronomicon' })
-    expect(catalogEntries().some(e => e.id === 'necronomicon')).toBe(true)
+    expect(catalogEntries(1).some(e => e.id === 'necronomicon')).toBe(true)
   })
 })
 

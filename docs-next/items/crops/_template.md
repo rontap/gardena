@@ -22,7 +22,7 @@ Always these three columns; `—` where the crop has no variety of that tier. Pu
 
 ## Growing
 
-Fields of `CROPS.{id}` (trees also `TREES.{id}`, `TREE_FERT_PER_DAY.{id}`): `growSeconds`, `waterUsePerSec`, `waterTolerance`, `fertTolerance`, `fertUseMul`, `rotSeconds`. {Anything specific to this crop.}
+Fields of `CROPS.{id}` (trees also `TREES.{id}`): `growSeconds`, `waterUsePerSec`, `waterTolerance`, `fertTolerance`, `fertUseMul`, `rotSeconds`. {Anything specific to this crop.}
 
 ## Selling
 

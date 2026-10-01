@@ -1,13 +1,10 @@
 import { describe, expect, test } from 'vitest'
-import { CROPS, TREE_FERT_PER_DAY } from '../defs/crops.ts'
+import { CROPS } from '../defs/crops.ts'
 import { AXES } from '../defs/items.ts'
+import { HARDNESS } from '../defs/rules.ts'
 import {
   TREES,
-  TREE_HAPPY_DROWN_SECONDS,
-  TREE_HAPPY_GAIN_SECONDS,
   TREE_HAPPY_START,
-  TREE_HAPPY_STARVE_SECONDS,
-  TREE_HAPPY_WILT_SECONDS,
   TREE_OFF_CHANCE,
 } from '../defs/trees.ts'
 import { Tree, frontOf } from './building.ts'
@@ -23,11 +20,13 @@ import { dump, parse } from './feature-save/save.ts'
 import {
   happyBand,
   makeTreeSoil,
+  PLANT_FERT_PER_SEC,
   TREE_FERT_MAX,
   TREE_WATER_MAX,
   TREE_WATER_MID,
-  WEED_CHANCE,
 } from './soil.ts'
+
+const WEED_CHANCE = HARDNESS.normal.weedChance
 import { DT_MAX, World } from './world.ts'
 
 const AT = { col: 10, row: 12 }
@@ -224,11 +223,12 @@ describe('trees.drink', () => {
     expect(CROPS.apricot.waterUsePerSec).toBe(0.002333)
     expect(CROPS.cherry.waterUsePerSec).toBe(0.003167)
     expect(CROPS.apple.waterUsePerSec).toBe(0.00375)
-    expect(TREE_FERT_PER_DAY.olive).toBe(0.09)
-    expect(TREE_FERT_PER_DAY.apricot).toBe(0.12)
-    expect(TREE_FERT_PER_DAY.cherry).toBe(0.165)
-    expect(TREE_FERT_PER_DAY.apple).toBe(0.18)
-    expect(statsOf('apple', 'base', 0, []).fertUsePerSec).toBeCloseTo(TREE_FERT_PER_DAY.apple / DAY_SECONDS, 12)
+    expect(CROPS.olive.fertUseMul).toBe(0.44)
+    expect(CROPS.apricot.fertUseMul).toBe(0.59)
+    expect(CROPS.cherry.fertUseMul).toBe(0.81)
+    expect(CROPS.apple.fertUseMul).toBe(0.88)
+    expect(statsOf('apple', 'base', 0, []).fertUsePerSec).toBeCloseTo(PLANT_FERT_PER_SEC * CROPS.apple.fertUseMul, 12)
+    expect(statsOf('olive', 'base', 0, []).fertUsePerSec).toBeCloseTo(PLANT_FERT_PER_SEC * CROPS.olive.fertUseMul, 12)
     expect(statsOf('carrot', 'base', 0, []).fertUsePerSec).not.toBe(statsOf('apple', 'base', 0, []).fertUsePerSec)
     const w = new World()
     const tree = plantTree(w, 0, 0, { kind: 'pending' })
@@ -258,15 +258,15 @@ describe('trees.drink', () => {
 
 describe('trees.happy', () => {
   test('trees.happy', () => {
-    expect(TREE_HAPPY_GAIN_SECONDS).toBe(900)
+    expect(HARDNESS.normal.happy.gain).toBe(900)
     expect(TREE_HAPPY_START).toBe(0.33)
-    expect(TREE_HAPPY_WILT_SECONDS).toBe(120)
-    expect(TREE_HAPPY_STARVE_SECONDS).toBe(200)
-    expect(TREE_HAPPY_DROWN_SECONDS).toBe(90)
+    expect(HARDNESS.normal.happy.wilt / 2).toBe(120)
+    expect(HARDNESS.normal.happy.starve / 2).toBe(170)
+    expect(HARDNESS.normal.happy.drown / 2).toBe(90)
     const w = new World()
     const tree = plantTree(w, 0, 0, { kind: 'pending' })
     tree.happiness = TREE_HAPPY_START
-    const gain = DT_MAX / TREE_HAPPY_GAIN_SECONDS
+    const gain = DT_MAX / HARDNESS.normal.happy.gain
     w.tick(DT_MAX)
     expect(tree.happiness).toBeCloseTo(TREE_HAPPY_START + gain + gain, 8)
     expect(tree.kind).toBe('tree')

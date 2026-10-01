@@ -38,7 +38,8 @@ import { TREES, TREE_RATE_HAPPY, TREE_RATE_ON, TREE_YIELD_DAYS } from '../defs/t
 import { INFUSABLE_KINDS, PLANT_CROPS, TREE_IDS, type GrownCrop, type SkuId, type TreeId } from '../sim/ids.ts'
 import { toolItem } from '../sim/feature-burrow/burrow.ts'
 import { faceName, infuseGoodsText, REAGENT_NAME, tierLabel, type Face } from '../sim/item.ts'
-import { statsOf, type Stats } from '../sim/modifiers.ts'
+import { difficultyModifier, statsOf, type Stats } from '../sim/modifiers.ts'
+import { HARDNESS, type Rules } from '../defs/rules.ts'
 import { FERT_PLOT_MAX, SOIL_WATER_MID, TREE_FERT_MAX, TREE_WATER_MID } from '../sim/soil.ts'
 import { DAY_SECONDS, days } from '../sim/clock.ts'
 import type { World } from '../sim/world.ts'
@@ -84,7 +85,7 @@ import {
   weatherSensorArt,
 } from '../view/svgs.ts'
 import { CalloutHover } from './callout-hover.tsx'
-import { Coin, Label, Overlay, tabTriggerClass } from './frame.tsx'
+import { Coin, Label, Overlay, tabSelectClass, tabSelectListClass, tabTriggerClass } from './frame.tsx'
 import { useCycle } from './cycle.ts'
 import { MACHINE_IDS, recipesUsing, type MachineId, type Recipe } from '../sim/feature-machines/recipe.ts'
 import { Recipes } from './recipe.tsx'
@@ -357,7 +358,7 @@ const STAGES = ['sprout', 'grow', 'ripe'] as const
 const TREE_STAGES = ['trunk', 'grow', 'unripe', 'ripe'] as const
 
 export function Almanac({ world, onClose }: { world: World; onClose: () => void }) {
-  const entries = catalogEntries()
+  const entries = catalogEntries(world.pace)
   const [tab, setTab] = useState<AlmanacTab>('fruits')
   const [id, setId] = useState(firstId('fruits'))
   const [tip, setTip] = useState<Tip>(undefined)
@@ -382,7 +383,7 @@ export function Almanac({ world, onClose }: { world: World; onClose: () => void 
             description={
               <>
                 <RecipeSale recipe={tip.recipe} />
-                <Recipes view={{ kind: 'one', recipe: tip.recipe }} size="sm" />
+                <Recipes view={{ kind: 'one', recipe: tip.recipe }} size="sm" world={world} />
               </>
             }
           />
@@ -447,6 +448,7 @@ export function Almanac({ world, onClose }: { world: World; onClose: () => void 
               <RowPane
                 row={row}
                 byId={byId}
+                world={world}
                 done={{
                   fermentation: world.done.has('unlock-fermentation'),
                   grinder: world.done.has('unlock-grinder'),
@@ -471,12 +473,14 @@ type AlmanacDone = { fermentation: boolean; grinder: boolean; preservatives: boo
 function RowPane({
   row,
   byId,
+  world,
   done,
   familiarity,
   tab,
 }: {
   row: ListRow
   byId: Map<string, CatalogEntry>
+  world: World
   done: AlmanacDone
   familiarity: World['familiarity']
   tab: AlmanacTab
@@ -485,13 +489,13 @@ function RowPane({
     case 'overview':
       return <OverviewPane tab={tab} />
     case 'concept':
-      return <ConceptPane id={row.id} />
+      return <ConceptPane id={row.id} rules={world.rules} />
     case 'sku':
-      return <Pane entry={skuEntry(byId, row.id)} done={done} familiarity={familiarity} tab={tab} />
+      return <Pane entry={skuEntry(byId, row.id)} done={done} familiarity={familiarity} tab={tab} world={world} />
     case 'forms':
       return <FormsPane title={row.title()} entries={row.ids.map(id => skuEntry(byId, id))} tab={tab} />
     case 'tools':
-      return <ToolPane title={row.title()} family={row.family} byId={byId} />
+      return <ToolPane title={row.title()} family={row.family} byId={byId} world={world} />
   }
 }
 
@@ -621,23 +625,23 @@ function MachinesOverview() {
   )
 }
 
-function ConceptPane({ id }: { id: ConceptId }) {
+function ConceptPane({ id, rules }: { id: ConceptId; rules: Rules }) {
   return (
     <>
       <div className="mb-3 text-lg leading-relaxed text-ink">{CONCEPT_LABEL[id]()}</div>
-      <div className="flex flex-col gap-3 text-base leading-relaxed text-ink">{conceptBody(id)}</div>
+      <div className="flex flex-col gap-3 text-base leading-relaxed text-ink">{conceptBody(id, rules)}</div>
     </>
   )
 }
 
-function conceptBody(id: ConceptId) {
+function conceptBody(id: ConceptId, rules: Rules) {
   switch (id) {
     case 'variety':
       return <VarietyConcept />
     case 'quality':
       return <QualityConcept />
     case 'freshness':
-      return <FreshnessConcept />
+      return <FreshnessConcept rules={rules} />
     case 'happiness':
       return <HappinessConcept />
     case 'day':
@@ -693,8 +697,8 @@ function QualityConcept() {
   )
 }
 
-function FreshnessConcept() {
-  const full = 80
+function FreshnessConcept({ rules }: { rules: Rules }) {
+  const full = Math.round(HARDNESS[rules.difficulty].freshFull * 100)
   return (
     <>
       <div>
@@ -1293,16 +1297,18 @@ function Pane({
   done,
   familiarity,
   tab,
+  world,
 }: {
   entry: CatalogEntry
   done: AlmanacDone
   familiarity: World['familiarity']
   tab: AlmanacTab
+  world: World
 }) {
   const tree = TREE_IDS.find(id => id === entry.id)
-  if (tree !== undefined) return <TreePane key={tree} tree={tree} n={familiarity[tree]} done={done} />
+  if (tree !== undefined) return <TreePane key={tree} tree={tree} n={familiarity[tree]} done={done} rules={world.rules} />
   const crop = CROP_IDS.find(id => id === entry.id)
-  if (crop !== undefined) return <CropPane key={crop} crop={crop} n={familiarity[crop]} done={done} />
+  if (crop !== undefined) return <CropPane key={crop} crop={crop} n={familiarity[crop]} done={done} rules={world.rules} />
   if (entry.id === 'pipe') return <PipePane title={entry.title} blurb={entry.blurb} />
   if (SILO_IDS.includes(entry.id)) return <CardPane entry={entry} fill="bg-grass" />
   const sensor = SENSOR_IDS.find(id => id === entry.id)
@@ -1315,7 +1321,7 @@ function Pane({
         <Plate entry={entry} tab={tab} />
       </div>
       <div className="text-base leading-relaxed text-ink">{entry.blurb}</div>
-      {machine !== undefined && <MachineRecipes machine={machine} />}
+      {machine !== undefined && <MachineRecipes machine={machine} world={world} />}
     </>
   )
 }
@@ -1346,11 +1352,11 @@ function FormsPane({ title, entries, tab }: { title: string; entries: CatalogEnt
   )
 }
 
-function MachineRecipes({ machine }: { machine: MachineId }) {
+function MachineRecipes({ machine, world }: { machine: MachineId; world: World }) {
   return (
     <div className="mt-4">
       <div className="mb-1 font-display text-xs leading-none text-ink">{m.hud_recipes()}</div>
-      <Recipes view={{ kind: 'list', machine }} size="md" />
+      <Recipes view={{ kind: 'list', machine }} size="md" world={world} />
     </div>
   )
 }
@@ -1489,8 +1495,8 @@ function waterLines(st: Stats, g: GroupScales, mid: number, n: number): Line[] {
   ]
 }
 
-function plantLines(crop: GrownCrop, variety: VarietyId, n: number): Line[] {
-  const st = statsOf(crop, variety, 0, [])
+function plantLines(crop: GrownCrop, variety: VarietyId, n: number, rules: Rules): Line[] {
+  const st = statsOf(crop, variety, 0, [difficultyModifier(rules.difficulty)])
   const g = PLANT_SCALES
   const seed: Line[] =
     variety === 'base'
@@ -1522,8 +1528,8 @@ function plantLines(crop: GrownCrop, variety: VarietyId, n: number): Line[] {
   ]
 }
 
-function treeLines(tree: TreeId, variety: VarietyId, n: number): Line[] {
-  const st = statsOf(tree, variety, 0, [])
+function treeLines(tree: TreeId, variety: VarietyId, n: number, rules: Rules): Line[] {
+  const st = statsOf(tree, variety, 0, [difficultyModifier(rules.difficulty)])
   const def = TREES[tree]
   const g = TREE_SCALES
   return [
@@ -1568,9 +1574,6 @@ function foundVarieties(crop: GrownCrop, n: number): VarietyId[] {
 function varietyLabel(variety: VarietyId): string {
   return variety === 'base' ? m.almanac_variety_plain() : varietyName(variety)
 }
-
-const varietyTabClass =
-  'cursor-pointer whitespace-nowrap rounded-md px-3 py-1 text-sm font-semibold text-ink/55 hover:bg-ink/10 hover:text-ink data-[state=active]:bg-dirt data-[state=active]:text-house data-[disabled]:cursor-default data-[disabled]:italic data-[disabled]:text-ink/35 data-[disabled]:hover:bg-transparent'
 
 function Portrait({ caption, fill, children }: { caption: string; fill: string; children: ReactNode }) {
   return (
@@ -1694,14 +1697,14 @@ function CropShell({
         }}
       >
         {VARIETIES[crop].length > 1 && (
-          <Tabs.List className="mb-3 inline-flex flex-wrap gap-1 rounded-lg bg-ink/8 p-1">
+          <Tabs.List className={`mb-3 ${tabSelectListClass}`}>
             {found.map(v => (
-              <Tabs.Trigger key={v} value={v} className={varietyTabClass}>
+              <Tabs.Trigger key={v} value={v} className={tabSelectClass}>
                 {varietyLabel(v)}
               </Tabs.Trigger>
             ))}
             {found.length < VARIETIES[crop].length && (
-              <Tabs.Trigger value="unknown" disabled className={varietyTabClass}>
+              <Tabs.Trigger value="unknown" disabled className={tabSelectClass}>
                 {m.almanac_variety_unknown()}
               </Tabs.Trigger>
             )}
@@ -1721,7 +1724,7 @@ function CropShell({
   )
 }
 
-function CropPane({ crop, n, done }: { crop: GrownCrop; n: number; done: AlmanacDone }) {
+function CropPane({ crop, n, done, rules }: { crop: GrownCrop; n: number; done: AlmanacDone; rules: Rules }) {
   return (
     <CropShell
       crop={crop}
@@ -1729,12 +1732,12 @@ function CropPane({ crop, n, done }: { crop: GrownCrop; n: number; done: Almanac
       done={done}
       ground="bg-dirt-dark"
       growing={v => <PlantGrowing crop={crop} variety={v} />}
-      lines={v => plantLines(crop, v, n)}
+      lines={v => plantLines(crop, v, n, rules)}
     />
   )
 }
 
-function TreePane({ tree, n, done }: { tree: TreeId; n: number; done: AlmanacDone }) {
+function TreePane({ tree, n, done, rules }: { tree: TreeId; n: number; done: AlmanacDone; rules: Rules }) {
   return (
     <CropShell
       crop={tree}
@@ -1742,7 +1745,7 @@ function TreePane({ tree, n, done }: { tree: TreeId; n: number; done: AlmanacDon
       done={done}
       ground="bg-grass"
       growing={v => <TreeGrowing tree={tree} variety={v} />}
-      lines={v => treeLines(tree, v, n)}
+      lines={v => treeLines(tree, v, n, rules)}
     />
   )
 }
@@ -1758,7 +1761,7 @@ function priceRow(prices: readonly Price[]): StatRow {
   }
 }
 
-function familyRows(family: ToolFamily): StatRow[] {
+function familyRows(family: ToolFamily, world: World): StatRow[] {
   switch (family.kind) {
     case 'work':
       return [
@@ -1769,7 +1772,7 @@ function familyRows(family: ToolFamily): StatRow[] {
         },
         {
           label: m.almanac_stat_use_time(),
-          cells: family.tools.map((t): Cell => ({ kind: 'value', value: m.almanac_seconds({ n: t.workSeconds }) })),
+          cells: family.tools.map((t): Cell => ({ kind: 'value', value: m.almanac_seconds({ n: Math.round(world.realSeconds(t.workSeconds)) }) })),
         },
       ]
     case 'hold':
@@ -1792,7 +1795,7 @@ function StatCell({ cell }: { cell: Cell }) {
   }
 }
 
-function ToolPane({ title, family, byId }: { title: string; family: ToolFamily; byId: Map<string, CatalogEntry> }) {
+function ToolPane({ title, family, byId, world }: { title: string; family: ToolFamily; byId: Map<string, CatalogEntry>; world: World }) {
   const ids = toolIds(family)
   return (
     <>
@@ -1811,7 +1814,7 @@ function ToolPane({ title, family, byId }: { title: string; family: ToolFamily; 
           )
         })}
         <span />
-        {familyRows(family).map(row => (
+        {familyRows(family, world).map(row => (
           <Fragment key={row.label}>
             {row.cells.map((cell, i) => (
               <StatCell key={i} cell={cell} />

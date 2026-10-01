@@ -120,6 +120,10 @@ export function isTilled(c: Cell): c is Tilled {
   )
 }
 
+export function recovers(c: Cell): c is Tilled {
+  return isTilled(c) && c.kind !== 'growing'
+}
+
 export function openCover(c: Extract<Plot, { kind: 'untilled' }>): boolean {
   return c.cover.kind === 'bare' || c.cover.kind === 'grass'
 }

@@ -44,7 +44,7 @@ Prompt: **Compost**.
 
 ## Art
 
-`prop-compost-box.svg`.
+`prop-compost-box.svg`. While working, a bar along the bottom of the footprint shows `progress` ([[features/machines]]).
 
 ## Sound
 

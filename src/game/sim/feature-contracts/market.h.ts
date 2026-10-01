@@ -213,11 +213,7 @@ export declare const MARKUP_BASE: number
 
 export declare const MARKUP_PER_DIFFICULTY: number
 
-export declare const PENALTY_RATE: number
-
 export declare const PENALTY_FLOOR: number
-
-export declare const CANCEL_MIN: number
 
 export type CleanUnit = (d: Demand) => number
 
@@ -225,7 +221,7 @@ export type Feasible = (good: StallGoodId, days: number, worldDay: number) => nu
 
 export type RollBoard = (day: number, slots: number) => readonly ContractOffer[]
 
-export type CancelFee = (a: Active, nowDay: number) => number
+export type CancelFee = (a: Active, nowDay: number, cancelMin: number) => number
 
 export type MissPenalty = (a: Active) => number
 

@@ -1,17 +1,9 @@
 import {
   CROPS,
-  HAPPY_DROWN_SECONDS,
-  HAPPY_GAIN_SECONDS,
   HAPPY_MAX,
-  HAPPY_STARVE_SECONDS,
-  HAPPY_WILT_SECONDS,
 } from '../../defs/crops.ts'
 import {
-  TREE_HAPPY_DROWN_SECONDS,
-  TREE_HAPPY_GAIN_SECONDS,
   TREE_HAPPY_START,
-  TREE_HAPPY_STARVE_SECONDS,
-  TREE_HAPPY_WILT_SECONDS,
 } from '../../defs/trees.ts'
 import {
   CHOP_GRAFTS,
@@ -39,7 +31,7 @@ import { extractBurrow } from '../feature-burrow/burrow.ts'
 import { goodness } from '../noise.ts'
 import { Plant, Turf, type Doom } from '../plant.ts'
 import { bare, isPlot, isTilled, type Cell, type Plot } from '../plot.ts'
-import { fertBand, makeTreeSoil, SOIL_TILL_WATER, SOIL_WATER_MID, Soil, TREE_FERT_MAX, TREE_WATER_MID, waterBand, WEED_CHANCE, type Band } from '../soil.ts'
+import { fertBand, makeTreeSoil, SOIL_TILL_WATER, SOIL_WATER_MID, Soil, TREE_FERT_MAX, TREE_WATER_MID, waterBand, type Band } from '../soil.ts'
 import type { World } from '../world.ts'
 
 type Harm = { kind: 'none' } | { kind: 'hurt'; by: Doom }
@@ -93,21 +85,17 @@ function ageHappiness(
   return harm
 }
 
-export function age(plant: Plant, soil: Soil, water: Band, fert: Band, dt: number): Harm {
-  return ageHappiness(plant, soil, water, fert, dt, {
-    starve: HAPPY_STARVE_SECONDS,
-    drown: HAPPY_DROWN_SECONDS,
-    wilt: HAPPY_WILT_SECONDS,
-    gain: HAPPY_GAIN_SECONDS,
-  })
+export function age(w: World, plant: Plant, soil: Soil, water: Band, fert: Band, dt: number): Harm {
+  return ageHappiness(plant, soil, water, fert, dt, w.hard.happy)
 }
 
-export function ageTree(tree: Tree, soil: Soil, water: Band, fert: Band, dt: number): Harm {
+export function ageTree(w: World, tree: Tree, soil: Soil, water: Band, fert: Band, dt: number): Harm {
+  const happy = w.hard.happy
   return ageHappiness(tree, soil, water, fert, dt, {
-    starve: TREE_HAPPY_STARVE_SECONDS,
-    drown: TREE_HAPPY_DROWN_SECONDS,
-    wilt: TREE_HAPPY_WILT_SECONDS,
-    gain: TREE_HAPPY_GAIN_SECONDS,
+    starve: happy.starve / 2,
+    drown: happy.drown / 2,
+    wilt: happy.wilt / 2,
+    gain: happy.gain,
   })
 }
 
@@ -234,7 +222,7 @@ export function grassCount(w: World): number {
 }
 
 export function freshSoil(w: World, at: Coord): Soil {
-  return new Soil(SOIL_TILL_WATER, goodness(w.rng, at.col, at.row), WEED_CHANCE)
+  return new Soil(SOIL_TILL_WATER, goodness(w.rng, at.col, at.row), w.hard.weedChance)
 }
 
 export function canShovel(w: World, at: Coord): boolean {
@@ -325,7 +313,7 @@ export function doPlant(w: World, at: Coord): void {
     const tree = new Tree(
       w.act.hand.item.tree,
       { shape: 'rect', col: above.col, row: above.row, w: 1, h: 2 },
-      makeTreeSoil(TREE_WATER_MID, goodness(w.rng, above.col, above.row) * TREE_FERT_MAX, WEED_CHANCE),
+      makeTreeSoil(TREE_WATER_MID, goodness(w.rng, above.col, above.row) * TREE_FERT_MAX, w.hard.weedChance),
       TREE_HAPPY_START,
     )
     tree.variety = w.act.hand.item.variety

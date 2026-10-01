@@ -1,4 +1,5 @@
-import { CROPS, freshMul, TREE_FERT_PER_DAY } from '../defs/crops.ts'
+import { CROPS, freshMul } from '../defs/crops.ts'
+import { HARDNESS } from '../defs/rules.ts'
 import {
   BARREL_AGE,
   BARREL_MATURE,
@@ -66,6 +67,7 @@ import {
   jamSale as liveJamSale,
   jamSugar as liveJamSugar,
   millProduct,
+  millWork,
 } from '../sim/feature-machines/machine.ts'
 import { statsOf } from '../sim/modifiers.ts'
 import { PLANT_FERT_PER_SEC, SOIL_TILL_WATER, SOIL_WATER_MAX, SOIL_WATER_MID, TREE_WATER_MAX, TREE_WATER_MID } from '../sim/soil.ts'
@@ -475,7 +477,7 @@ export function compute(state: BalanceState): { rows: Row[]; offDays: number; tr
       tree ? TREE_WATER_MAX : SOIL_WATER_MAX,
     )
     const fruitSale = c.sale * qMul * purposeMulAt(variety, 'produce', g) * c.saleMul
-    const fertL = isTreeId(c.id) ? (TREE_FERT_PER_DAY[c.id] / g.daySeconds) * growSeconds : g.fertDraw * c.fertUseMul * growSeconds
+    const fertL = g.fertDraw * c.fertUseMul * growSeconds
     const fertCost = (fertL / g.fertBagLiters) * g.fertCost
     const fertUnit = g.fertPaid ? fertCost : 0
     const costSeed = c.packPrice === null || c.packUnits === null ? null : c.packPrice / c.packUnits
@@ -525,7 +527,8 @@ export function compute(state: BalanceState): { rows: Row[]; offDays: number; tr
       const inn = millInAt(c.millRecipe, g)
       millSale = millBatch / inn
       const millNet = millBatch - inn * unitCost
-      const millTime = inn * fruitPeriod + g.millWork
+      const work = g.millWork === MILL_WORK ? millWork(c.millRecipe) : g.millWork
+      const millTime = inn * fruitPeriod + work
       millCpm = perMin(millNet, millTime)
       millClicks = g.machineClicks / inn
       const millPathClicks = produceClicks + millClicks
@@ -793,7 +796,7 @@ function handUnit(
   const late = planted * step - grow
   const wait = late > 0 ? late : 0
   const f = 1 - wait / rot
-  const fruit = f <= 0 ? 0 : row.fruitSale * freshMul(f) * handSatMul(planted, grow, sat)
+  const fruit = f <= 0 ? 0 : row.fruitSale * freshMul(f, HARDNESS.normal.freshFull) * handSatMul(planted, grow, sat)
   return { fruit, seed, fert, grow }
 }
 

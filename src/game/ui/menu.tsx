@@ -6,7 +6,9 @@ import { UI_MENU } from '../view/svgs.ts'
 import { Changelog } from './changelog.tsx'
 import { Btn, Chrome } from './frame.tsx'
 import { JoinFields, Notice, type MpFail } from './multiplayer.tsx'
+import { NewGamePage } from './new-game.tsx'
 import { SettingsPage } from './settings.tsx'
+import type { Rules } from '../defs/rules.ts'
 import type { Settings } from '../sim/settings.ts'
 
 const FAIL: { readonly [K in LoadFailReason]: () => string } = {
@@ -16,7 +18,7 @@ const FAIL: { readonly [K in LoadFailReason]: () => string } = {
   unusable: () => m.menu_fail_unusable(),
 }
 
-type MenuPage = { kind: 'home' } | { kind: 'changelog' } | { kind: 'settings' }
+type MenuPage = { kind: 'home' } | { kind: 'new' } | { kind: 'changelog' } | { kind: 'settings' }
 
 type MenuProps = {
   settings: Settings
@@ -31,7 +33,7 @@ type MenuProps = {
       connecting: boolean
       name: string
       onName: (v: string) => void
-      onNew: () => void
+      onNew: (rules: Rules) => void
       onLoad: () => void
       onUpload: (text: string) => void
       onJoinOpen: () => void
@@ -66,6 +68,7 @@ export function Menu(props: MenuProps) {
   if (joining && page.kind !== 'home') {
     setPage({ kind: 'home' })
   }
+  const fresh = !joining && page.kind === 'new'
   const changelog = !joining && page.kind === 'changelog'
   const config = !joining && page.kind === 'settings'
   const mpLocked = mode === 'play' && props.connected
@@ -120,6 +123,16 @@ export function Menu(props: MenuProps) {
             }
           >
             ×
+          </button>
+        )}
+        {fresh && (
+          <button
+            type="button"
+            aria-label={m.menu_back()}
+            className="absolute top-4 left-4 z-30 cursor-pointer px-2 py-0.5 text-lg leading-none text-ink/60 hover:bg-dirt hover:text-house"
+            onClick={() => setPage({ kind: 'home' })}
+          >
+            ←
           </button>
         )}
         <div className="relative z-20 flex flex-col gap-2 px-4 pt-4 pb-3">
@@ -177,23 +190,28 @@ export function Menu(props: MenuProps) {
                   </div>
                 </>
               ) : (
-                <>
-                  <Btn className="w-full" onClick={props.onNew}>
-                    {m.menu_new_game()}
-                  </Btn>
-                  <Btn className="w-full" disabled={!slotExists()} onClick={onLoad}>
-                    {loadLabel}
-                  </Btn>
-                  <Btn className="w-full" onClick={pick}>
-                    {m.menu_upload_save()}
-                  </Btn>
-                  <Btn className="w-full" onClick={props.onJoinOpen}>
-                    {m.menu_join_multiplayer()}
-                  </Btn>
-                  <Btn className="w-full" onClick={() => setPage({ kind: 'settings' })}>
-                    {m.menu_settings()}
-                  </Btn>
-                </>
+                <div className="grid">
+                  <div className={`col-start-1 row-start-1 flex flex-col gap-2 ${fresh ? 'invisible' : ''}`}>
+                    <Btn className="w-full" onClick={() => setPage({ kind: 'new' })}>
+                      {m.menu_new_game()}
+                    </Btn>
+                    <Btn className="w-full" disabled={!slotExists()} onClick={onLoad}>
+                      {loadLabel}
+                    </Btn>
+                    <Btn className="w-full" onClick={pick}>
+                      {m.menu_upload_save()}
+                    </Btn>
+                    <Btn className="w-full" onClick={props.onJoinOpen}>
+                      {m.menu_join_multiplayer()}
+                    </Btn>
+                    <Btn className="w-full" onClick={() => setPage({ kind: 'settings' })}>
+                      {m.menu_settings()}
+                    </Btn>
+                  </div>
+                  <div className={`col-start-1 row-start-1 ${fresh ? '' : 'invisible'}`}>
+                    <NewGamePage onPlay={props.onNew} />
+                  </div>
+                </div>
               )}
               {mpLocked && !guest && (
                 <p className="text-xs text-ink/55">

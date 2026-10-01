@@ -38,7 +38,7 @@ Prompts: **Make jam**, or **Make {jar name}** for a jar with its own name; **Fil
 
 ## Art
 
-`prop-jam.svg`.
+`prop-jam.svg`. While working, a bar along the bottom of the footprint shows `progress` ([[features/machines]]).
 
 ## Sound
 

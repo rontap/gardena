@@ -11,7 +11,10 @@ import { dump, parse } from '../feature-save/save.ts'
 import { makeShovel } from '../item.ts'
 import { bare, isFenceSite, isPavingSite, type Cell } from '../plot.ts'
 import { placeSolidOk, readPrompt } from '../prompt.ts'
-import { makeTreeSoil, Soil, TREE_FERT_MAX, TREE_WATER_MID, WEED_CHANCE } from '../soil.ts'
+import { HARDNESS } from '../../defs/rules.ts'
+import { makeTreeSoil, Soil, TREE_FERT_MAX, TREE_WATER_MID } from '../soil.ts'
+
+const WEED_CHANCE = HARDNESS.normal.weedChance
 import type { WeatherKind } from '../weather.ts'
 import { DT_MAX, World } from '../world.ts'
 import { grownTrees, mushroomSeam } from './mushroom.ts'

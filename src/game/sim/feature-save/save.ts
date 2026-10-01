@@ -45,6 +45,7 @@ export function dump(world: World): Save {
   return {
     game: 'gardena',
     version: GAME_VERSION,
+    rules: world.rules,
     savedAt: new Date().toISOString(),
     rng: { seed: world.rng.seed, fruit: world.rng.consumed('fruit') },
     clock: { day: world.clock.day, t: world.clock.t },

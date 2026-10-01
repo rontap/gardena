@@ -217,10 +217,6 @@ export const REP_MAX = 20
 
 export const REP_DONE: { readonly [K in Stars]: number } = { 1: 0.5, 2: 1, 3: 1.5, 4: 2 }
 
-export const REP_LOST: { readonly [K in Stars]: number } = { 1: 1, 2: 2, 3: 3, 4: 4 }
-
-export const REP_IDLE = 0.3
-
 export const STARTER_CROPS: readonly PlantCrop[] = ['carrot', 'potato', 'wheat']
 
 export const D_STARTER = -1
@@ -256,8 +252,6 @@ export const MARKUP_BAND: { readonly [K in DeadlineBand]: number } = {
   long: 0,
 }
 
-export const PENALTY_RATE = 0.2
-
 export const LOAD_MIN = 0.12
 
 export const LOAD_MAX = 1.35
@@ -279,8 +273,6 @@ export const SCALE_START = 0.35
 export const SCALE_DAYS = 24
 
 export const PENALTY_FLOOR = 0.25
-
-export const CANCEL_MIN = 0.05
 
 export const PAIR_COST = 10
 
@@ -585,6 +577,7 @@ function offerAt(
   D: number,
   company: CompanyId,
   scaleDay: number,
+  penaltyRate: number,
 ): ContractOffer {
   const tier = starsOf(D)
   const band = weighted(DEADLINE_BANDS, stream.at(day, slot, 5))
@@ -627,7 +620,7 @@ function offerAt(
     clean,
     markup,
     reward: Math.round(clean * (1 + markup)),
-    penalty: Math.round(PENALTY_RATE * clean),
+    penalty: Math.round(penaltyRate * clean),
   }
 }
 
@@ -740,21 +733,21 @@ function withPrizes(stream: Spatial, day: number, offers: readonly ContractOffer
   return offers.map((o, i) => (picked.includes(i) ? { ...o, prize: prizeFor(stream, day, o) } : o))
 }
 
-export function rollBoard(rng: Rng, day: number, slots: number, rep: number): readonly ContractOffer[] {
+export function rollBoard(rng: Rng, day: number, slots: number, rep: number, penaltyRate: number): readonly ContractOffer[] {
   const stream = rng.stream('contract')
   const firms = shuffled(stream, day, slots)
   const base = Array.from({ length: slots }, (_, slot) =>
-    offerAt(stream, day, slot, slotD(stream, day, slot, rep), firms[slot], day),
+    offerAt(stream, day, slot, slotD(stream, day, slot, rep), firms[slot], day, penaltyRate),
   )
   return withPrizes(stream, day, base)
 }
 
 export const LADDER_DAY = 24
 
-export function rollBoardAtD(rng: Rng, D: number, slots: number): readonly ContractOffer[] {
+export function rollBoardAtD(rng: Rng, D: number, slots: number, penaltyRate: number): readonly ContractOffer[] {
   const stream = rng.stream('contract')
   const firms = shuffled(stream, D, slots)
-  const base = Array.from({ length: slots }, (_, slot) => offerAt(stream, D, slot, D, firms[slot], LADDER_DAY))
+  const base = Array.from({ length: slots }, (_, slot) => offerAt(stream, D, slot, D, firms[slot], LADDER_DAY, penaltyRate))
   return withPrizes(stream, D, base)
 }
 
@@ -772,11 +765,11 @@ export function missPenalty(a: Active): number {
   return Math.round(a.offer.penalty * m)
 }
 
-export function cancelFee(a: Active, nowDay: number): number {
+export function cancelFee(a: Active, nowDay: number, cancelMin: number): number {
   const elapsed = nowDay - (a.dueDay - a.offer.days)
   const t = elapsed / a.offer.days
   const u = t < 0 ? 0 : t > 1 ? 1 : t
-  return Math.round((1 - u) * CANCEL_MIN * a.offer.clean + u * missPenalty(a))
+  return Math.round((1 - u) * cancelMin * a.offer.clean + u * missPenalty(a))
 }
 
 export function needOf(a: Active): number {
@@ -923,7 +916,7 @@ function resolveMiss(w: World, a: Active): void {
   const penalty = missPenalty(a)
   w.money += sold - penalty
   w.contracts.book[a.offer.company].missed += 1
-  const rep = addRep(w, -REP_LOST[a.offer.stars])
+  const rep = addRep(w, -w.hard.repLost[a.offer.stars])
   dropActive(w, a)
   pushHistory(w, {
     id: a.offer.id,
@@ -958,7 +951,7 @@ export function acceptContractBody(w: World, c: ContractId): void {
   if (!w.done.has('unlock-contracts')) return
   if (w.contracts.active.length >= w.contractCap()) return
   if (w.contracts.takenToday.includes(c)) return
-  const offer = rollBoard(w.rng, w.clock.day, w.contractSlots(), w.contracts.repDay).find(o => o.id === c)
+  const offer = rollBoard(w.rng, w.clock.day, w.contractSlots(), w.contracts.repDay, w.hard.penaltyRate).find(o => o.id === c)
   if (offer === undefined) return
   const bins: Bins =
     offer.lines.length === 1
@@ -976,9 +969,9 @@ export function cancelContractBody(w: World, c: ContractId): void {
   const a = w.contracts.active.find(x => x.offer.id === c)
   if (a === undefined) return
   const sold = dumpFilled(w, a)
-  const fee = cancelFee(a, w.nowDay())
+  const fee = cancelFee(a, w.nowDay(), w.hard.cancelMin)
   w.money += sold - fee
-  const rep = addRep(w, -REP_LOST[a.offer.stars])
+  const rep = addRep(w, -w.hard.repLost[a.offer.stars])
   dropActive(w, a)
   pushHistory(w, {
     id: a.offer.id,

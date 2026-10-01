@@ -33,7 +33,7 @@ Prompt: **Grind**. Hover shows **{n} → seeds**.
 
 ## Art
 
-`prop-grinder.svg`.
+`prop-grinder.svg`. While working, a bar along the bottom of the footprint shows `progress` ([[features/machines]]).
 
 ## Sound
 

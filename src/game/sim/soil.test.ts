@@ -3,7 +3,10 @@ import {describe, expect, test} from 'vitest'
 import {DIG_HARD_SPAN} from '../defs/items.ts'
 import {HAPPY_START} from '../defs/crops.ts'
 import {DOOR, HOUSE_BASE, Rock, Tree} from './building.ts'
-import {FERT_PLOT_MAX, makeTreeSoil, SOIL_WATER_MAX, SOIL_WATER_MID, Soil, TREE_FERT_MAX, TREE_WATER_MAX, TREE_WATER_MID, WEED_CHANCE} from './soil.ts'
+import { HARDNESS } from '../defs/rules.ts'
+import {FERT_PLOT_MAX, makeTreeSoil, SOIL_WATER_MAX, SOIL_WATER_MID, Soil, TREE_FERT_MAX, TREE_WATER_MAX, TREE_WATER_MID} from './soil.ts'
+
+const WEED_CHANCE = HARDNESS.normal.weedChance
 import {bare, isPavingSite} from './plot.ts'
 import {goodness, groundOf, hardnessOf, HARD_MAX} from './noise.ts'
 import {World} from './world.ts'

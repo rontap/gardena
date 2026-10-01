@@ -17,13 +17,20 @@ import {Rock, Tree} from './building.ts'
 import {Act} from './log.ts'
 import {Rng} from './rng.ts'
 import {Clock, days} from './clock.ts'
-import {BIG_TICK, makeTreeSoil, Soil, SOIL_TILL_WATER, SOIL_WATER_MID, STUNT, TREE_FERT_MAX, TREE_WATER_MID, WEED_CHANCE, GRASS_CHANCE, ramped} from './soil.ts'
+import { GAME_SPEED, HARDNESS, type Difficulty } from '../defs/rules.ts'
+import {BIG_TICK, makeTreeSoil, Soil, SOIL_TILL_WATER, SOIL_WATER_MID, STUNT, TREE_FERT_MAX, TREE_WATER_MID, GRASS_CHANCE, GRASS_RAMP_START, ramped} from './soil.ts'
+
+const WEED_CHANCE = HARDNESS.normal.weedChance
 import {bare} from './plot.ts'
 import {SOURCE} from './water.ts'
 import {goodness} from './noise.ts'
 import {dest} from './queue.ts'
 import {fillable} from './nets.ts'
-import {DT_MAX, stipendOf, World} from './world.ts'
+import {DT_MAX, stipendOf as stipendBands, World} from './world.ts'
+
+function stipendOf(endedDay: number): number {
+    return stipendBands(endedDay, HARDNESS.normal.stipend)
+}
 import {SHELF_SKUS, SHELVES} from '../defs/shelf.ts'
 
 const HOME = [{cx: 0, cy: 0}]
@@ -88,11 +95,11 @@ function expectPacked(w: World): void {
 
 describe('beta-1 invariants', () => {
     test('weed and grass chances ramp from -10% over one day of big ticks', () => {
-        expect(ramped(WEED_CHANCE, 0)).toBeLessThan(0)
-        expect(ramped(GRASS_CHANCE, 0)).toBeLessThan(0)
-        expect(ramped(WEED_CHANCE, 12)).toBeCloseTo((-0.1 + (WEED_CHANCE + 0.1) * 0.5), 9)
-        expect(ramped(WEED_CHANCE, 24)).toBe(WEED_CHANCE)
-        expect(ramped(GRASS_CHANCE, 24)).toBe(GRASS_CHANCE)
+        expect(ramped(WEED_CHANCE, 0, HARDNESS.normal.weedStart)).toBeLessThan(0)
+        expect(ramped(GRASS_CHANCE, 0, GRASS_RAMP_START)).toBeLessThan(0)
+        expect(ramped(WEED_CHANCE, 12, HARDNESS.normal.weedStart)).toBeCloseTo((HARDNESS.normal.weedStart + (WEED_CHANCE - HARDNESS.normal.weedStart) * 0.5), 9)
+        expect(ramped(WEED_CHANCE, 24, HARDNESS.normal.weedStart)).toBeCloseTo(WEED_CHANCE, 12)
+        expect(ramped(GRASS_CHANCE, 24, GRASS_RAMP_START)).toBe(GRASS_CHANCE)
     })
 
     test('no plant tick across sundown', () => {
@@ -181,6 +188,8 @@ describe('beta-1 invariants', () => {
             saleMul: 1.04,
             growSpeed: 1,
             waterUseMul: 1,
+            fertUseMul: 1,
+            rotMul: 1,
         })
         const sale = new Plant('carrot', 'base', 0).stats(w.modifiers).sale
         expect(sale).toBe(CROPS.carrot.sale * 1.04)
@@ -1461,8 +1470,8 @@ describe('beta-6 invariants', () => {
             expect(h.kind === 'hold' && h.item.kind === 'fruit' ? h.item.unitSale : undefined).toBe(sale)
             expect(h.kind === 'hold' && h.item.kind === 'fruit' ? h.item.freshness : undefined).toBeCloseTo(1, 2)
         }
-        expect(freshMul(0.8)).toBe(1)
-        expect(freshMul(0.4)).toBe(0.5)
+        expect(freshMul(0.8, 0.8)).toBe(1)
+        expect(freshMul(0.4, 0.8)).toBe(0.5)
         w.seats[0].hand = {kind: 'empty'}
         const b = new Plant('carrot', 'base', 0)
         b.freshness = 0.4
@@ -1513,7 +1522,7 @@ describe('beta-6 invariants', () => {
         const slot = w.seats[0].inventory[0]
         expect(slot.kind === 'hold' && slot.item.kind === 'fruit' && slot.item.unitSale).toBe(5)
         expect(slot.kind === 'hold' && slot.item.kind === 'fruit' && slot.item.count).toBe(2)
-        if (slot.kind === 'hold' && slot.item.kind === 'fruit') expect(fruitMoney(slot.item)).toBe(10)
+        if (slot.kind === 'hold' && slot.item.kind === 'fruit') expect(fruitMoney(slot.item, HARDNESS.normal.freshFull)).toBe(10)
     })
 
     test('buy-delete is not a SkuId; the build shelf has no Delete', () => {
@@ -1812,6 +1821,41 @@ describe('vehicles.silo-store', () => {
         expect(walk({col: 6, row: 20})).toBe('silo')
         expect(walk({col: 10, row: 20})).toBe('additives')
         expect(walk({col: 14, row: 20})).toBe('chest')
+    })
+})
+
+const LEVELS: readonly Difficulty[] = ['peaceful', 'normal', 'hard']
+
+describe('rules.new', () => {
+    test('rules.new', () => {
+        const rules = {difficulty: 'hard' as const, speed: 'fast' as const}
+        const w = new World(1, undefined, rules)
+        expect(w.rules).toEqual(rules)
+        expect(w.pace).toBe(GAME_SPEED.fast)
+        let apple = false
+        w.forEachCell((_at, c) => {
+            if (c.kind !== 'tree' || c.species !== 'apple') return
+            expect(c.soil.weedChance).toBe(w.hard.weedChance)
+            apple = true
+        })
+        expect(apple).toBe(true)
+
+        const plain = new World(1)
+        expect(plain.rules).toEqual({difficulty: 'normal', speed: 'normal'})
+        expect(plain.pace).toBe(GAME_SPEED.normal)
+        expect(plain.hard).toBe(HARDNESS.normal)
+    })
+})
+
+describe('rules.fresh', () => {
+    test('rules.fresh', () => {
+        for (const difficulty of LEVELS) {
+            const full = HARDNESS[difficulty].freshFull
+            expect(freshMul(full, full)).toBe(1)
+            expect(freshMul(1, full)).toBe(1)
+            expect(freshMul(full / 2, full)).toBe(0.5)
+            expect(freshMul(0, full)).toBe(0)
+        }
     })
 })
 

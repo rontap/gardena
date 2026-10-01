@@ -2,8 +2,15 @@
 import { describe, expect, test } from 'vitest'
 import { DAY_SECONDS } from './clock.ts'
 import { onCell } from './drop.ts'
-import { Weed } from './plant.ts'
-import { Soil, WEED_CHANCE, WEED_GONE_DAYS, WEED_GROW, SOIL_WATER_MID } from './soil.ts'
+import { Plant, Weed } from './plant.ts'
+import { HARDNESS, type Difficulty } from '../defs/rules.ts'
+import { Soil, WEED_GONE_DAYS, WEED_GROW, SOIL_WATER_MID, ramped } from './soil.ts'
+import { doShovel } from './feature-field/field.helpers.ts'
+import { makeShovel } from './item.ts'
+import { bare } from './plot.ts'
+import { doPickup } from './queue.ts'
+
+const WEED_CHANCE = HARDNESS.normal.weedChance
 import { dump } from './feature-save/save.ts'
 import { parse } from './feature-save/save.parse.ts'
 import { DT_MAX, World } from './world.ts'
@@ -55,5 +62,63 @@ describe('weeds.gone', () => {
     if (!back.ok) return
     const cell = back.world.cell(AT)
     expect(cell.kind === 'weed' && cell.weed.readyAt).toEqual({ kind: 'ready', day: ripe.clock.day })
+  })
+})
+
+const LEVELS: readonly Difficulty[] = ['peaceful', 'normal', 'hard']
+
+describe('weeds.levels', () => {
+  test('weeds.levels', () => {
+    for (const difficulty of LEVELS) {
+      const w = new World(1, undefined, { difficulty, speed: 'normal' })
+      const till = { col: 8, row: 16 }
+      w.setCell(till, bare('soft', 0))
+      w.seats[0].hand = { kind: 'hold', item: makeShovel('shovel') }
+      expect(doShovel(w, till)).toBe(true)
+      const tilled = w.cell(till)
+      expect(tilled.kind).toBe('empty')
+      if (tilled.kind !== 'empty') return
+      expect(tilled.soil.weedChance).toBe(w.hard.weedChance)
+
+      const weedAt = { col: 8, row: 18 }
+      const next = { col: 9, row: 18 }
+      w.setCell(next, { kind: 'empty', soil: new Soil(SOIL_WATER_MID, 1, w.hard.weedChance) })
+      const weed = new Weed(0)
+      weed.maturity = 1 - DT_MAX / WEED_GROW / 2
+      w.setCell(weedAt, { kind: 'weed', soil: new Soil(SOIL_WATER_MID, 1, w.hard.weedChance), weed })
+      w.tick(DT_MAX)
+      const neighbour = w.cell(next)
+      expect(neighbour.kind).toBe('empty')
+      if (neighbour.kind !== 'empty') return
+      expect(neighbour.soil.weedChance).toBe(w.hard.weedChance + w.hard.weedNeighbour)
+
+      const pullAt = { col: 8, row: 20 }
+      const pullSoil = new Soil(SOIL_WATER_MID, 1, 0.2)
+      w.setCell(pullAt, { kind: 'weed', soil: pullSoil, weed: new Weed(0) })
+      w.seats[0].hand = { kind: 'empty' }
+      doPickup(w, pullAt)
+      expect(pullSoil.weedChance).toBe(w.hard.weedPulled)
+      expect(w.cell(pullAt).kind).toBe('empty')
+
+      expect(ramped(w.hard.weedChance, 0, w.hard.weedStart)).toBe(w.hard.weedStart)
+    }
+  })
+})
+
+describe('weeds.hold', () => {
+  test('weeds.hold', () => {
+    const w = new World(1)
+    const soil = new Soil(SOIL_WATER_MID, 1, 0)
+    const plant = new Plant('carrot', 'base', 0)
+    w.setCell(AT, { kind: 'growing', soil, plant })
+    w.tick(DT_MAX)
+    expect(soil.weedChance).toBe(0)
+    expect(w.cell(AT).kind).toBe('growing')
+    plant.maturity = 1
+    w.tick(DT_MAX)
+    expect(soil.weedChance).toBe(0)
+    expect(w.cell(AT).kind).toBe('ripe')
+    w.tick(DT_MAX)
+    expect(soil.weedChance).toBeCloseTo((0.15 * DT_MAX) / DAY_SECONDS, 10)
   })
 })

@@ -8,7 +8,10 @@ import { ADDITIVE_BAG, SiloSeed, SiloSpray } from './building.ts'
 import { packSku, type AnnualId, type SkuId } from './ids.ts'
 import { skuItem, type Item } from './item.ts'
 import { Act } from './log.ts'
-import { Soil, SOIL_WATER_MID, WEED_CHANCE } from './soil.ts'
+import { HARDNESS } from '../defs/rules.ts'
+import { Soil, SOIL_WATER_MID } from './soil.ts'
+
+const WEED_CHANCE = HARDNESS.normal.weedChance
 import { DT_MAX, World } from './world.ts'
 
 const AT = { col: 10, row: 12 }

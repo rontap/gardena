@@ -267,9 +267,9 @@ function researchCard(world: World, id: ResearchId): { html: string; face: Face 
   const color = face === 'run' ? house() : ink()
   if (face === 'done') return { face, html: cardHtml(icon, d.name, escText(m.hud_done()), color) }
   if (face === 'run' && world.job.kind === 'run') {
-    return { face, html: cardHtml(icon, d.name, coinMeta(d.cost, Math.ceil(world.job.left)), color) }
+    return { face, html: cardHtml(icon, d.name, coinMeta(d.cost, Math.ceil(world.realSeconds(world.job.left))), color) }
   }
-  return { face, html: cardHtml(icon, d.name, coinMeta(d.cost, d.seconds), color) }
+  return { face, html: cardHtml(icon, d.name, coinMeta(d.cost, Math.round(world.realSeconds(d.seconds))), color) }
 }
 
 function skillCard(world: World, id: SkillId): { html: string; face: Face } {
@@ -604,7 +604,7 @@ function ResearchDetail({ world, id, armed }: { world: World; id: ResearchId; ar
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-ink/45">{m.hud_time()}</span>
-                <span className="tabular-nums">{m.hud_secs({ secs: d.seconds })}</span>
+                <span className="tabular-nums">{m.hud_secs({ secs: Math.round(world.realSeconds(d.seconds)) })}</span>
               </div>
             </div>
             <div className="mt-2 text-sm text-ink/75">{d.blurb}</div>
@@ -649,7 +649,7 @@ function ResearchDetail({ world, id, armed }: { world: World; id: ResearchId; ar
           <div>
             <div className="mb-1.5 truncate text-sm">
               {RESEARCH[job.id].name}
-              <span className="text-ink/55"> · {m.hud_secs({ secs: Math.ceil(job.left) })}</span>
+              <span className="text-ink/55"> · {m.hud_secs({ secs: Math.ceil(world.realSeconds(job.left)) })}</span>
             </div>
             <Bar
               value={(RESEARCH[job.id].seconds - job.left) / RESEARCH[job.id].seconds}

@@ -94,13 +94,14 @@ import * as machines from './feature-machines/machines.tick.ts'
 import { CONTRACT_ACTIVE, CONTRACT_OFFERS, emptyContracts } from './feature-contracts/market.ts'
 import type { ContractId, Contracts, DemandChip, SellAllQuote } from './feature-contracts/market.h.ts'
 import { makeStall, STALL_IDS, type StallMap } from './stall.ts'
-import { statsOf, type Modifier, type Stats } from './modifiers.ts'
+import { GAME_SPEED, HARDNESS, RULES_NORMAL, type Hardness, type Rules } from '../defs/rules.ts'
+import { difficultyModifier, statsOf, type Modifier, type Stats } from './modifiers.ts'
 import { Plant } from './plant.ts'
 import {
   isTilled,
+  recovers,
   type Cell
 } from './plot.ts'
-import { WEED_CHANCE } from './soil.ts'
 import {
   edgeKey,
   edgeOwned as pipeOwned,
@@ -197,14 +198,8 @@ export function pointsForEndedDay(day: number): number {
   return day % 2 === 1 ? POINTS_PER_DAY : 0
 }
 
-export const STIPEND = [
-  { through: 3, amount: 12 },
-  { through: 6, amount: 6 },
-  { through: 10, amount: 3 },
-] as const
-
-export function stipendOf(endedDay: number): number {
-  const band = STIPEND.find(b => endedDay <= b.through)
+export function stipendOf(endedDay: number, bands: readonly { through: number; amount: number }[]): number {
+  const band = bands.find(b => endedDay <= b.through)
   if (band === undefined) return 0
   return band.amount
 }
@@ -311,6 +306,7 @@ export class World {
   bigTicks = 0
   cheatFastResearch = false
   cheatSpeed: 1 | 3 = 1
+  readonly rules: Rules
   bigAcc = 0
   nets: Net[] | undefined = undefined
   netAt = new Map<string, Net>()
@@ -340,11 +336,12 @@ export class World {
   private pendingDirty = new Set<DirtyReason>()
   private flushQueued = false
 
-  constructor(seed?: number, sink?: LogSink)
+  constructor(seed?: number, sink?: LogSink, rules?: Rules)
   constructor(tag: typeof HYDRATE, h: Hydrate)
-  constructor(seedOrTag?: number | typeof HYDRATE, sinkOrH: LogSink | Hydrate = new MemorySink()) {
+  constructor(seedOrTag?: number | typeof HYDRATE, sinkOrH: LogSink | Hydrate = new MemorySink(), rules: Rules = RULES_NORMAL) {
     if (seedOrTag === HYDRATE) {
       const h = sinkOrH as Hydrate
+      this.rules = h.rules
       this.rng = h.rng
       this.sink = h.sink
       this.house = h.house
@@ -429,6 +426,7 @@ export class World {
       this.drops.length = 0
       h.drops.forEach(d => this.drops.push(d))
       this.modifiers.length = 0
+      this.modifiers.push(difficultyModifier(this.rules.difficulty))
       family.rebuildSkillModifiers(this)
       this.netVerts.clear()
       h.segments.forEach(s => vertsOf(s.at).forEach(v => this.netVerts.add(vertexKey(v))))
@@ -443,8 +441,10 @@ export class World {
       this.applyWeatherRates()
       return
     }
+    this.rules = rules
     this.rng = new Rng(seedOrTag)
     this.sink = sinkOrH as LogSink
+    this.modifiers.push(difficultyModifier(this.rules.difficulty))
     this.sink.reset(this.rng.seed)
     this.house = new House(HOUSE_BASE, DOOR)
     this.warehouse = new Warehouse(WAREHOUSE_BASE)
@@ -457,7 +457,7 @@ export class World {
     initFamily(this)
     this.chunks.set(
       chunkKey(this.owned[0]),
-      generateChunk(this.rng, this.owned[0], this.house, this.pump, this.warehouse, this.postbox, this.silo, this.additives),
+      generateChunk(this.rng, this.owned[0], this.house, this.pump, this.warehouse, this.postbox, this.silo, this.additives, this.hard.weedChance),
     )
     this.seats = [soloSeat(localPlayerId(), localPlayerName())]
     this.act = this.seats[0]
@@ -474,6 +474,18 @@ export class World {
 
   get seed(): number {
     return this.rng.seed
+  }
+
+  get hard(): Hardness {
+    return HARDNESS[this.rules.difficulty]
+  }
+
+  get pace(): number {
+    return GAME_SPEED[this.rules.speed]
+  }
+
+  realSeconds(s: number): number {
+    return s / this.pace
   }
 
   get log(): Cmd[] {
@@ -673,7 +685,7 @@ export class World {
     else this.sensors.delete(k)
     if (cell.kind === 'button') this.buttons.set(k, here)
     else this.buttons.delete(k)
-    if (isTilled(cell) && cell.soil.weedChance < WEED_CHANCE) this.recover.set(k, here)
+    if (recovers(cell) && cell.soil.weedChance < this.hard.weedChance) this.recover.set(k, here)
     else this.recover.delete(k)
     if (cell.kind === 'empty') this.empty.set(k, here)
     else this.empty.delete(k)

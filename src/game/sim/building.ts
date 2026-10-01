@@ -19,7 +19,6 @@ import {
   FURNACE_SECONDS,
   INFUSE_IN,
   INFUSE_REAGENT,
-  INFUSE_SECONDS,
   GRIND_MAX,
   grindMinAt,
   GRIND_WORK,
@@ -30,7 +29,6 @@ import {
   JAM_SECONDS,
   MILL_H,
   MILL_W,
-  MILL_WORK,
   POSTBOX_SLOTS,
   PRODUCE_SLOTS,
   SILO_FIELD_ADDITIVE_CAP,
@@ -83,9 +81,11 @@ import {
   jamWorking,
   meanQuality,
   millDumpUnits,
+  infuseSeconds,
   millNeed,
   millProduct,
   millRecipeOf,
+  millWork,
   millWorking,
   mixQuality,
   sameInfusable,
@@ -702,7 +702,7 @@ export class Mill extends Machine {
   override tick(w: World, at: Coord, dt: number): boolean {
     if (!millWorking(this)) return false
     const need = millNeed(this.recipe)
-    this.progress += (dt * w.machineMul() * furnaceMul(w.furnaceSnap, this.base)) / MILL_WORK
+    this.progress += (dt * w.machineMul() * furnaceMul(w.furnaceSnap, this.base)) / millWork(this.recipe)
     if (this.progress < 1) return false
     if (!emitProduct(w, this.base, millProduct(this.recipe, this.variety, this.quality))) return false
     this.progress = 0
@@ -1057,7 +1057,7 @@ export class Infuser extends Machine {
   }
   override tick(w: World, at: Coord, dt: number): boolean {
     if (!infuserWorking(this)) return false
-    if (this.progress < 1) this.progress += (dt * furnaceMul(w.furnaceSnap, this.base)) / INFUSE_SECONDS
+    if (this.progress < 1) this.progress += (dt * furnaceMul(w.furnaceSnap, this.base)) / infuseSeconds(this.lock.kind)
     if (this.progress < 1) return false
     const reagent = infuseReagent(this)
     if (reagent === undefined) throw new Error('reagent')

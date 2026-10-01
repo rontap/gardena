@@ -9,22 +9,22 @@ I fully understand the law and my constraints:
 
 * No type marshalling and defensive coding
 * absolutely no version support
-* following instructions exactly. user prompt > docs > code > AI ideas
+* following instructions exactly. user prompt > docs-next > code > AI ideas
 * executive decisions are NOT allowed, stop and describe the problem and ask, not ask_tool.
 * I am a senior skilled developer who is fully capable of writing an interesting, well specified UI/UX/TS architecture and I will strive for short, clean, elegant solutions both in code and in design
 ```
 
 Then answer.
 
-@docs/standards/lexicon.md
+@docs-next/process/lexicon.md
 
 The file imported above is binding on every sentence written in this session, before the first one, whatever the task is. It is not a reference to open when text is the subject. It governs chat replies, ideation, plans, reviews, commit and PR text, and subagent prompts exactly as it governs player copy.
 
 ## Register
 
-`docs-next/**/*.md`, `docs/**/*.md`, commits, and reviews take the vault term, exact. Everything else takes the user-facing word from `docs/standards/user-facing-text.md`: chat with the developer, update notes, HUD, player copy.
+`docs-next/**/*.md`, commits, and reviews take the vault term, exact. Everything else takes the user-facing word from `docs-next/process/user-facing-text.md`: chat with the developer, update notes, HUD, player copy.
 
-Chat replies sit on the user-facing side. A vault term is wrong in a chat reply even when it is right in a note. `arm` is correct in `docs/ui/place.md` and in `armWire`; in chat it is pick the tool, then tap the target.
+Chat replies sit on the user-facing side. A vault term is wrong in a chat reply even when it is right in a note. `armWire` is the code name; in chat it is pick the tool, then tap the target.
 
 ## Literal
 
@@ -49,8 +49,8 @@ A grep locates a line. It never authorises an edit, and four lines of context ar
 
 ## Project law
 
-`AGENTS.md` is the orchestrator brief. `docs/canon.md` is how code is written. `docs-next/index.md` is the map: game rules, systems, items, art and the code map are there, written from the code. `docs/` is read only for what `docs-next/` has no page for yet, and for reasons, decisions and invariants the code cannot show.
+`AGENTS.md` is the orchestrator brief. `docs-next/process/canon.md` is how code is written. `docs-next/index.md` is the map: game rules, systems, items, art and the code map are there, written from the code. Agent law is `docs-next/process/`.
 
 ## Version text
 
-Only the orchestrator writes a version number or release notes: `docs/GLOBAL_VERSION.md`, the menu wordmark, `SAVE_VERSION`, dump `version`, `PROTOCOL`, `src/game/ui/changelog.md`, `changelogs-*.md`. Write one only when this turn asked for it in as many words. A task that names no version is not a release: build the feature, stop, and let the orchestrator cut the version.
+Only the orchestrator writes a version number or release notes: `docs-next/process/versions.md`, the menu wordmark, `SAVE_VERSION`, dump `version`, `PROTOCOL`, `src/game/ui/changelog.md`, `changelogs-*.md`. Write one only when this turn asked for it in as many words. A task that names no version is not a release: build the feature, stop, and let the orchestrator cut the version.

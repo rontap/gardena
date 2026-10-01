@@ -42,6 +42,8 @@ export function pickSkillBody(w: World, id: SkillId): void {
       saleMul: effect.saleMul,
       growSpeed: 1,
       waterUseMul: 1,
+      fertUseMul: 1,
+      rotMul: 1,
     })
     w.modGen += 1
   }
@@ -62,6 +64,8 @@ export function rebuildSkillModifiers(w: World): void {
       saleMul: effect.saleMul,
       growSpeed: 1,
       waterUseMul: 1,
+      fertUseMul: 1,
+      rotMul: 1,
     })
   })
   w.modGen += 1

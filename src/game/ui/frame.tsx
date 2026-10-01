@@ -226,6 +226,11 @@ export const tabRailListClass = '-my-3 -ml-4 flex w-28 shrink-0 flex-col gap-0.5
 export const tabRailClass =
   'cursor-pointer whitespace-nowrap border-l-2 border-transparent py-1 pr-2 pl-4 text-left text-sm font-semibold tracking-wide text-ink/45 hover:text-ink/75 data-[state=active]:border-ink data-[state=active]:bg-ink/6 data-[state=active]:text-ink'
 
+export const tabSelectListClass = 'inline-flex flex-wrap gap-1 rounded-lg bg-ink/8 p-1'
+
+export const tabSelectClass =
+  'cursor-pointer whitespace-nowrap rounded-md px-3 py-1 text-sm font-semibold text-ink/55 hover:bg-ink/10 hover:text-ink data-[state=active]:bg-dirt data-[state=active]:text-house data-[disabled]:cursor-default data-[disabled]:italic data-[disabled]:text-ink/35 data-[disabled]:hover:bg-transparent'
+
 /**
  * Incremental search. Unlike Field it does not select on focus, and it swallows
  * Escape only while it has something to clear — an empty box lets Escape through

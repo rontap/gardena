@@ -52,14 +52,17 @@ import {
   chunkRect,
 } from './building.ts'
 import { FREEZER_ROT_MUL, SUGAR_BAG, SUGAR_MILL } from '../defs/items.ts'
-import { TREES, TREE_YIELD_DAYS } from '../defs/trees.ts'
+import { TREES, TREE_HAPPY_START, TREE_YIELD_DAYS } from '../defs/trees.ts'
 import { dump, parse } from './feature-save/save.ts'
 import { makeShovel, skuItem, type Hand, type Item } from './item.ts'
 import { Plant, Weed } from './plant.ts'
 import { ADDITIVE_BASE, Rock, Tree } from './building.ts'
 import { Act, type Cmd } from './log.ts'
 import { Rng } from './rng.ts'
-import { makeTreeSoil, Soil, SOIL_WATER_MID, TREE_FERT_MAX, TREE_WATER_MID, WEED_CHANCE, WEED_FERT_PER_SEC, GRASS_CHANCE, PLANT_FERT_PER_SEC, ramped } from './soil.ts'
+import { HARDNESS, type Difficulty } from '../defs/rules.ts'
+import { makeTreeSoil, Soil, SOIL_WATER_MID, TREE_FERT_MAX, TREE_WATER_MID, WEED_FERT_PER_SEC, GRASS_CHANCE, GRASS_RAMP_START, PLANT_FERT_PER_SEC, ramped } from './soil.ts'
+
+const WEED_CHANCE = HARDNESS.normal.weedChance
 import { bare } from './plot.ts'
 import { STALL_IDS } from './stall.ts'
 import { statsOf } from './modifiers.ts'
@@ -130,7 +133,7 @@ function aabbGrassPick(w: World, bigTicks: number, i: number): { col: number; ro
 function expectedGrassAt(w: World, bigTicks: number): { col: number; row: number } | undefined {
   const n = w.owned.length * CHUNK * CHUNK
   const grass = new Rng(w.seed).stream('grass')
-  if (!(Math.min(1, ramped(GRASS_CHANCE, bigTicks) * n) > grass.at(bigTicks))) return undefined
+  if (!(Math.min(1, ramped(GRASS_CHANCE, bigTicks, GRASS_RAMP_START) * n) > grass.at(bigTicks))) return undefined
   for (let i = 0; i < 24; i++) {
     const at = ownedGrassPick(w, bigTicks, i)
     const c = w.cell(at)
@@ -655,7 +658,7 @@ describe('0.9 log and rng', () => {
 
 describe('1.5.2', () => {
   test('`Soil.weedChance: number` required. New soil (till, expand) = `WEED_CHANCE`. Copy soil on harvest/death keeps the field. Spawn: `mul` 0 → skip; else `weed.at(col, row, bigTicks) < ramped(soil.weedChance, bigTicks) * mul`. Recover: iff `weedChance < WEED_CHANCE`, `min(WEED_CHANCE, weedChance + 0.15 × dt / DAY_SECONDS)`. Does not pull outbreak down. Tick every `dt` on the recover index (tilled cells with `weedChance < WEED_CHANCE`). Same formula.', () => {
-    expect(WEED_CHANCE).toBe(0.03)
+    expect(WEED_CHANCE).toBe(0.0275)
     const w = new World()
     const soil = bed()
     expect(soil.weedChance).toBe(WEED_CHANCE)
@@ -680,7 +683,7 @@ describe('1.5.2', () => {
     w.tick(1)
     expect(weed.spread).toBe(true)
     expect(weed.maturity).toBe(1)
-    expect(adj.weedChance).toBeCloseTo(WEED_CHANCE + 0.05, 8)
+    expect(adj.weedChance).toBeCloseTo(WEED_CHANCE + HARDNESS.normal.weedNeighbour, 8)
     const again = adj.weedChance
     w.tick(1)
     expect(adj.weedChance).toBe(again)
@@ -705,7 +708,7 @@ describe('1.5.2', () => {
     w.seats[0].actor.y = AT.row + 0.5
     w.enqueue({ act: 'weed-spray', at: AT })
     w.tick(DT_MAX)
-    expect(soil.weedChance).toBe(0.03)
+    expect(soil.weedChance).toBe(WEED_CHANCE)
     expect(w.seats[0].workTotal).toBe(SPRAY_WORK)
     while (w.seats[0].queue.length > 0) w.tick(DT_MAX)
     expect(soil.weedChance).toBeCloseTo(-1 + (0.15 * DT_MAX) / 240, 8)
@@ -745,7 +748,7 @@ describe('1.5.2', () => {
     w.enqueue({ act: 'pickup', at: AT })
     w.tick(DT_MAX)
     expect(w.seats[0].hand).toEqual({ kind: 'hold', item: { kind: 'weed', count: 1 } })
-    expect(soil.weedChance).toBeCloseTo((0.15 * DT_MAX) / 240, 8)
+    expect(soil.weedChance).toBeCloseTo(HARDNESS.normal.weedPulled + (0.15 * DT_MAX) / 240, 8)
     const soil2 = bed()
     const at2 = { col: 11, row: 12 }
     w.setCell(at2, { kind: 'weed', soil: soil2, weed: new Weed(0) })
@@ -755,7 +758,7 @@ describe('1.5.2', () => {
     w.enqueue({ act: 'pickup', at: at2 })
     w.tick(DT_MAX)
     expect(w.seats[0].hand).toEqual({ kind: 'hold', item: { kind: 'weed', count: 2 } })
-    expect(soil2.weedChance).toBeCloseTo((0.15 * DT_MAX) / 240, 8)
+    expect(soil2.weedChance).toBeCloseTo(HARDNESS.normal.weedPulled + (0.15 * DT_MAX) / 240, 8)
     const soil3 = bed()
     const at3 = { col: 12, row: 12 }
     w.setCell(at3, { kind: 'weed', soil: soil3, weed: new Weed(0) })
@@ -771,8 +774,8 @@ describe('1.5.2', () => {
   })
 
   test('Each `BIG_TICK`, world roll: `mul` 0 → skip; else `min(1, ramped(GRASS_CHANCE, bigTicks) * ownedCellCount) * mul > grass.at(bigTicks)`. `ownedCellCount = owned.length * CHUNK * CHUNK`. Same day-one ramp. `mul` from current weather. If it fires, pick eligible untilled (untilled, not very-hard, cover bare, no drop) via grass stream try-index `i` mapped onto owned cells, not `bounds()` AABB. At most one tuft. Variant `grass.at(col, row, bigTicks)`.', () => {
-    expect(ramped(GRASS_CHANCE, 0)).toBeLessThan(0)
-    expect(ramped(GRASS_CHANCE, 1)).toBeLessThan(0)
+    expect(ramped(GRASS_CHANCE, 0, GRASS_RAMP_START)).toBeLessThan(0)
+    expect(ramped(GRASS_CHANCE, 1, GRASS_RAMP_START)).toBeLessThan(0)
     const fresh = new World(1)
     expect(grassCount(fresh)).toBe(0)
     stepBig(fresh)
@@ -785,7 +788,7 @@ describe('1.5.2', () => {
     const grass = new Rng(seed).stream('grass')
     for (let t = 1; t <= 24; t++) {
       const u = grass.at(t)
-      const r = ramped(GRASS_CHANCE, t)
+      const r = ramped(GRASS_CHANCE, t, GRASS_RAMP_START)
       if (r <= u && Math.min(1, r * n) > u) {
         tFire = t
         break
@@ -822,7 +825,7 @@ describe('1.5.2', () => {
     let aabbOutside = false
     for (let t = 5; t <= 24; t++) {
       const u = new Rng(seed).stream('grass').at(t)
-      if (!(Math.min(1, ramped(GRASS_CHANCE, t) * ownedN) > u)) continue
+      if (!(Math.min(1, ramped(GRASS_CHANCE, t, GRASS_RAMP_START) * ownedN) > u)) continue
       for (let i = 0; i < 24; i++) {
         const aabb = aabbGrassPick(hole, t, i)
         const owned = ownedGrassPick(hole, t, i)
@@ -997,10 +1000,10 @@ describe('1.5.2', () => {
   })
 
   test('trees.yield', () => {
-    expect(TREES.apricot).toMatchObject({ juvenileSeconds: 192, fruitSeconds: 200 })
-    expect(TREES.apple).toMatchObject({ juvenileSeconds: 240, fruitSeconds: 300 })
-    expect(TREES.cherry).toMatchObject({ juvenileSeconds: 336, fruitSeconds: 160 })
-    expect(TREES.olive).toMatchObject({ juvenileSeconds: 384, fruitSeconds: 260 })
+    expect(TREES.apricot).toMatchObject({ juvenileSeconds: 192, fruitSeconds: 175 })
+    expect(TREES.apple).toMatchObject({ juvenileSeconds: 240, fruitSeconds: 275 })
+    expect(TREES.cherry).toMatchObject({ juvenileSeconds: 336, fruitSeconds: 135 })
+    expect(TREES.olive).toMatchObject({ juvenileSeconds: 384, fruitSeconds: 235 })
     expect(CROPS.apricot.sale).toBe(5)
     expect(CROPS.apple.sale).toBe(8)
     expect(CROPS.cherry.sale).toBe(4)
@@ -1886,5 +1889,96 @@ describe('plants.variety-roll', () => {
     if (c.kind !== 'ripe') return
     expect(c.plant.variety).toBe('green-zebra')
     expect(c.plant.quality).toBe(0)
+  })
+})
+
+const LEVELS: readonly Difficulty[] = ['peaceful', 'normal', 'hard']
+
+describe('rules.fert', () => {
+  test('rules.fert', () => {
+    for (const difficulty of LEVELS) {
+      const w = new World(1, undefined, { difficulty, speed: 'normal' })
+      const soil = bed(SOIL_WATER_MID, 1)
+      const plant = new Plant('carrot', 'base', 0)
+      w.setCell(AT, { kind: 'growing', soil, plant })
+      const treeAt = { col: 14, row: 16 }
+      const treeSoil = makeTreeSoil(TREE_WATER_MID, 1, 0)
+      const tree = new Tree('apple', { shape: 'rect', col: treeAt.col, row: treeAt.row, w: 1, h: 2 }, treeSoil, TREE_HAPPY_START, 1)
+      w.setCell(treeAt, tree)
+      w.setCell({ col: treeAt.col, row: treeAt.row + 1 }, tree)
+      const crop0 = soil.fertilizer
+      const tree0 = treeSoil.fertilizer
+      w.tick(DT_MAX)
+      const per = HARDNESS[difficulty].plantFertPerSec * DT_MAX
+      expect(soil.fertilizer).toBeCloseTo(crop0 - per * CROPS.carrot.fertUseMul, 8)
+      expect(treeSoil.fertilizer).toBeCloseTo(tree0 - per * CROPS.apple.fertUseMul, 8)
+    }
+  })
+})
+
+describe('rules.rot', () => {
+  test('rules.rot', () => {
+    for (const difficulty of LEVELS) {
+      const w = new World(1, undefined, { difficulty, speed: 'normal' })
+      const plant = new Plant('carrot', 'base', 0)
+      plant.maturity = 1
+      w.setCell(AT, { kind: 'ripe', soil: bed(), plant })
+      const fruit = {
+        kind: 'fruit' as const,
+        crop: 'apple' as const,
+        variety: 'base' as const,
+        quality: 0,
+        count: 1,
+        unitSale: CROPS.apple.sale,
+        freshness: 1,
+        cut: false,
+      }
+      w.seats[0].hand = { kind: 'hold', item: fruit }
+      w.tick(DT_MAX)
+      const mul = HARDNESS[difficulty].rotMul
+      expect(plant.freshness).toBeCloseTo(1 - DT_MAX / (CROPS.carrot.rotSeconds * mul), 8)
+      expect(fruit.freshness).toBeCloseTo(1 - DT_MAX / (CROPS.apple.rotSeconds * mul), 8)
+    }
+  })
+})
+
+describe('rules.happy', () => {
+  test('rules.happy', () => {
+    for (const difficulty of LEVELS) {
+      const clocks = HARDNESS[difficulty].happy
+      const rules = { difficulty, speed: 'normal' as const }
+      const drop = (w: World, water: number, fert: number) => {
+        const plant = new Plant('carrot', 'base', 0)
+        w.setCell(AT, { kind: 'growing', soil: bed(water, fert), plant })
+        w.tick(DT_MAX)
+        return plant.happiness
+      }
+      const treeDrop = (w: World, water: number, fert: number) => {
+        const at = { col: 14, row: 16 }
+        const soil = makeTreeSoil(water, fert, 0)
+        const tree = new Tree('apple', { shape: 'rect', col: at.col, row: at.row, w: 1, h: 2 }, soil, TREE_HAPPY_START, 1)
+        w.setCell(at, tree)
+        w.setCell({ col: at.col, row: at.row + 1 }, tree)
+        w.tick(DT_MAX)
+        return tree.happiness
+      }
+      const wilt = new World(1, undefined, rules)
+      expect(drop(wilt, 0, 1)).toBeCloseTo(HAPPY_START - DT_MAX / clocks.wilt, 8)
+      const drown = new World(1, undefined, rules)
+      expect(drop(drown, 2, 1)).toBeCloseTo(HAPPY_START - DT_MAX / clocks.drown, 8)
+      const starve = new World(1, undefined, rules)
+      expect(drop(starve, 1, 0)).toBeCloseTo(HAPPY_START - DT_MAX / clocks.starve, 8)
+      const green = new World(1, undefined, rules)
+      expect(drop(green, 1, 0.08)).toBeCloseTo(HAPPY_START + DT_MAX / clocks.gain, 8)
+
+      const treeWilt = new World(1, undefined, rules)
+      expect(treeDrop(treeWilt, 0, 1)).toBeCloseTo(TREE_HAPPY_START - DT_MAX / (clocks.wilt / 2), 8)
+      const treeDrown = new World(1, undefined, rules)
+      expect(treeDrop(treeDrown, 10, 1)).toBeCloseTo(TREE_HAPPY_START - DT_MAX / (clocks.drown / 2), 8)
+      const treeStarve = new World(1, undefined, rules)
+      expect(treeDrop(treeStarve, 5, 0)).toBeCloseTo(TREE_HAPPY_START - DT_MAX / (clocks.starve / 2), 8)
+      const treeGreen = new World(1, undefined, rules)
+      expect(treeDrop(treeGreen, 5, 0.4)).toBeCloseTo(TREE_HAPPY_START + DT_MAX / clocks.gain, 8)
+    }
   })
 })

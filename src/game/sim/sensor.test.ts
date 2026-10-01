@@ -10,7 +10,10 @@ import { dump, parse } from './feature-save/save.ts'
 import { lookText } from './look.ts'
 import { counterDial, evalDag, FertSensor, HarvestSensor, isSeqIn, Lamp, Lever, portXY, pourEligible, rawMap, readerRaw, WaterSensor, wouldCycle, type WireEnd } from './sensor.ts'
 import { HAPPY_START } from '../defs/crops.ts'
-import { makeTreeSoil, Soil, TREE_FERT_MAX, TREE_WATER_MID, WEED_CHANCE } from './soil.ts'
+import { HARDNESS } from '../defs/rules.ts'
+import { makeTreeSoil, Soil, TREE_FERT_MAX, TREE_WATER_MID } from './soil.ts'
+
+const WEED_CHANCE = HARDNESS.normal.weedChance
 import { DT_MAX, World } from './world.ts'
 
 const A = { col: 10, row: 12 }

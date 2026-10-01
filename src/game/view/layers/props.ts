@@ -1,19 +1,15 @@
-import { Container, Texture } from 'pixi.js'
+import { Container } from 'pixi.js'
 import { HOUSE_BASE, type CircleBase, type Facing, type RectBase } from '../../sim/building.ts'
 import { furnaceWorking, infuserWorking, millWorking, stationWorking } from '../../sim/feature-machines/machine.ts'
+import { isCraftCell } from '../../sim/feature-machines/recipe.ts'
 import { ritualReady } from '../../sim/feature-necronomicon/necronomicon.ts'
 import { isSensor } from '../../sim/sensor.ts'
-import { COMPOST_NEED } from '../../defs/items.ts'
 import type { World } from '../../sim/world.ts'
 import { TILE } from '../camera.ts'
 import { atlasTex, sensorKey, type AtlasKey } from '../atlas.ts'
 import { SpritePool } from '../app.ts'
+import { drawMeter, meterOf } from '../meter.ts'
 import { vfxReduced } from '../vfx.ts'
-
-const WHITE = Texture.WHITE
-const WASH = 0xcfc6b0
-const GOOD = 0x2fd15a
-const INK = 0x1c1710
 
 const SORTER_KEY: { readonly [K in Facing]: AtlasKey } = {
   n: 'sorter-n',
@@ -53,6 +49,8 @@ export class PropsLayer {
   readonly root = new Container({ eventMode: 'none', isRenderGroup: true })
   private readonly pool = new SpritePool(this.root)
   private readonly arms = new SpritePool(this.root)
+  private readonly meterRoot = new Container({ eventMode: 'none' })
+  private readonly meterPool = new SpritePool(this.meterRoot)
 
   tick(world: World, now: number): void {
     this.arms.begin()
@@ -75,6 +73,21 @@ export class PropsLayer {
       s.rotation = ((SAIL_REST + (millWorking(cell) ? turn : 0)) * Math.PI) / 180
     }
     this.arms.end()
+    this.paintMeters(world)
+  }
+
+  private paintMeters(world: World): void {
+    this.meterPool.begin()
+    for (const at of world.machines.values()) {
+      const cell = world.cell(at)
+      if (!isCraftCell(cell)) continue
+      if (cell.base.col !== at.col || cell.base.row !== at.row) continue
+      const meter = meterOf(cell, world.machineMul(), world.furnaceMulFor(cell.base))
+      if (!meter.show) continue
+      drawMeter(this.meterPool, cell.base, meter.t)
+    }
+    this.meterPool.end()
+    this.root.addChild(this.meterRoot)
   }
 
   patch(world: World): void {
@@ -113,17 +126,6 @@ export class PropsLayer {
       const cell = world.cell(at)
       if (cell.kind === 'compost-box') {
         put('compost-box', at.col, at.row)
-        const t = cell.units < COMPOST_NEED ? cell.units / COMPOST_NEED : cell.progress
-        const bg = this.pool.take(WHITE)
-        bg.tint = INK
-        bg.position.set(at.col * TILE + 2, at.row * TILE + TILE - 6)
-        bg.width = TILE - 4
-        bg.height = 4
-        const fg = this.pool.take(WHITE)
-        fg.tint = cell.units < COMPOST_NEED ? WASH : GOOD
-        fg.position.set(at.col * TILE + 3, at.row * TILE + TILE - 5)
-        fg.width = (TILE - 6) * t
-        fg.height = 2
         continue
       }
       if (cell.kind === 'station') {
@@ -192,5 +194,6 @@ export class PropsLayer {
       put(sensorKey(cell), at.col, at.row)
     }
     this.pool.end()
+    this.root.addChild(this.meterRoot)
   }
 }

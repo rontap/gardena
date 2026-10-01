@@ -22,7 +22,7 @@ Every tree is planted from a tree seed on a soft untilled tile whose upper neigh
 
 ## Growing
 
-Fields of `TREES.apple` (`juvenileSeconds`, `fruitSeconds`), `CROPS.apple` (`waterUsePerSec`, `waterTolerance`, `fertTolerance`, `rotSeconds`) and `TREE_FERT_PER_DAY.apple`. Rules: [[features/trees]].
+Fields of `TREES.apple` (`juvenileSeconds`, `fruitSeconds`) and `CROPS.apple` (`waterUsePerSec`, `waterTolerance`, `fertTolerance`, `fertUseMul`, `rotSeconds`). Rules: [[features/trees]].
 
 ## Selling
 

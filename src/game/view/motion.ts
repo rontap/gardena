@@ -178,7 +178,7 @@ export function paintMotion(root: HTMLElement, world: World, fps: number, tickMs
       last.craftFill = w
       fillEl.style.width = w
     }
-    const t = craft.kind === 'working' ? clockText(craft.left) : clockText(craft.recipe.duration.seconds)
+    const t = craft.kind === 'working' ? clockText(world.realSeconds(craft.left)) : clockText(world.realSeconds(craft.recipe.duration.seconds))
     const timeEl = hud.get('craft-time')
     if (timeEl !== undefined && last.craftTime !== t) {
       last.craftTime = t

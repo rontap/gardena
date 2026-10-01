@@ -108,7 +108,7 @@ function sorted(world: World, skus: SkuId[]): SkuId[] {
 
 function found(world: World, query: string): SkuId[] {
   const all = SHELVES.flatMap(s => s.groups.flatMap(g => g.skus))
-  return all.filter(id => world.skuShown(id) && matches(id, query))
+  return all.filter(id => world.skuShown(id) && matches(id, query, world.pace))
 }
 
 function footer(at: ShelfId | undefined, hits: SkuId[] | undefined): string {

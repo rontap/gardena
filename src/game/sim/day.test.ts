@@ -6,8 +6,17 @@ import {skuItem} from './item.ts'
 import {Plant} from './plant.ts'
 import {Act} from './log.ts'
 import {DAY_SECONDS} from './clock.ts'
-import {Soil, SOIL_WATER_MID, WEED_CHANCE} from './soil.ts'
-import {DT_MAX, POINTS_PER_DAY, pointsForEndedDay, STIPEND, stipendOf, World} from './world.ts'
+import { GAME_SPEED, HARDNESS, type Difficulty, type Speed } from '../defs/rules.ts'
+import { BUTTON_PULSE, SPEECH_S } from '../defs/items.ts'
+import { Button, pressButton } from './sensor.ts'
+import {Soil, SOIL_WATER_MID} from './soil.ts'
+
+const WEED_CHANCE = HARDNESS.normal.weedChance
+import {DT_MAX, POINTS_PER_DAY, pointsForEndedDay, stipendOf as stipendBands, World} from './world.ts'
+
+function stipendOf(endedDay: number): number {
+    return stipendBands(endedDay, HARDNESS.normal.stipend)
+}
 
 const AT = {col: 10, row: 12}
 
@@ -75,7 +84,7 @@ describe('day.stipend', () => {
         expect(stipendOf(7)).toBe(3)
         expect(stipendOf(10)).toBe(3)
         expect(stipendOf(11)).toBe(0)
-        expect(STIPEND).toEqual([
+        expect(HARDNESS.normal.stipend).toEqual([
             {through: 3, amount: 12},
             {through: 6, amount: 6},
             {through: 10, amount: 3},
@@ -201,6 +210,124 @@ describe('world.cheatSpeed', () => {
         c.tick(DT_MAX)
         expect(c.job.kind === 'run' && c.job.left).toBeCloseTo(left - DT_MAX, 5)
         expect(c.cheatFastResearch).toBe(false)
+    })
+})
+
+const LEVELS: readonly Difficulty[] = ['peaceful', 'normal', 'hard']
+const SPEEDS: readonly Speed[] = ['leisurely', 'normal', 'fast']
+
+describe('rules.stipend', () => {
+    test('rules.stipend', () => {
+        for (const difficulty of LEVELS) {
+            const w = new World(1, undefined, { difficulty, speed: 'normal' })
+            for (let day = 1; day <= 11; day++) {
+                w.clock.t = DAY_SECONDS - 0.001
+                w.tick(DT_MAX)
+                expect(w.recapAt(day).stipend).toBe(stipendBands(day, HARDNESS[difficulty].stipend))
+            }
+            expect(w.recapAt(11).stipend).toBe(0)
+        }
+    })
+})
+
+describe('rules.loan', () => {
+    test('rules.loan', () => {
+        const pack = skuItem(LOAN_PACK)
+        if (pack.kind !== 'seeds') throw new Error('pack')
+        for (const difficulty of LEVELS) {
+            const w = new World(1, undefined, { difficulty, speed: 'normal' })
+            w.clock.day = 20
+            w.silo.seeds.length = 0
+            w.money = 0
+            w.clock.t = DAY_SECONDS - 0.001
+            w.tick(DT_MAX)
+            const first = w.recapAt(20)
+            expect(first.loan).toBe(LOAN_CASH)
+            expect(first.payback).toBe(0)
+            expect(w.silo.baseCount(pack.crop)).toBe(LOAN_PACKS * pack.count)
+            if (w.hard.loanPayback) {
+                expect(first.loanDays).toBe(LOAN_DAYS)
+                expect(w.money).toBeCloseTo(LOAN_CASH - first.tax - first.water, 8)
+            } else {
+                expect(first.loanDays).toBe(0)
+                expect(w.loanDays).toBe(0)
+                expect(w.money).toBeCloseTo(LOAN_CASH - first.tax - first.water, 8)
+            }
+
+            w.money = LOAN_BELOW
+            w.clock.t = DAY_SECONDS - 0.001
+            w.tick(DT_MAX)
+            const second = w.recapAt(21)
+            expect(second.loan).toBe(0)
+            if (w.hard.loanPayback) {
+                expect(second.payback).toBe(LOAN_PAYBACK)
+                expect(second.loanDays).toBe(LOAN_DAYS - 1)
+            } else {
+                expect(second.payback).toBe(0)
+                expect(second.loanDays).toBe(0)
+            }
+
+            w.silo.seeds.length = 0
+            w.money = 0
+            w.clock.t = DAY_SECONDS - 0.001
+            w.tick(DT_MAX)
+            const third = w.recapAt(22)
+            expect(third.loan).toBe(LOAN_CASH)
+            if (w.hard.loanPayback) {
+                expect(third.payback).toBe(LOAN_PAYBACK)
+                expect(third.loanDays).toBe(2 * LOAN_DAYS - 2)
+            } else {
+                expect(third.payback).toBe(0)
+                expect(third.loanDays).toBe(0)
+                expect(w.loanDays).toBe(0)
+            }
+        }
+    })
+})
+
+describe('speed.pace', () => {
+    test('speed.pace', () => {
+        for (const speed of SPEEDS) {
+            const w = new World(1, undefined, { difficulty: 'normal', speed })
+            expect(w.pace).toBe(GAME_SPEED[speed])
+            expect(w.realSeconds(6)).toBeCloseTo(6 / GAME_SPEED[speed], 8)
+        }
+    })
+})
+
+describe('speed.real', () => {
+    test('speed.real', () => {
+        for (const speed of SPEEDS) {
+            const rules = { difficulty: 'normal' as const, speed }
+            const speech = new World(1, undefined, rules)
+            speech.say('x')
+            const speechSteps = Math.floor((SPEECH_S * speech.pace) / DT_MAX - 1e-9)
+            for (let i = 0; i < speechSteps; i++) speech.tick(DT_MAX)
+            expect(speech.speech.kind).toBe('say')
+            speech.tick(DT_MAX)
+            expect(speech.speech.kind).toBe('none')
+
+            const banner = new World(1, undefined, rules)
+            expect(banner.clock.banner).toBe(4)
+            const bannerSteps = Math.floor((4 * banner.pace) / DT_MAX - 1e-9)
+            for (let i = 0; i < bannerSteps; i++) banner.tick(DT_MAX)
+            expect(banner.clock.banner).toBeGreaterThan(0)
+            banner.tick(DT_MAX)
+            expect(banner.clock.banner).toBeCloseTo(0, 8)
+
+            const button = new World(1, undefined, rules)
+            const at = { col: 10, row: 12 }
+            const b = new Button({ shape: 'rect', col: at.col, row: at.row, w: 1, h: 1 })
+            button.setCell(at, b)
+            pressButton(b)
+            expect(b.out).toBe(1)
+            for (let i = 0; i < BUTTON_PULSE - 1; i++) {
+                button.tick(DT_MAX)
+                expect(b.out).toBe(1)
+            }
+            button.tick(DT_MAX)
+            expect(b.out).toBe(0)
+        }
     })
 })
 

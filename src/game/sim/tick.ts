@@ -17,7 +17,7 @@ import { advanceGrandma } from './feature-necronomicon/necronomicon.ts'
 import * as vehicles from './feature-vehicles/vehicle.ts'
 import * as queue from './queue.ts'
 import * as nets from './nets.ts'
-import { addRep, applyDayDemand, recover, tickContracts, REP_IDLE } from './feature-contracts/market.ts'
+import { addRep, applyDayDemand, recover, tickContracts } from './feature-contracts/market.ts'
 import { tutorialTick } from './tutorial.ts'
 import { settleLoan } from './loan.ts'
 import { STALL_IDS } from './stall.ts'
@@ -146,7 +146,7 @@ export function tickVfx(world: World, pouring: ReadonlySet<string>): boolean {
 }
 
 export function tickWorld(world: World, dt: number): void {
-  const seam = world.clock.advance(dt) === 'seam'
+  const seam = world.clock.advance(dt, world.pace) === 'seam'
   if (seam) {
     world.seats.forEach(s => {
       s.workLeft = 0
@@ -154,7 +154,7 @@ export function tickWorld(world: World, dt: number): void {
       s.filling = false
     })
     tickContracts(world, world.nowDay())
-    const stipend = stipendOf(world.clock.day - 1)
+    const stipend = stipendOf(world.clock.day - 1, world.hard.stipend)
     world.money += stipend
     const tax = world.tax()
     world.money -= tax
@@ -188,14 +188,14 @@ export function tickWorld(world: World, dt: number): void {
     world.clock.banner = 4
     world.seam = { kind: 'play' }
     world.tally = { died: 0, harvests: 0, research: [], contracts: [] }
-    if (world.done.has('unlock-contracts') && world.contracts.takenToday.length === 0) addRep(world, -REP_IDLE)
+    if (world.done.has('unlock-contracts') && world.contracts.takenToday.length === 0) addRep(world, -world.hard.repIdle)
     world.contracts.takenToday = []
     world.contracts.repDay = world.contracts.rep
     applyDayDemand(world)
     world.ping()
     return
   }
-  tickSpeech(world, dt)
+  tickSpeech(world, dt / world.pace)
   tickJob(world, dt)
   tickButtons(world)
   world.seats.forEach(s => {

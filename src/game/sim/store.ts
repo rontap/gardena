@@ -232,7 +232,7 @@ export function consignItem(world: World, item: Item): boolean {
 
 function toStall(world: World, item: Item): Sale {
   if (item.kind === 'fruit') {
-    const unit = freshMul(item.freshness) * qualityMul(item.quality) * purposeMul(item.variety, 'produce')
+    const unit = freshMul(item.freshness, world.hard.freshFull) * qualityMul(item.quality) * purposeMul(item.variety, 'produce')
     const rest = splitConsign(world, item.crop, item.count, item.freshness === 0, n => {
       world.stall[item.crop].take(item.variety, n, unit)
     }, false)

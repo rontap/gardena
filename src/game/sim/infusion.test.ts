@@ -6,6 +6,7 @@ import {
   FURNACE_SECONDS,
   INFUSE_IN,
   INFUSE_REAGENT,
+  INFUSE_EXTRACT_SECONDS,
   INFUSE_SECONDS,
   MILL_CHILLI_IN,
   MILL_CHILLI_OUT,
@@ -109,7 +110,7 @@ describe('infusion.extract', () => {
     expect(MILL_CHILLI_OUT).toBe(2)
     expect(INFUSE_IN).toBe(1)
     expect(INFUSE_REAGENT).toBe(1)
-    expect(INFUSE_SECONDS).toBe(90)
+    expect(INFUSE_SECONDS).toBe(70)
     expect(MILL_RECIPES).toEqual(['sugar-cane', 'olive', 'wheat', 'grass', 'vanilla', 'chilli', 'truffle'])
     expect(millNeed('vanilla')).toBe(MILL_VANILLA_IN)
     expect(millNeed('chilli')).toBe(MILL_CHILLI_IN)
@@ -223,18 +224,25 @@ describe('infusion.overlay', () => {
     expect(itemInner({ ...jam, infused: true })).toBe(`${itemInner(jam)}${OVERLAY_INFUSED}`)
     expect(itemInner(jam).includes(OVERLAY_INFUSED)).toBe(false)
     expect(Object.keys(ASSETS).filter(f => f.includes('infused'))).toEqual(['../../assets/overlay-infused.svg'])
-    expect(catalogEntries().some(e => e.id === 'infusion')).toBe(false)
-    expect(catalogEntries().some(e => e.id.startsWith('infused-'))).toBe(false)
+    expect(catalogEntries(1).some(e => e.id === 'infusion')).toBe(false)
+    expect(catalogEntries(1).some(e => e.id.startsWith('infused-'))).toBe(false)
     expect(CONCEPT_IDS.filter(id => id === 'infusion')).toEqual(['infusion'])
   })
 })
 
 describe('infusion.machine', () => {
-  test('Infuser 2×2 `Machine`, `MILL_W` × `MILL_H`, `INFUSE_SECONDS` 90 `fixed`, mill I/O, pads, `inn`. `furnaceMul` applies. Not machinery. Not `work`. Not `machineMul`. Need `INFUSE_IN` good + 1 reagent: `INFUSE_FLAKES` flakes or `INFUSE_EXTRACT` vanilla-extract, not both. Same `infused: true` either way. Output same good, quality and `unitSale` unchanged. Refuses `infused === true`. `MachineId` += `infuser`.', () => {
-    expect(INFUSE_SECONDS).toBe(90)
+  test('Infuser 2×2 `Machine`, `MILL_W` × `MILL_H`, `INFUSE_SECONDS` 70 `fixed`, Extract `INFUSE_EXTRACT_SECONDS` 30, mill I/O, pads, `inn`. `furnaceMul` applies. Not machinery. Not `work`. Not `machineMul`. Need `INFUSE_IN` good + 1 reagent: `INFUSE_FLAKES` flakes or `INFUSE_EXTRACT` vanilla-extract, not both. Same `infused: true` either way. Output same good, quality and `unitSale` unchanged. Refuses `infused === true`. `MachineId` += `infuser`.', () => {
+    expect(INFUSE_SECONDS).toBe(70)
+    expect(INFUSE_EXTRACT_SECONDS).toBe(30)
     expect(machineOfSku('buy-infuser')).toBe('infuser')
     expect(recipesOf('infuser').length).toBe(5)
-    expect(recipesOf('infuser').every(r => r.duration.kind === 'fixed' && r.duration.seconds === INFUSE_SECONDS)).toBe(true)
+    expect(
+      recipesOf('infuser').every(r => {
+        if (r.duration.kind !== 'fixed') return false
+        const extract = r.out.kind === 'exact' && r.out.face.kind === 'extract'
+        return r.duration.seconds === (extract ? INFUSE_EXTRACT_SECONDS : INFUSE_SECONDS)
+      }),
+    ).toBe(true)
     const w = new World(1)
     const inf = new Infuser({ shape: 'rect', col: AT.col, row: AT.row, w: MILL_W, h: MILL_H })
     expect(inf.base.w).toBe(MILL_W)

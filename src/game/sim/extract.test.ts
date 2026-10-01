@@ -18,6 +18,7 @@ import {
 } from '../defs/items.ts'
 import { TREES, TREE_HAPPY_START } from '../defs/trees.ts'
 import { Infuser, Mill, occupiedCells, Tree } from './building.ts'
+import { millWork } from './feature-machines/machine.ts'
 import { advanceYield } from './feature-field/field.ts'
 import { canExtract, doChop } from './feature-field/field.helpers.ts'
 import { dump, parse } from './feature-save/save.ts'
@@ -25,7 +26,10 @@ import { INFUSABLE_KINDS, REAGENTS, type Reagent } from './ids.ts'
 import { makeAxe, makeExtract, type Item } from './item.ts'
 import { Plant } from './plant.ts'
 import { readPrompt } from './prompt.ts'
-import { makeTreeSoil, Soil, SOIL_WATER_MID, STUNT, TREE_FERT_MAX, TREE_WATER_MID, WEED_CHANCE } from './soil.ts'
+import { HARDNESS } from '../defs/rules.ts'
+import { makeTreeSoil, Soil, SOIL_WATER_MID, STUNT, TREE_FERT_MAX, TREE_WATER_MID } from './soil.ts'
+
+const WEED_CHANCE = HARDNESS.normal.weedChance
 import { DT_MAX, World } from './world.ts'
 
 const AT = { col: 10, row: 20 }
@@ -174,7 +178,7 @@ describe('extract.infuser', () => {
     w.seats[0].hand = { kind: 'hold', item: { kind: 'grass', count: MILL_GRASS } }
     w.enqueue({ act: 'mill', at: AT })
     drain(w)
-    run(w, MILL_WORK + 1)
+    run(w, millWork('grass') + 1)
     expect(w.drops.map(d => d.item)).toContainEqual(makeExtract(false))
     w.drops.length = 0
     w.seats[0].hand = { kind: 'hold', item: { kind: 'truffle', count: 1 } }

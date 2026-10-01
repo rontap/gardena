@@ -1,18 +1,19 @@
 # Gardena
 
-Vault for this game. Agents read this first.
+Game notes. Agents read `docs-next/index.md` and `docs-next/process/_index.md`.
 
 ## Law
 
-- [[canon]]
-- [[stack]]
-- [[pipeline]]
-- [[GLOBAL_VERSION]]
-- [[standards/docs]]
-- [[standards/lexicon]]
-- [[standards/user-facing-text]]
-- [[standards/testing]]
-- [[standards/update-notes]]
+- `docs-next/process/canon.md`
+- `docs-next/process/stack.md`
+- `docs-next/process/agents.md`
+- `docs-next/process/versions.md`
+- `docs-next/process/docs.md`
+- `docs-next/process/lexicon.md`
+- `docs-next/process/user-facing-text.md`
+- `docs-next/process/mechanics.md`
+- `docs-next/process/testing.md`
+- `docs-next/process/update-notes.md`
 
 ## Aims
 

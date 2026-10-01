@@ -5,10 +5,6 @@ export const TREE_YIELD_DAYS = 2
 export const TREE_YIELD_MUL = 3
 export const TREE_OFF_MUL = 0.7
 export const TREE_HAPPY_START = 0.33
-export const TREE_HAPPY_GAIN_SECONDS = 900
-export const TREE_HAPPY_WILT_SECONDS = 120
-export const TREE_HAPPY_STARVE_SECONDS = 200
-export const TREE_HAPPY_DROWN_SECONDS = 90
 export const TREE_OFF_CHANCE = { red: 0.1, orange: 0.15, green: 0.2 } as const
 export const TREE_RATE_ON = 2.75
 export const TREE_RATE_OFF = 0.25
@@ -21,10 +17,10 @@ export type TreeDef = {
 }
 
 export const TREES: { readonly [K in TreeId]: TreeDef } = {
-  apricot: { id: 'apricot', juvenileSeconds: 192, fruitSeconds: 200 },
-  apple: { id: 'apple', juvenileSeconds: 240, fruitSeconds: 300 },
-  cherry: { id: 'cherry', juvenileSeconds: 336, fruitSeconds: 160 },
-  olive: { id: 'olive', juvenileSeconds: 384, fruitSeconds: 260 },
+  apricot: { id: 'apricot', juvenileSeconds: 192, fruitSeconds: 175 },
+  apple: { id: 'apple', juvenileSeconds: 240, fruitSeconds: 275 },
+  cherry: { id: 'cherry', juvenileSeconds: 336, fruitSeconds: 135 },
+  olive: { id: 'olive', juvenileSeconds: 384, fruitSeconds: 235 },
 }
 
 export const TREE_NAME: { readonly [K in TreeId]: () => string } = {

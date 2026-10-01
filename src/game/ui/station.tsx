@@ -144,7 +144,7 @@ export function StationUi({ world, at, onClose }: { world: World; at: Coord; onC
               </span>
               <Bar value={cell.progress} color="bg-study" track="bg-ink/20" className="h-2 w-40 shrink-0" />
               <span className="w-14 shrink-0 text-right text-sm tabular-nums text-ink/55">
-                {m.hud_station_left({ n: left })}
+                {m.hud_station_left({ n: Math.round(world.realSeconds(left)) })}
               </span>
             </div>
             <hr className="border-ink/15" />

@@ -4,7 +4,6 @@ import {
   JAM_BUFFER,
   MILL_GRASS,
   MILL_IN,
-  MILL_WORK,
   BARREL_MATURE,
   CASK_SALE,
   AXES,
@@ -59,6 +58,7 @@ import {
   meanQuality,
   millNeed,
   millProduct,
+  millWork,
   millRecipeOf,
   machineEast,
   machineWest,
@@ -74,7 +74,10 @@ import { allSlots, ANY } from '../feature-vehicles/pick.ts'
 import { CASK_IDS, CROP_OF_CASK, GROWN_IDS } from '../ids.ts'
 import { BARREL_AGE, CASK_AGE_MAX, CASK_AGE_MIN, FLOUR, JAM_SALE, MILL_H, MILL_W, SENSOR_HOLD } from '../../defs/items.ts'
 import { Plant } from '../plant.ts'
-import { Soil, SOIL_WATER_MID, WEED_CHANCE } from '../soil.ts'
+import { HARDNESS } from '../../defs/rules.ts'
+import { Soil, SOIL_WATER_MID } from '../soil.ts'
+
+const WEED_CHANCE = HARDNESS.normal.weedChance
 import { Barrel, Chest, CompostBox, Freezer, Furnace, Grinder, Infuser, JamMachine, Machine, Mill, occupiedCells, PAD, PotStill, Refuel, ResearchStation } from '../building.ts'
 import { lookText } from '../look.ts'
 import { bare } from '../plot.ts'
@@ -275,7 +278,7 @@ describe('machines', () => {
     const mill = put(AT)
     const east = machineEast(mill.base)
     w.setCell(east, new Chest({ shape: 'rect', col: east.col, row: east.row, w: 1, h: 1 }))
-    ticks(w, MILL_WORK)
+    ticks(w, millWork('wheat'))
     const chest = w.cell(east)
     if (chest.kind !== 'chest') throw new Error('chest')
     expect(chest.slots.some(s => s.kind === 'hold' && s.item.kind === 'flour')).toBe(true)
@@ -290,12 +293,12 @@ describe('machines', () => {
     })
     w.setCell(e2, full)
     const flour0 = w.drops.filter(d => d.item.kind === 'flour').length
-    ticks(w, MILL_WORK)
+    ticks(w, millWork('wheat'))
     expect(mill2.units).toBe(MILL_IN)
     expect(w.drops.filter(d => d.item.kind === 'flour').length).toBe(flour0)
     const mill3At = { col: AT.col, row: AT.row + 8 }
     const mill3 = put(mill3At)
-    ticks(w, MILL_WORK)
+    ticks(w, millWork('wheat'))
     expect(mill3.units).toBe(0)
     expect(w.drops.some(d => d.item.kind === 'flour' && d.at.col === mill3At.col && d.at.row === mill3At.row + MILL_H)).toBe(
       true,
@@ -444,7 +447,7 @@ describe('machines.furnace-feed', () => {
 describe('machines.furnace-burn', () => {
   test('`FURNACE_NEED` units, `FURNACE_SECONDS`, consume `FURNACE_NEED` at finish, drop `FURNACE_ASH` ash, leftover stays, `inn === 1` skips.', () => {
     expect(FURNACE_NEED).toBe(20)
-    expect(FURNACE_SECONDS).toBe(240)
+    expect(FURNACE_SECONDS).toBe(220)
     expect(FURNACE_ASH).toBe(5)
     const w = new World(1)
     const at = { col: AT.col, row: AT.row + 12 }
@@ -497,7 +500,7 @@ describe('machines.furnace-haste', () => {
     mill.units = MILL_IN
     w.setCell(millAt, mill)
     w.tick(DT_MAX)
-    expect(mill.progress).toBeCloseTo((DT_MAX * (1 + FURNACE_HASTE)) / MILL_WORK)
+    expect(mill.progress).toBeCloseTo((DT_MAX * (1 + FURNACE_HASTE)) / millWork('wheat'))
     const stillAt = { col: 8, row: 18 }
     const still = new PotStill({ shape: 'rect', col: stillAt.col, row: stillAt.row, w: 2, h: 1 })
     still.feed = [{ crop: 'potato', variety: 'base', quality: 0, count: STILL_CAP }]
@@ -1264,7 +1267,7 @@ describe('machines.tick-self', () => {
     mill.units = MILL_IN
     w.setCell(at, mill)
     expect(mill.tick(w, at, DT_MAX)).toBe(false)
-    expect(mill.progress).toBeCloseTo((DT_MAX * w.machineMul()) / MILL_WORK)
+    expect(mill.progress).toBeCloseTo((DT_MAX * w.machineMul()) / millWork('wheat'))
   })
 
   test('`buy-research-station` costs its SKU price plus `STATION_PRICE_STEP` for each Crop Variety Station on the farm.', () => {

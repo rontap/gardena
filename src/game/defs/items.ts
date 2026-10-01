@@ -80,7 +80,7 @@ export const COMPOST_VALUE = {
 
 export const FURNACE_CAP = 100
 export const FURNACE_NEED = 20
-export const FURNACE_SECONDS = 240
+export const FURNACE_SECONDS = 220
 export const FURNACE_ASH = 5
 export const FURNACE_REACH = 3
 export const FURNACE_HASTE = 0.25
@@ -126,7 +126,7 @@ export const SUGAR_BAG = 2
 export const SUGAR_MILL = 15
 export const SUGAR_SHOP = 8
 export const MILL_IN = 5
-export const MILL_GRASS = 15
+export const MILL_GRASS = 10
 export const MILL_VANILLA_IN = 1
 export const MILL_VANILLA_OUT = 4
 export const MILL_CHILLI_IN = 3
@@ -134,9 +134,13 @@ export const MILL_CHILLI_OUT = 2
 export const MILL_TRUFFLE_IN = 1
 export const MILL_TRUFFLE_OUT = 5
 export const MILL_WORK = 10
+export const MILL_OLIVE_WORK = 30
+export const MILL_WHEAT_WORK = 20
+export const MILL_GRASS_WORK = 20
 export const INFUSE_IN = 1
 export const INFUSE_REAGENT = 1
-export const INFUSE_SECONDS = 90
+export const INFUSE_SECONDS = 70
+export const INFUSE_EXTRACT_SECONDS = 30
 export const INFUSE_REAGENTS: { readonly [K in Infusable['kind']]: readonly [Reagent, Reagent] } = {
   jam: ['vanilla-extract', 'flakes'],
   cask: ['vanilla-extract', 'flakes'],

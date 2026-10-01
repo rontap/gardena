@@ -2,7 +2,10 @@ import { describe, expect, test } from 'vitest'
 import { CROP_NAME, HAPPY_MAX, HAPPY_START } from '../defs/crops.ts'
 import { Tree } from '../sim/building.ts'
 import { Plant, Weed } from '../sim/plant.ts'
-import { makeTreeSoil, Soil, SOIL_WATER_MID, TREE_FERT_MAX, TREE_WATER_MAX, TREE_WATER_MID, WEED_CHANCE } from '../sim/soil.ts'
+import { HARDNESS } from '../defs/rules.ts'
+import { makeTreeSoil, Soil, SOIL_WATER_MID, TREE_FERT_MAX, TREE_WATER_MAX, TREE_WATER_MID } from '../sim/soil.ts'
+
+const WEED_CHANCE = HARDNESS.normal.weedChance
 import {
   applyRoster,
   AWAY_MS,

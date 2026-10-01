@@ -6,7 +6,7 @@ import { FERT_BAG_LITERS, SUGAR_MILL } from '../../defs/items.ts'
 import { JAM_CROPS, type JamCrop, type StallGoodId } from '../../sim/ids.ts'
 import type { Item } from '../../sim/item.ts'
 import { DAY_SECONDS } from '../../sim/clock.ts'
-import { CANCEL_MIN, cancelFee, demandGood, DIFFICULTY_CEILING, filledOf, needOf, prizeTool, REP_MAX, rollBoard } from '../../sim/feature-contracts/market.ts'
+import { cancelFee, demandGood, DIFFICULTY_CEILING, filledOf, needOf, prizeTool, REP_MAX, rollBoard } from '../../sim/feature-contracts/market.ts'
 import type { Active, ContractOffer, Demand, HistoryEntry, Outcome, Prize, Stars } from '../../sim/feature-contracts/market.h.ts'
 import { isCropStall, stallGoodName } from '../../sim/stall.ts'
 import type { World } from '../../sim/world.ts'
@@ -22,7 +22,7 @@ export function Contracts({ world, onClose }: { world: World; onClose: () => voi
   const [tip, setTip] = useState<Tip>(undefined)
   const slots = world.contractSlots()
   const cap = world.contractCap()
-  const board = rollBoard(world.rng, world.clock.day, slots, world.contracts.repDay).filter(o => !world.contracts.takenToday.includes(o.id))
+  const board = rollBoard(world.rng, world.clock.day, slots, world.contracts.repDay, world.hard.penaltyRate).filter(o => !world.contracts.takenToday.includes(o.id))
   const nowDay = world.clock.day - 1 + world.clock.t / DAY_SECONDS
   const atCap = world.contracts.active.length >= cap
   return (
@@ -60,6 +60,7 @@ export function Contracts({ world, onClose }: { world: World; onClose: () => voi
                     offer={offer}
                     atCap={atCap}
                     cap={cap}
+                    cancelMin={world.hard.cancelMin}
                     onTip={setTip}
                     onAccept={() => world.acceptContract(offer.id)}
                   />
@@ -81,7 +82,7 @@ export function capFull(cap: number): string {
   return m.market_cap_three()
 }
 
-export function offerHover(offer: ContractOffer, atCap: boolean, cap: number): Tip {
+export function offerHover(offer: ContractOffer, atCap: boolean, cap: number, cancelMin: number): Tip {
   const company = COMPANIES[offer.company].name
   const days = offer.days === 1 ? m.market_one_day() : m.market_days({ n: offer.days })
   const deliver = offer.lines
@@ -97,7 +98,7 @@ export function offerHover(offer: ContractOffer, atCap: boolean, cap: number): T
         {cash ? <Coin n={offer.reward} /> : prizeName(offer.prize)}
         {cash ? m.market_when_markup({ markup: Math.round(offer.markup * 100) }) : m.market_when_completed()}
         {`\n${m.market_cancel_cost()}`}
-        <Coin n={Math.round(CANCEL_MIN * offer.clean)} />
+        <Coin n={Math.round(cancelMin * offer.clean)} />
         {m.almanac_period()}
         {!atCap ? `\n${m.market_click_accept()}` : null}
         {why !== undefined ? <span className="mt-2 block font-bold text-roof">{why}</span> : null}
@@ -110,17 +111,19 @@ export function OfferCard({
   offer,
   atCap,
   cap,
+  cancelMin,
   onTip,
   onAccept,
 }: {
   offer: ContractOffer
   atCap: boolean
   cap: number
+  cancelMin: number
   onTip: (tip: Tip) => void
   onAccept: () => void
 }) {
   const grey = atCap
-  const enter = () => onTip(offerHover(offer, atCap, cap))
+  const enter = () => onTip(offerHover(offer, atCap, cap, cancelMin))
   const leave = () => onTip(undefined)
   return (
     <button
@@ -393,7 +396,7 @@ function ActiveCard({
   const need = needOf(active)
   const filled = filledOf(active)
   const left = active.dueDay - nowDay
-  const fee = cancelFee(active, nowDay)
+  const fee = cancelFee(active, nowDay, world.hard.cancelMin)
   return (
     <div className="flex flex-col gap-1.5 bg-ink/6 p-3">
       <HeaderRow

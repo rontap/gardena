@@ -710,7 +710,7 @@ export function doPickup(world: World, at: Coord): void {
       mergeInto(held.item, gained, 1)
     }
     if (c.kind === 'weed') {
-      c.soil.weedChance = 0
+      c.soil.weedChance = world.hard.weedPulled
       world.setCell(at, { kind: 'empty', soil: c.soil })
     } else if (c.kind === 'untilled') {
       world.setCell(at, { kind: 'untilled', ground: c.ground, hardness: c.hardness, cover: { kind: 'bare' } })

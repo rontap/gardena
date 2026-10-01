@@ -14,7 +14,6 @@ import {
   MILL_CHILLI_OUT,
   MILL_VANILLA_IN,
   MILL_VANILLA_OUT,
-  MILL_WORK,
   STILL_CAP,
   STILL_SECONDS,
   STILL_WATER,
@@ -22,7 +21,7 @@ import {
 } from '../../defs/items.ts'
 import { ANNUAL_IDS, BARREL_CROPS, JAM_CROPS, MILL_RECIPES, PLANT_CROPS, STILL_CROPS, TREE_IDS, type GrownCrop, type JamCrop, type MillRecipe } from '../ids.ts'
 import { tierOf, VARIETIES, type VarietyId } from '../../defs/varieties.ts'
-import { barrelNeed, jamSugar, millNeed } from './machine.ts'
+import { barrelNeed, jamSugar, millNeed, millWork } from './machine.ts'
 import { Barrel, CompostBox, Grinder, JamMachine, Mill, PotStill } from '../building.ts'
 import {
   BARREL_PINS,
@@ -86,7 +85,7 @@ describe('recipes.table', () => {
     MILL_RECIPES.forEach(recipe => {
       const r = millRow(recipe)
       expect(unitsOf(r.inputs[0])).toBe(millNeed(recipe))
-      expect(r.duration).toEqual({ kind: 'work', seconds: MILL_WORK })
+      expect(r.duration).toEqual({ kind: 'work', seconds: millWork(recipe) })
     })
   })
 
@@ -346,9 +345,9 @@ describe('recipes.haste', () => {
     mill.recipe = 'wheat'
     mill.units = millNeed('wheat')
     const milled = craftState(mill, 1.1)
-    expect(milled.kind === 'working' && milled.left).toBeCloseTo(MILL_WORK / 1.1)
+    expect(milled.kind === 'working' && milled.left).toBeCloseTo(millWork('wheat') / 1.1)
     const hasted = craftState(mill, 1.1, 1.2)
-    expect(hasted.kind === 'working' && hasted.left).toBeCloseTo(MILL_WORK / (1.1 * 1.2))
+    expect(hasted.kind === 'working' && hasted.left).toBeCloseTo(millWork('wheat') / (1.1 * 1.2))
 
     const still = new PotStill(BASE)
     still.feed = [{ crop: 'potato', variety: 'base', quality: 0, count: STILL_CAP }]

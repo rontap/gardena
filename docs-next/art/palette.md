@@ -31,7 +31,7 @@ The game has one cottage palette. An asset or a panel uses only colours from the
 | `parch` | `#ded7c4` | text fields and checkboxes |
 | `study` | `#24487a` | research progress in the research station panel |
 | `tier-1` … `tier-4` | `#3d7ea6`, `#2a9d8f`, `#e07b18`, `#e23b2e` | contract difficulty dots |
-| `lens-bad`, `lens-good`, `lens-done` | `#e23b2e`, `#2fd15a`, `#1e9be6` | the map views' colours and their swatches ([[shell]]) |
+| `lens-bad`, `lens-good`, `lens-done` | `#e23b2e`, `#2fd15a`, `#1e9be6` | the map views' colours and their swatches ([[shell]]). `lens-good` is also the fill of the working bar on a machine ([[features/machines]]); the track is `ink` |
 
 ## Stone and paving
 

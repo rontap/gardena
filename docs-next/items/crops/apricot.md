@@ -22,7 +22,7 @@ Planting: a soft untilled tile whose upper neighbour is also soft untilled (bare
 
 ## Growing
 
-Fields of `TREES.apricot` (`juvenileSeconds`, `fruitSeconds`), `CROPS.apricot` (`waterUsePerSec`, `waterTolerance`, `fertTolerance`, `rotSeconds`) and `TREE_FERT_PER_DAY.apricot`. Rules: [[features/trees]].
+Fields of `TREES.apricot` (`juvenileSeconds`, `fruitSeconds`) and `CROPS.apricot` (`waterUsePerSec`, `waterTolerance`, `fertTolerance`, `fertUseMul`, `rotSeconds`). Rules: [[features/trees]].
 
 ## Selling
 

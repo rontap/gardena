@@ -21,10 +21,17 @@ import { Tree } from './building.ts'
 import { DAY_SECONDS } from './clock.ts'
 import { statsOf } from './modifiers.ts'
 import { hash, Rng } from './rng.ts'
-import { BIG_TICK, makeTreeSoil, Soil, SOIL_WATER_MID, TREE_FERT_MAX, TREE_WATER_MID, WEED_CHANCE } from './soil.ts'
+import { HARDNESS } from '../defs/rules.ts'
+import { BIG_TICK, makeTreeSoil, Soil, SOIL_WATER_MID, TREE_FERT_MAX, TREE_WATER_MID } from './soil.ts'
+
+const WEED_CHANCE = HARDNESS.normal.weedChance
 import { SOURCE } from './water.ts'
 import { forecastWeather, pumpCostMul, soakDelta, sourceRateMul, type WeatherKind } from './weather.ts'
-import { DT_MAX, stipendOf, World } from './world.ts'
+import { DT_MAX, stipendOf as stipendBands, World } from './world.ts'
+
+function stipendOf(endedDay: number): number {
+  return stipendBands(endedDay, HARDNESS.normal.stipend)
+}
 
 const AT = { col: 10, row: 12 }
 

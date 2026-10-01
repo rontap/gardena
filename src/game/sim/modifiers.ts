@@ -1,16 +1,18 @@
-import { CROPS, TREE_FERT_PER_DAY, tolerance, type CropDef } from '../defs/crops.ts'
+import { CROPS, tolerance, type CropDef } from '../defs/crops.ts'
+import { HARDNESS, type Difficulty } from '../defs/rules.ts'
 import { purposeMul, qualityMul, tierOf, VARIETY_GROW, VARIETY_ROT, type VarietyId } from '../defs/varieties.ts'
-import { DAY_SECONDS } from './clock.ts'
-import { isTreeId, type CropId, type GrownCrop } from './ids.ts'
+import { type CropId, type GrownCrop } from './ids.ts'
 import { PLANT_FERT_PER_SEC } from './soil.ts'
 
 export type Modifier = {
   id: string
-  source: 'research' | 'fertilizer' | 'skill'
+  source: 'research' | 'fertilizer' | 'skill' | 'difficulty'
   crop?: CropId
   saleMul: number
   growSpeed: number
   waterUseMul: number
+  fertUseMul: number
+  rotMul: number
 }
 
 export type Stats = {
@@ -28,6 +30,8 @@ export function apply(def: CropDef, variety: VarietyId, quality: number, mods: r
   const skillSale = mine.reduce((a, m) => a * m.saleMul, 1)
   const growSpeed = mine.reduce((a, m) => a * m.growSpeed, 1)
   const waterUseMul = mine.reduce((a, m) => a * m.waterUseMul, 1)
+  const fertUseMul = mine.reduce((a, m) => a * m.fertUseMul, 1)
+  const rotMul = mine.reduce((a, m) => a * m.rotMul, 1)
   const tier = tierOf(variety)
   const cropSale = def.saleMul === undefined ? 1 : def.saleMul
   return {
@@ -36,8 +40,20 @@ export function apply(def: CropDef, variety: VarietyId, quality: number, mods: r
     waterUsePerSec: def.waterUsePerSec * waterUseMul,
     waterTolerance: tolerance(def.waterTolerance, tier),
     fertTolerance: tolerance(def.fertTolerance, tier),
-    fertUsePerSec: isTreeId(def.id) ? TREE_FERT_PER_DAY[def.id] / DAY_SECONDS : PLANT_FERT_PER_SEC * def.fertUseMul,
-    rotSeconds: def.rotSeconds * VARIETY_ROT[tier],
+    fertUsePerSec: PLANT_FERT_PER_SEC * def.fertUseMul * fertUseMul,
+    rotSeconds: def.rotSeconds * VARIETY_ROT[tier] * rotMul,
+  }
+}
+
+export function difficultyModifier(d: Difficulty): Modifier {
+  return {
+    id: 'difficulty',
+    source: 'difficulty',
+    saleMul: 1,
+    growSpeed: 1,
+    waterUseMul: 1,
+    fertUseMul: HARDNESS[d].plantFertPerSec / PLANT_FERT_PER_SEC,
+    rotMul: HARDNESS[d].rotMul,
   }
 }
 

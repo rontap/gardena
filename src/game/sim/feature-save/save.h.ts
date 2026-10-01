@@ -225,6 +225,7 @@ export type SaveContracts = {
 export type Save = {
   game: 'gardena'
   version: typeof import('../version.ts').GAME_VERSION
+  rules: import('../../defs/rules.ts').Rules
   savedAt: string
   rng: SaveRng
   clock: { day: number; t: number }

@@ -8,7 +8,10 @@ import { Plant } from './plant.ts'
 import type { Item } from './item.ts'
 import { DAY_SECONDS } from './clock.ts'
 import { HAPPY_START } from '../defs/crops.ts'
-import { makeTreeSoil, Soil, TREE_FERT_MAX, TREE_WATER_MID, WEED_CHANCE } from './soil.ts'
+import { HARDNESS } from '../defs/rules.ts'
+import { makeTreeSoil, Soil, TREE_FERT_MAX, TREE_WATER_MID } from './soil.ts'
+
+const WEED_CHANCE = HARDNESS.normal.weedChance
 import { AXES } from '../defs/items.ts'
 import { Tree } from './building.ts'
 import { makeAxe } from './item.ts'

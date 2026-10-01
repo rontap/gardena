@@ -4,7 +4,10 @@ import { ANNUAL_IDS, TREE_IDS, type CropId } from '../sim/ids.ts'
 import { statsOf } from '../sim/modifiers.ts'
 import { Plant } from '../sim/plant.ts'
 import { Tree } from '../sim/building.ts'
-import { makeTreeSoil, TREE_FERT_MAX, TREE_WATER_MID, WEED_CHANCE } from '../sim/soil.ts'
+import { HARDNESS } from './rules.ts'
+import { makeTreeSoil, TREE_FERT_MAX, TREE_WATER_MID } from '../sim/soil.ts'
+
+const WEED_CHANCE = HARDNESS.normal.weedChance
 import {
   CROSSBREED_VAR_BONUS,
   EXPERIENCED_VAR_BONUS,
@@ -114,7 +117,7 @@ describe('quality.sale', () => {
     expect(qualityMul(0)).toBe(1)
     expect(statsOf('carrot', 'base', 0, []).sale).toBe(CROPS.carrot.sale)
     expect(statsOf('potato', 'base', 0, []).sale).toBe(CROPS.potato.sale)
-    const mods = [{ id: 'better-potato', source: 'skill' as const, crop: 'potato' as const, saleMul: 1.04, growSpeed: 1, waterUseMul: 1 }]
+    const mods = [{ id: 'better-potato', source: 'skill' as const, crop: 'potato' as const, saleMul: 1.04, growSpeed: 1, waterUseMul: 1, fertUseMul: 1, rotMul: 1 }]
     expect(statsOf('potato', 'base', 0, mods).sale).toBe(CROPS.potato.sale * 1.04)
     expect(statsOf('tomato', 'san-marzano', 1, []).sale).toBe(
       CROPS.tomato.sale * qualityMul(1) * PURPOSE_MUL.heirloom.off,

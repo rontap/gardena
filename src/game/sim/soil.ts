@@ -11,13 +11,13 @@ export const WEED_FERT_PER_SEC = (1 / 240) * 0.6 * 0.9
 export const WEED_GROW = 60
 export const WEED_GONE_DAYS = 1
 export const BIG_TICK = 10
-export const WEED_CHANCE = 0.03
 export const GRASS_CHANCE = 0.5
+export const GRASS_RAMP_START = -0.1
 export const CHANCE_RAMP_TICKS = DAY_SECONDS / BIG_TICK
 
-export function ramped(chance: number, bigTicks: number): number {
+export function ramped(chance: number, bigTicks: number, start: number): number {
   const k = Math.min(1, bigTicks / CHANCE_RAMP_TICKS)
-  return -0.1 + (chance + 0.1) * k
+  return start + (chance - start) * k
 }
 
 export const TREE_WATER_MAX = 10

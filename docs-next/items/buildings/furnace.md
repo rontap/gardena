@@ -63,7 +63,7 @@ Prompts: **Burn**, **Bake** with flour in hand.
 
 ## Art
 
-`prop-furnace.svg`, groups `off` and `on`.
+`prop-furnace.svg`, groups `off` and `on`. While working, a bar along the bottom of the footprint shows `progress` ([[features/machines]]).
 
 ## Sound
 

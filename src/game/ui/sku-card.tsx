@@ -73,9 +73,9 @@ export function gateLine(world: World, id: SkuId, state: RowState): string {
   return REASON[state]()
 }
 
-export function matches(id: SkuId, q: string): boolean {
+export function matches(id: SkuId, q: string, pace: number): boolean {
   const shelf = shelfOf(id)
-  const hay = `${skuLabel(id)} ${shelf.label()} ${skuDesc(id)}`.toLowerCase()
+  const hay = `${skuLabel(id)} ${shelf.label()} ${skuDesc(id, pace)}`.toLowerCase()
   return hay.includes(q.trim().toLowerCase())
 }
 
@@ -105,7 +105,7 @@ export function SkuCallout({ world, id }: { world: World; id: SkuId }) {
       description={
         <>
           <span className="mb-2 block text-xs opacity-60">{crumb}</span>
-          <span>{skuDesc(id)}</span>
+          <span>{skuDesc(id, world.pace)}</span>
           {made.kind === 'seeds' && (
             <span className="mt-1 block">
               {cropVariety(made.crop, 'base')} {m.hud_shop_seed({ n: 0 })}
@@ -113,7 +113,7 @@ export function SkuCallout({ world, id }: { world: World; id: SkuId }) {
           )}
           {machine !== undefined && (
             <span className="mt-2 block border-t border-ink/15 pt-1">
-              <Recipes view={{ kind: 'list', machine }} size="sm" />
+              <Recipes view={{ kind: 'list', machine }} size="sm" world={world} />
             </span>
           )}
           {state !== 'ok' && <span className="mt-2 block font-bold text-roof">{gateLine(world, id, state)}</span>}

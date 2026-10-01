@@ -18,13 +18,13 @@ import {
   INFUSE_IN,
   INFUSE_REAGENT,
   INFUSE_REAGENTS,
+  INFUSE_EXTRACT_SECONDS,
   INFUSE_SECONDS,
   GRIND_MAX,
   GRIND_MIN,
   GRIND_WORK,
   JAM_IN,
   JAM_SECONDS,
-  MILL_WORK,
   STILL_CAP,
   STILL_SECONDS,
   STILL_WATER,
@@ -62,6 +62,7 @@ import {
   jamWorking,
   millNeed,
   millProduct,
+  millWork,
   millWorking,
   spiritKind,
   stillReady,
@@ -167,7 +168,7 @@ function millRecipe(pin: MillPin): Recipe {
     machine: 'mill',
     inputs: [{ kind: 'one', face, amount: units(millNeed(pin.recipe)) }],
     out: { kind: 'exact', face: out, amount: amountOf(out) },
-    duration: { kind: 'work', seconds: MILL_WORK },
+    duration: { kind: 'work', seconds: millWork(pin.recipe) },
   }
 }
 
@@ -524,7 +525,7 @@ const INFUSER_EXTRACT: Recipe = {
   machine: 'infuser',
   inputs: [{ kind: 'one', face: makeExtract(false), amount: units(INFUSE_IN) }, reagentFor('extract')],
   out: { kind: 'exact', face: makeExtract(true), amount: units(1) },
-  duration: { kind: 'fixed', seconds: INFUSE_SECONDS },
+  duration: { kind: 'fixed', seconds: INFUSE_EXTRACT_SECONDS },
 }
 
 export const JAM_PINS: readonly Pin<JamCrop>[] = pins(JAM_CROPS)

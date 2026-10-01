@@ -9,13 +9,15 @@ import { Act } from '../log.ts'
 import { permit } from '../mp.ts'
 import { Plant } from '../plant.ts'
 import { dump, parse } from '../feature-save/save.ts'
-import { Soil, WEED_CHANCE } from '../soil.ts'
+import { HARDNESS } from '../../defs/rules.ts'
+import { Soil } from '../soil.ts'
+
+const WEED_CHANCE = HARDNESS.normal.weedChance
 import { DAY_SECONDS } from '../clock.ts'
 import type { Active, ContractOffer, Demand, Lines, Prize, PrizePool } from './market.h.ts'
 import {
   AMOUNT_MIN,
   BROKER_MAX_TIER,
-  CANCEL_MIN,
   CONTRACT_OFFERS,
   CONTRACT_SLOT_MAX,
   SLOT_BANDS,
@@ -36,8 +38,6 @@ import {
   GOOD_COST,
   GOOD_TIER,
   REP_DONE,
-  REP_IDLE,
-  REP_LOST,
   REP_MAX,
   MARKUP_BASE,
   DEADLINE_DAYS,
@@ -61,8 +61,8 @@ import {
   recover,
   recoverPerDay,
   saleUnits,
-  rollBoard,
-  rollBoardAtD,
+  rollBoard as rollBoardAtRate,
+  rollBoardAtD as rollBoardAtDRate,
   scale,
 } from './market.ts'
 import { Rng } from '../rng.ts'
@@ -70,6 +70,15 @@ import { STALL_IDS } from '../stall.ts'
 import { DT_MAX, World } from '../world.ts'
 
 const AT = { col: 10, row: 12 }
+const RATE = HARDNESS.normal.penaltyRate
+
+function rollBoard(rng: Rng, day: number, slots: number, rep: number) {
+  return rollBoardAtRate(rng, day, slots, rep, RATE)
+}
+
+function rollBoardAtD(rng: Rng, D: number, slots: number) {
+  return rollBoardAtDRate(rng, D, slots, RATE)
+}
 
 describe('contracts', () => {
   test('Board slot `i` on day `d` is a pure function of `(seed, d, i, repAtDayStart)`. Reputation is the only player input; inventory, plantings, research, money and `clock.t` do not move it.', () => {
@@ -430,8 +439,8 @@ describe('contracts', () => {
 
   test('Reputation moves by the table and clamps to `[0, REP_MAX]`. Completing pays, cancelling and missing cost more, an idle day drips.', () => {
     expect(REP_DONE).toEqual({ 1: 0.5, 2: 1, 3: 1.5, 4: 2 })
-    expect(REP_LOST).toEqual({ 1: 1, 2: 2, 3: 3, 4: 4 })
-    expect(REP_IDLE).toBe(0.3)
+    expect(HARDNESS.normal.repLost).toEqual({ 1: 1, 2: 2, 3: 3, 4: 4 })
+    expect(HARDNESS.normal.repIdle).toBe(0.4)
     const w = new World(1)
     expect(w.contracts.rep).toBe(0)
     w.contracts.active.push(carrotActive(0, 2))
@@ -483,8 +492,8 @@ describe('contracts', () => {
   test('Cancel fee at `elapsed = 0` is `CANCEL_MIN * clean`; at `elapsed = days` it equals the miss penalty at that fill.', () => {
     const a = carrotActive(2, 5)
     const start = a.dueDay - a.offer.days
-    expect(cancelFee(a, start)).toBe(Math.round(CANCEL_MIN * a.offer.clean))
-    expect(cancelFee(a, a.dueDay)).toBe(missPenalty(a))
+    expect(cancelFee(a, start, HARDNESS.normal.cancelMin)).toBe(Math.round(HARDNESS.normal.cancelMin * a.offer.clean))
+    expect(cancelFee(a, a.dueDay, HARDNESS.normal.cancelMin)).toBe(missPenalty(a))
   })
 
   test('Consign fills `active` in array order, then the stall. A full bin passes through.', () => {
@@ -1020,6 +1029,63 @@ describe('prizes', () => {
 
   test('The money pool climbs faster over the top half of the ladder than the bottom.', () => {
     expect(load(40) / load(20)).toBeGreaterThan(load(20) / load(8))
+  })
+})
+
+const LEVELS = ['peaceful', 'normal', 'hard'] as const
+
+describe('rules.penalty', () => {
+  test('rules.penalty', () => {
+    for (const difficulty of LEVELS) {
+      const rate = HARDNESS[difficulty].penaltyRate
+      const offer = rollBoardAtRate(new Rng(1), 4, 1, 0, rate)[0]
+      expect(offer.penalty).toBe(Math.round(rate * offer.clean))
+    }
+  })
+})
+
+describe('rules.rep', () => {
+  test('rules.rep', () => {
+    for (const difficulty of LEVELS) {
+      const rules = { difficulty, speed: 'normal' as const }
+      const idle = new World(1, undefined, rules)
+      idle.done.add('unlock-contracts')
+      idle.contracts.rep = 10
+      idle.clock.t = DAY_SECONDS - 0.001
+      idle.tick(DT_MAX)
+      expect(idle.contracts.rep).toBeCloseTo(10 - idle.hard.repIdle, 8)
+
+      const missed = new World(1, undefined, rules)
+      missed.contracts.rep = 10
+      missed.contracts.active.push(carrotActive(0, missed.nowDay() + 1e-12))
+      missed.tick(DT_MAX)
+      expect(missed.contracts.rep).toBeCloseTo(10 - missed.hard.repLost[1], 8)
+
+      const cancelled = new World(1, undefined, rules)
+      cancelled.contracts.rep = 10
+      cancelled.contracts.active.push(carrotActive(0, 10))
+      cancelled.cancelContract(0)
+      expect(cancelled.contracts.rep).toBeCloseTo(10 - cancelled.hard.repLost[1], 8)
+    }
+  })
+})
+
+describe('rules.cancel', () => {
+  test('rules.cancel', () => {
+    for (const difficulty of LEVELS) {
+      const w = new World(1, undefined, { difficulty, speed: 'normal' })
+      const open = carrotActive(0, w.nowDay() + 4)
+      w.contracts.active.push(open)
+      const atStart = w.money
+      w.cancelContract(0)
+      expect(w.money).toBeCloseTo(atStart - Math.round(w.hard.cancelMin * open.offer.clean), 8)
+
+      const late = carrotActive(0, w.nowDay())
+      w.contracts.active.push(late)
+      const atDeadline = w.money
+      w.cancelContract(0)
+      expect(w.money).toBeCloseTo(atDeadline - missPenalty(late), 8)
+    }
   })
 })
 

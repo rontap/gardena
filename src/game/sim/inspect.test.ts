@@ -7,7 +7,10 @@ import { cellGauge } from './look.ts'
 import { itemGauge, makeAxe, makeContainer, makePickaxe, makeShovel, type Item } from './item.ts'
 import { bare } from './plot.ts'
 import { Weed } from './plant.ts'
-import { SOIL_WATER_MID, Soil, WEED_CHANCE } from './soil.ts'
+import { HARDNESS } from '../defs/rules.ts'
+import { SOIL_WATER_MID, Soil } from './soil.ts'
+
+const WEED_CHANCE = HARDNESS.normal.weedChance
 import { World } from './world.ts'
 import { actionText } from '../ui/status.tsx'
 

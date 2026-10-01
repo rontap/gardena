@@ -31,6 +31,7 @@ import {
   FREEZER_ROT_MUL,
   HANGAR_H,
   HANGAR_W,
+  INFUSE_EXTRACT_SECONDS,
   INFUSE_SECONDS,
   EXTRACT_BAG_LITERS,
   EXTRACT_GROWTH,
@@ -39,8 +40,10 @@ import {
   EXTRACT_SEASON,
   EXTRACT_SECONDS,
   MILL_IN,
+  MILL_OLIVE_WORK,
   MILL_TRUFFLE_OUT,
   MILL_VANILLA_IN,
+  MILL_WHEAT_WORK,
   MILL_WORK,
   JAM_IN,
   JAM_SECONDS,
@@ -73,7 +76,9 @@ const TILE_TITLE: { readonly [K in TileId]: () => string } = {
 
 const FREEZER_PCT = (1 - FREEZER_ROT_MUL) * 100
 
-export function catalogEntries(): CatalogEntry[] {
+export function catalogEntries(pace: number): CatalogEntry[] {
+  const sec = (n: number) => n / pace
+  const work = <T extends { workSeconds: number }>(t: T): T => ({ ...t, workSeconds: sec(t.workSeconds) })
   const crops: CatalogEntry[] = (Object.keys(CROPS) as GrownCrop[]).map(id => {
     const d = CROPS[id]
     return {
@@ -94,7 +99,7 @@ export function catalogEntries(): CatalogEntry[] {
         usesLeft: SHOVELS.shovel.uses,
         workSeconds: SHOVELS.shovel.workSeconds,
       },
-      blurb: m.catalog_shovel(SHOVELS.shovel),
+      blurb: m.catalog_shovel(work(SHOVELS.shovel)),
     },
     {
       id: 'better-shovel',
@@ -105,7 +110,7 @@ export function catalogEntries(): CatalogEntry[] {
         usesLeft: SHOVELS['better-shovel'].uses,
         workSeconds: SHOVELS['better-shovel'].workSeconds,
       },
-      blurb: m.catalog_better_shovel(SHOVELS['better-shovel']),
+      blurb: m.catalog_better_shovel(work(SHOVELS['better-shovel'])),
     },
     {
       id: 'pickaxe',
@@ -116,7 +121,7 @@ export function catalogEntries(): CatalogEntry[] {
         usesLeft: PICKAXES.pickaxe.uses,
         workSeconds: PICKAXES.pickaxe.workSeconds,
       },
-      blurb: m.catalog_pickaxe(PICKAXES.pickaxe),
+      blurb: m.catalog_pickaxe(work(PICKAXES.pickaxe)),
     },
     {
       id: 'better-pickaxe',
@@ -127,7 +132,7 @@ export function catalogEntries(): CatalogEntry[] {
         usesLeft: PICKAXES['better-pickaxe'].uses,
         workSeconds: PICKAXES['better-pickaxe'].workSeconds,
       },
-      blurb: m.catalog_better_pickaxe(PICKAXES['better-pickaxe']),
+      blurb: m.catalog_better_pickaxe(work(PICKAXES['better-pickaxe'])),
     },
     {
       id: 'bucket',
@@ -176,7 +181,7 @@ export function catalogEntries(): CatalogEntry[] {
       blurb: m.catalog_compost_box({
         need: COMPOST_NEED,
         liters: COMPOST_LITERS,
-        seconds: COMPOST_SECONDS,
+        seconds: sec(COMPOST_SECONDS),
         seeds: COMPOST_VALUE.seeds,
         fruit: COMPOST_VALUE.fruit,
         heirloom: COMPOST_VALUE.fruit,
@@ -200,7 +205,7 @@ export function catalogEntries(): CatalogEntry[] {
       id: 'weed',
       title: m.names_ground_weed(),
       icon: { kind: 'weed', count: 1 },
-      blurb: m.catalog_weed({ seconds: WEED_GROW }),
+      blurb: m.catalog_weed({ seconds: sec(WEED_GROW) }),
     },
     {
       id: 'rotten',
@@ -227,7 +232,7 @@ export function catalogEntries(): CatalogEntry[] {
       icon: { kind: 'seeds', crop: 'grass', variety: 'base', quality: 0, count: GRASS_PACK },
       blurb: m.catalog_grass_seeds({
         pack: GRASS_PACK,
-        seconds: GRASS_GROW,
+        seconds: sec(GRASS_GROW),
         drink: Number((GRASS_WATER_PER_SEC * DAY_SECONDS).toFixed(2)),
       }),
     },
@@ -252,7 +257,7 @@ export function catalogEntries(): CatalogEntry[] {
         usesLeft: SHOVELS['rotary-shovel'].uses,
         workSeconds: SHOVELS['rotary-shovel'].workSeconds,
       },
-      blurb: m.catalog_rotary_shovel(SHOVELS['rotary-shovel']),
+      blurb: m.catalog_rotary_shovel(work(SHOVELS['rotary-shovel'])),
     },
     {
       id: 'diamond-pickaxe',
@@ -263,7 +268,7 @@ export function catalogEntries(): CatalogEntry[] {
         usesLeft: PICKAXES['diamond-pickaxe'].uses,
         workSeconds: PICKAXES['diamond-pickaxe'].workSeconds,
       },
-      blurb: m.catalog_diamond_pickaxe(PICKAXES['diamond-pickaxe']),
+      blurb: m.catalog_diamond_pickaxe(work(PICKAXES['diamond-pickaxe'])),
     },
     {
       id: 'pumpjack',
@@ -281,7 +286,7 @@ export function catalogEntries(): CatalogEntry[] {
       id: 'grinder',
       title: m.names_building_grinder(),
       icon: { kind: 'grinder' },
-      blurb: m.catalog_grinder({ min: GRIND_MIN, max: GRIND_MAX, workSeconds: GRIND_WORK }),
+      blurb: m.catalog_grinder({ min: GRIND_MIN, max: GRIND_MAX, workSeconds: sec(GRIND_WORK) }),
     },
     {
       id: 'pipe',
@@ -338,14 +343,23 @@ export function catalogEntries(): CatalogEntry[] {
       blurb: m.catalog_mill({
         cane: MILL_IN,
         vanilla: MILL_VANILLA_IN,
-        work: MILL_WORK,
+        work: sec(MILL_WORK),
+        olive: sec(MILL_OLIVE_WORK),
+        wheat: sec(MILL_WHEAT_WORK),
       }),
     },
     {
       id: 'infuser',
       title: m.names_building_infuser(),
       icon: { kind: 'infuser' },
-      blurb: m.catalog_infuser({ goods: infuseGoodsText(INFUSABLE_KINDS, 'disjunction'), seconds: INFUSE_SECONDS }),
+      blurb: m.catalog_infuser({
+        goods: infuseGoodsText(
+          INFUSABLE_KINDS.filter(k => k !== 'extract'),
+          'disjunction',
+        ),
+        seconds: sec(INFUSE_SECONDS),
+        extract: sec(INFUSE_EXTRACT_SECONDS),
+      }),
     },
     {
       id: 'necronomicon',
@@ -384,41 +398,41 @@ export function catalogEntries(): CatalogEntry[] {
       blurb: m.catalog_extract({
         liters: EXTRACT_BAG_LITERS,
         pour: EXTRACT_POUR,
-        seconds: EXTRACT_SECONDS,
+        seconds: sec(EXTRACT_SECONDS),
         pct: Math.round(EXTRACT_GROWTH * 100),
         season: Math.round(EXTRACT_SEASON * 100),
-        infused: EXTRACT_INFUSED_SECONDS,
+        infused: sec(EXTRACT_INFUSED_SECONDS),
       }),
     },
     {
       id: 'still',
       title: m.names_building_still(),
       icon: { kind: 'still' },
-      blurb: m.catalog_still({ cap: STILL_CAP, seconds: STILL_SECONDS }),
+      blurb: m.catalog_still({ cap: STILL_CAP, seconds: sec(STILL_SECONDS) }),
     },
     {
       id: 'furnace',
       title: m.names_building_furnace(),
       icon: { kind: 'furnace' },
-      blurb: m.catalog_furnace({ need: FURNACE_NEED, seconds: FURNACE_SECONDS, ash: FURNACE_ASH }),
+      blurb: m.catalog_furnace({ need: FURNACE_NEED, seconds: sec(FURNACE_SECONDS), ash: FURNACE_ASH }),
     },
     {
       id: 'station',
       title: m.names_building_station(),
       icon: { kind: 'station' },
-      blurb: m.catalog_station({ seconds: STATION_SECONDS_BASE }),
+      blurb: m.catalog_station({ seconds: sec(STATION_SECONDS_BASE) }),
     },
     {
       id: 'axe',
       title: m.names_item_axe(),
       icon: { kind: 'axe', id: 'axe', usesLeft: AXES.axe.uses, workSeconds: AXES.axe.workSeconds },
-      blurb: m.catalog_axe(AXES.axe),
+      blurb: m.catalog_axe(work(AXES.axe)),
     },
     {
       id: 'chainsaw',
       title: m.names_item_chainsaw(),
       icon: { kind: 'axe', id: 'chainsaw', usesLeft: AXES.chainsaw.uses, workSeconds: AXES.chainsaw.workSeconds },
-      blurb: m.catalog_chainsaw(AXES.chainsaw),
+      blurb: m.catalog_chainsaw(work(AXES.chainsaw)),
     },
     {
       id: 'electric-chainsaw',
@@ -429,7 +443,7 @@ export function catalogEntries(): CatalogEntry[] {
         usesLeft: AXES['electric-chainsaw'].uses,
         workSeconds: AXES['electric-chainsaw'].workSeconds,
       },
-      blurb: m.catalog_electric_chainsaw(AXES['electric-chainsaw']),
+      blurb: m.catalog_electric_chainsaw(work(AXES['electric-chainsaw'])),
     },
     {
       id: 'wood',
@@ -465,7 +479,7 @@ export function catalogEntries(): CatalogEntry[] {
       id: 'jam',
       title: m.names_building_jam(),
       icon: { kind: 'jam-machine' },
-      blurb: m.catalog_jam({ fruit: JAM_IN, seconds: JAM_SECONDS }),
+      blurb: m.catalog_jam({ fruit: JAM_IN, seconds: sec(JAM_SECONDS) }),
     },
     {
       id: 'freezer',

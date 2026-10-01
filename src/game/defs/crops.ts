@@ -1,6 +1,6 @@
 import { m } from '../../paraglide/messages.js'
 import { TOL_MIN, VARIETY_TOL, type VarietyId, type VarietyTier } from './varieties.ts'
-import type { CropId, GrownCrop, TreeId } from '../sim/ids.ts'
+import type { CropId, GrownCrop } from '../sim/ids.ts'
 
 export type CropClass = 'root' | 'grain' | 'fruit'
 
@@ -93,7 +93,7 @@ export const CROPS: { readonly [K in GrownCrop]: CropDef } = {
     waterUsePerSec: 0.00375,
     waterTolerance: 2.2,
     fertTolerance: 1.35,
-    fertUseMul: 0,
+    fertUseMul: 0.88,
     sale: 8,
     seed: 4,
     rotSeconds: 660,
@@ -159,7 +159,7 @@ export const CROPS: { readonly [K in GrownCrop]: CropDef } = {
     waterUsePerSec: 0.002333,
     waterTolerance: 3.6,
     fertTolerance: 1.7,
-    fertUseMul: 0,
+    fertUseMul: 0.59,
     sale: 5,
     seed: 0,
     rotSeconds: 340,
@@ -172,7 +172,7 @@ export const CROPS: { readonly [K in GrownCrop]: CropDef } = {
     waterUsePerSec: 0.0015,
     waterTolerance: 1.2,
     fertTolerance: 1,
-    fertUseMul: 0,
+    fertUseMul: 0.44,
     sale: 10,
     seed: 0,
     rotSeconds: 540,
@@ -185,7 +185,7 @@ export const CROPS: { readonly [K in GrownCrop]: CropDef } = {
     waterUsePerSec: 0.003167,
     waterTolerance: 2.2,
     fertTolerance: 1.35,
-    fertUseMul: 0,
+    fertUseMul: 0.81,
     sale: 4,
     seed: 0,
     rotSeconds: 180,
@@ -217,17 +217,6 @@ export const CROP_NAME: { readonly [K in CropId]: () => string } = {
 
 export const HAPPY_START = 0.5
 export const HAPPY_MAX = 1
-export const HAPPY_GAIN_SECONDS = 900
-export const HAPPY_WILT_SECONDS = 240
-export const HAPPY_STARVE_SECONDS = 400
-export const HAPPY_DROWN_SECONDS = 180
-
-export const TREE_FERT_PER_DAY: { readonly [K in TreeId]: number } = {
-  olive: 0.09,
-  apricot: 0.12,
-  cherry: 0.165,
-  apple: 0.18,
-}
 
 export function tolerance(base: number, tier: VarietyTier): number {
   const t = base * VARIETY_TOL[tier]
@@ -259,8 +248,6 @@ export function cropVariety(id: CropId, variety: VarietyId): string {
   return m.names_variety_pair({ crop: CROP_NAME[id](), variety: NAMED[variety]() })
 }
 
-export const FRESH_FULL = 0.8
-
-export function freshMul(f: number): number {
-  return f >= FRESH_FULL ? 1 : f / FRESH_FULL
+export function freshMul(f: number, full: number): number {
+  return f >= full ? 1 : f / full
 }

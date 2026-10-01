@@ -30,7 +30,7 @@ Each good takes two of the reagents (`INFUSE_REAGENTS`):
 
 Among vanilla extract, flakes and Truffle extract, each of the four goods lacks one, so any two of the three infuse all four, and one alone does not.
 
-Each batch takes `INFUSE_IN` good and `INFUSE_REAGENT` of the first of the good's two reagents the Infuser holds (`infuseReagent`), and runs `INFUSE_SECONDS`, sped up by nearby Furnaces. A reagent the locked good does not take stays in its store. The infused good keeps the averaged quality and `unitSale` of what went in.
+Each batch takes `INFUSE_IN` good and `INFUSE_REAGENT` of the first of the good's two reagents the Infuser holds (`infuseReagent`), and runs `infuseSeconds`: `INFUSE_SECONDS` for jam, cask, spirit and olive oil, `INFUSE_EXTRACT_SECONDS` for Extract. Nearby Furnaces speed that up. A reagent the locked good does not take stays in its store. The infused good keeps the averaged quality and `unitSale` of what went in.
 
 ## Recipe
 
@@ -59,7 +59,7 @@ Prompt: **Infuse**. Hover: **{have}/{need} → Infused {name}**, **{have}/{need}
 
 ## Art
 
-`prop-infuser.svg`, groups `off` and `on`.
+`prop-infuser.svg`, groups `off` and `on`. While working, a bar along the bottom of the footprint shows `progress` ([[features/machines]]).
 
 ## Sound
 

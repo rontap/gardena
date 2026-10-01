@@ -8,7 +8,7 @@ Start here. Find the task type, read the pages it lists, then grep the code usin
 
 - The code is the truth. A page states what `src/`, `src/game/defs/` and `messages/en/` do now.
 - A page describes the current game only. Git versions the pages: a page states what the game does, and leaves out what it used to do, what it lacks, leftovers in the code, and bugs. Findings go to the developer in chat.
-- The old `docs/` is used only for what code cannot show: why a rule exists, architectural decisions, invariants.
+- Agent law is [[process/_index]]. These pages state what the code does.
 - Pages name identifiers, constants and string keys. They do not cite line numbers or restate code; [[code-map]] says where to look.
 - Constants by name, never their digits.
 - Prose by default. A table only where rows share columns.

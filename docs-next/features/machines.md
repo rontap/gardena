@@ -1,6 +1,6 @@
 # Machines
 
-Code: `feature-machines/` (`machine.ts`, `recipe.ts`, `machines.tick.ts`, `machines.emit.ts`, `machines.helpers.ts`), machine classes in `building.ts`, `ui/recipe.tsx`, `ui/station.tsx`; see [[code-map]].
+Code: `feature-machines/` (`machine.ts`, `recipe.ts`, `machines.tick.ts`, `machines.emit.ts`, `machines.helpers.ts`), machine classes in `building.ts`, `ui/recipe.tsx`, `ui/station.tsx`, `view/meter.ts` (the working bar); see [[code-map]].
 Unlocked: each machine by its own research ([[features/research]]).
 
 ## Purpose
@@ -63,6 +63,8 @@ A machine's state (`Craft`, from `craftState`) is shown on its panel and hover l
   thirsty   Pot still full but its water network cannot give `STILL_WATER` L (shown as Needs water)
 ```
 
+While `craftState` is `working`, the Mill, Jam machine, Grinder, Pot still, Compost box, Furnace and Infuser draw a bar along the bottom of the footprint. The fill is that craft's `progress`. Idle, filling, paused, thirsty and ready draw no bar. The list is `METERED` in `view/meter.ts`. The bar is redrawn each frame.
+
 ### Input and output
 
 Hand input, input from a chest on the left of the bottom row, output to a chest on the right or onto a free plot, and vehicle loading spots: [[systems/building-io]]. When the output has nowhere to go, the machine keeps the finished batch and waits.
@@ -110,9 +112,11 @@ Putting an item into any machine plays one load sound: lid open, item in, lid sh
 | — | Mill: `MILL_IN` cane makes `SUGAR_BAG` L of sugar | `plants.test.ts` |
 | — | Pot still starts only when its water network gives the full `STILL_WATER` | `plants.test.ts` |
 | `familiarity.point` | reaching `familiarityMax` grants `FAMILIARITY_POINT` once per grown crop; 13 crops grant 13 | `plants.test.ts`, `machine.test.ts` |
+| — | `METERED` machines show `progress` only while `craftState` is `working` | `meter.test.ts` |
 
 ## When you change this
 
 - New machine: [[howto/add-building]]; a `MachineId`, recipes in `recipe.ts`, a `Craft` function, a page in `items/buildings/`, a row in the table above.
 - New recipe on an existing machine: its `accept` / `apply`, its recipe row, the product's item page ([[items/_index]]).
 - Speed rules: the recipe panel's time labels use `recipeSeconds`; keep them equal to the tick code.
+- The working bar: add the machine's `MachineId` to `METERED`. Its `craftState` must report `working` with `progress`.

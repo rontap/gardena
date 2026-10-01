@@ -32,7 +32,10 @@ import {
   JAM_IN,
   JAM_SECONDS,
   MILL_GRASS,
+  MILL_GRASS_WORK,
   MILL_IN,
+  MILL_OLIVE_WORK,
+  MILL_WHEAT_WORK,
   MILL_WORK,
   PICKAXES,
   PRODUCE_SLOTS,
@@ -46,6 +49,7 @@ import {
   SUGAR_BAG,
   SUGAR_MILL,
   STATION_SECONDS_BASE,
+  INFUSE_EXTRACT_SECONDS,
   INFUSE_REAGENTS,
   INFUSE_SECONDS,
   SUGAR_SHOP,
@@ -314,8 +318,8 @@ export function spiritName(spirit: SpiritKind, variety: VarietyId): string {
   return SPIRIT_NAME[spirit]()
 }
 
-export function fruitMoney(it: { unitSale: number; count: number; freshness: number }): number {
-  return it.unitSale * it.count * freshMul(it.freshness)
+export function fruitMoney(it: { unitSale: number; count: number; freshness: number }, full: number): number {
+  return it.unitSale * it.count * freshMul(it.freshness, full)
 }
 
 export function mergeUnitSale(a: { unitSale: number; count: number }, b: { unitSale: number; count: number }): number {
@@ -757,7 +761,10 @@ export function skuLabel(id: SkuId): string {
 const PACK_N = 5
 const FREEZER_PCT = (1 - FREEZER_ROT_MUL) * 100
 
-const SKU_DESC: { readonly [K in SkuId]: () => string } = {
+function skuText(pace: number): { readonly [K in SkuId]: () => string } {
+  const sec = (n: number) => n / pace
+  const work = <T extends { workSeconds: number }>(t: T): T => ({ ...t, workSeconds: sec(t.workSeconds) })
+  return {
   'pack-carrot': () => m.catalog_sku_pack({ n: PACK_N, name: cropName('carrot') }),
   'pack-potato': () => m.catalog_sku_pack({ n: PACK_N, name: cropName('potato') }),
   'pack-wheat': () => m.catalog_sku_pack({ n: PACK_N, name: cropName('wheat') }),
@@ -766,19 +773,19 @@ const SKU_DESC: { readonly [K in SkuId]: () => string } = {
   'pack-grape': () => m.catalog_sku_pack({ n: PACK_N, name: cropName('grape') }),
   'pack-sugar-cane': () => m.catalog_sku_pack_sugar_cane({ n: PACK_N, name: cropName('sugar-cane') }),
   'pack-chilli': () => m.catalog_sku_pack({ n: PACK_N, name: cropName('chilli') }),
-  'buy-shovel': () => m.catalog_shovel(SHOVELS.shovel),
-  'buy-better-shovel': () => m.catalog_better_shovel(SHOVELS['better-shovel']),
-  'buy-pickaxe': () => m.catalog_pickaxe(PICKAXES.pickaxe),
-  'buy-better-pickaxe': () => m.catalog_better_pickaxe(PICKAXES['better-pickaxe']),
+  'buy-shovel': () => m.catalog_shovel(work(SHOVELS.shovel)),
+  'buy-better-shovel': () => m.catalog_better_shovel(work(SHOVELS['better-shovel'])),
+  'buy-pickaxe': () => m.catalog_pickaxe(work(PICKAXES.pickaxe)),
+  'buy-better-pickaxe': () => m.catalog_better_pickaxe(work(PICKAXES['better-pickaxe'])),
   'buy-bucket': () => m.catalog_bucket({ n: CONTAINERS.bucket.capacityLiters, plot: SOIL_WATER_MID }),
   'buy-bucket-large': () => m.catalog_bucket({ n: CONTAINERS['large-bucket'].capacityLiters, plot: SOIL_WATER_MID }),
   'buy-fertilizer': () => m.catalog_sku_buy_fertilizer({ n: FERT_BAG_LITERS }),
   'buy-weed-spray': () => m.catalog_weed_spray({ n: WEED_SPRAY_BAG }),
   'buy-compost-box': () =>
-    m.catalog_sku_buy_compost_box({ need: COMPOST_NEED, liters: COMPOST_LITERS, seconds: COMPOST_SECONDS }),
+    m.catalog_sku_buy_compost_box({ need: COMPOST_NEED, liters: COMPOST_LITERS, seconds: sec(COMPOST_SECONDS) }),
   'buy-pumpjack': () => m.catalog_pumpjack({ rate: SOURCE.pump.rate * DAY_SECONDS, cap: SOURCE.pump.capacity }),
   'buy-chest': () => m.catalog_chest({ n: CHEST_SLOTS }),
-  'buy-grinder': () => m.catalog_grinder({ min: GRIND_MIN, max: GRIND_MAX, workSeconds: GRIND_WORK }),
+  'buy-grinder': () => m.catalog_grinder({ min: GRIND_MIN, max: GRIND_MAX, workSeconds: sec(GRIND_WORK) }),
   'buy-pipe': () => m.catalog_pipe(),
   'buy-sprinkler': () => m.catalog_sprinkler({ w: 2, h: 2, day: SPRINKLER_TILE_DAY }),
   'buy-sprinkler-vert': () => m.catalog_sprinkler_vert({ w: 4, h: 2, day: SPRINKLER_TILE_DAY }),
@@ -793,10 +800,19 @@ const SKU_DESC: { readonly [K in SkuId]: () => string } = {
   'buy-fence': () => m.catalog_sku_buy_fence(),
   'pack-grass': () => m.catalog_sku_pack_grass({ n: GRASS_PACK }),
   'buy-mill': () =>
-    m.catalog_sku_buy_mill({ cane: MILL_IN, grass: MILL_GRASS, work: MILL_WORK, bag: SUGAR_BAG, sale: SUGAR_MILL }),
-  'buy-jam': () => m.catalog_sku_buy_jam({ fruit: JAM_IN, seconds: JAM_SECONDS, buffer: JAM_BUFFER }),
-  'buy-still': () => m.catalog_sku_buy_still({ cap: STILL_CAP, water: STILL_WATER, seconds: STILL_SECONDS }),
-  'buy-barrel': () => m.catalog_sku_buy_barrel({ mature: BARREL_MATURE, age: BARREL_AGE }),
+    m.catalog_sku_buy_mill({
+      cane: MILL_IN,
+      grass: MILL_GRASS,
+      work: sec(MILL_WORK),
+      olive: sec(MILL_OLIVE_WORK),
+      wheat: sec(MILL_WHEAT_WORK),
+      grassWork: sec(MILL_GRASS_WORK),
+      bag: SUGAR_BAG,
+      sale: SUGAR_MILL,
+    }),
+  'buy-jam': () => m.catalog_sku_buy_jam({ fruit: JAM_IN, seconds: sec(JAM_SECONDS), buffer: JAM_BUFFER }),
+  'buy-still': () => m.catalog_sku_buy_still({ cap: STILL_CAP, water: STILL_WATER, seconds: sec(STILL_SECONDS) }),
+  'buy-barrel': () => m.catalog_sku_buy_barrel({ mature: sec(BARREL_MATURE), age: sec(BARREL_AGE) }),
   'buy-freezer': () => m.catalog_sku_buy_freezer({ n: FREEZER_SLOTS, pct: FREEZER_PCT }),
   'buy-freezer-large': () => m.catalog_sku_buy_freezer_large({ n: FREEZER_LARGE_SLOTS, pct: FREEZER_PCT }),
   'buy-sugar': () => m.catalog_sku_buy_sugar({ bag: SUGAR_BAG, sale: SUGAR_SHOP }),
@@ -825,17 +841,26 @@ const SKU_DESC: { readonly [K in SkuId]: () => string } = {
   'buy-traffic-light': () => m.catalog_traffic_light(),
   'buy-dispatch': () => m.catalog_dispatch(),
   'buy-furnace': () =>
-    m.catalog_sku_buy_furnace({ need: FURNACE_NEED, seconds: FURNACE_SECONDS, ash: FURNACE_ASH, cap: FURNACE_CAP }),
-  'buy-axe': () => m.catalog_axe(AXES.axe),
-  'buy-chainsaw': () => m.catalog_chainsaw(AXES.chainsaw),
-  'buy-research-station': () => m.catalog_sku_buy_research_station({ seconds: STATION_SECONDS_BASE }),
-  'buy-infuser': () => m.catalog_sku_buy_infuser({ goods: infuseGoodsText(INFUSABLE_KINDS, 'disjunction'), seconds: INFUSE_SECONDS }),
+    m.catalog_sku_buy_furnace({ need: FURNACE_NEED, seconds: sec(FURNACE_SECONDS), ash: FURNACE_ASH, cap: FURNACE_CAP }),
+  'buy-axe': () => m.catalog_axe(work(AXES.axe)),
+  'buy-chainsaw': () => m.catalog_chainsaw(work(AXES.chainsaw)),
+  'buy-research-station': () => m.catalog_sku_buy_research_station({ seconds: sec(STATION_SECONDS_BASE) }),
+  'buy-infuser': () =>
+    m.catalog_sku_buy_infuser({
+      goods: infuseGoodsText(
+        INFUSABLE_KINDS.filter(k => k !== 'extract'),
+        'disjunction',
+      ),
+      seconds: sec(INFUSE_SECONDS),
+      extract: sec(INFUSE_EXTRACT_SECONDS),
+    }),
   'buy-necronomicon': () => m.catalog_sku_buy_necronomicon(),
   'buy-sorter': () => m.catalog_sku_buy_sorter(),
+  }
 }
 
-export function skuDesc(id: SkuId): string {
-  return SKU_DESC[id]()
+export function skuDesc(id: SkuId, pace: number): string {
+  return skuText(pace)[id]()
 }
 
 export function itemTip(item: Item): string {

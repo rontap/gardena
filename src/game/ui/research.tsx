@@ -14,7 +14,7 @@ export function Research({ world, onClose }: { world: World; onClose: () => void
       footer={
         <div className="text-sm text-ink/55">
           {job.kind === 'run'
-            ? m.hud_research_run({ name: RESEARCH[job.id].name, secs: Math.ceil(job.left) })
+            ? m.hud_research_run({ name: RESEARCH[job.id].name, secs: Math.ceil(world.realSeconds(job.left)) })
             : m.hud_research_idle()}
         </div>
       }

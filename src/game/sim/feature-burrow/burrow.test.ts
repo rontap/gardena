@@ -425,7 +425,7 @@ describe('burrow.truffle', () => {
     expect(w.silo.accept(item)).toBe(0)
     expect(w.additives.accept(item)).toBe(0)
     expect(m.names_item_truffle().length).toBeGreaterThan(0)
-    expect(catalogEntries().some(e => e.id === 'truffle')).toBe(true)
+    expect(catalogEntries(1).some(e => e.id === 'truffle')).toBe(true)
     expect(BURROW_RARITIES.filter(r => BURROW_ENTRIES[r].some(e => e.kind === 'truffle'))).toEqual(['rare'])
     expect(BURROW_RARITIES.filter(r => BURROW_ENTRIES[r].some(e => e.kind === 'fly-agaric'))).toEqual(['uncommon'])
     expect(BURROW_RARITIES.map(r => BURROW_ENTRIES[r].length)).toEqual([5, 5, 5])

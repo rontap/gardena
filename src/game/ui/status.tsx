@@ -283,7 +283,7 @@ function MachineCraft({ world, hover }: { world: World; hover: PromptHit }) {
   if (machine === undefined) return null
   return (
     <div className="bg-dirt/25 px-3 py-2.5">
-      <Recipes view={{ kind: 'live', craft: craftState(machine, world.machineMul(), world.furnaceMulFor(machine.base)) }} size="md" />
+      <Recipes view={{ kind: 'live', craft: craftState(machine, world.machineMul(), world.furnaceMulFor(machine.base)) }} size="md" world={world} />
     </div>
   )
 }

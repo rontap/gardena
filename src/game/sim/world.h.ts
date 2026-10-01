@@ -217,6 +217,7 @@ export type ExpandFace = { id: ChunkId; dir: 'n' | 'e' | 's' | 'w'; at: Coord; p
 export type Job = { kind: 'idle' } | { kind: 'run'; id: ResearchId; left: number }
 
 export type Hydrate = {
+  rules: import('../defs/rules.ts').Rules
   rng: Rng
   sink: LogSink
   house: House

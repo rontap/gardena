@@ -53,7 +53,10 @@ import { SPIRIT_KINDS, STILL_CROPS } from '../ids.ts'
 import type { Item } from '../item.ts'
 import { isSolid } from '../plot.ts'
 import { Plant, Weed } from '../plant.ts'
-import { FERT_PLOT_MAX, makeTreeSoil, Soil, TREE_FERT_MAX, TREE_WATER_MID, WEED_CHANCE } from '../soil.ts'
+import { HARDNESS } from '../../defs/rules.ts'
+import { FERT_PLOT_MAX, makeTreeSoil, Soil, TREE_FERT_MAX, TREE_WATER_MID } from '../soil.ts'
+
+const WEED_CHANCE = HARDNESS.normal.weedChance
 import { CROPS } from '../../defs/crops.ts'
 
 const AT = { col: 10, row: 12 }

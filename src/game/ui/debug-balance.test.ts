@@ -1,8 +1,8 @@
 import { expect, test } from 'vitest'
-import { CROPS, TREE_FERT_PER_DAY } from '../defs/crops.ts'
+import { CROPS } from '../defs/crops.ts'
 import { TREES } from '../defs/trees.ts'
 import { DAY_SECONDS } from '../sim/clock.ts'
-import { TREE_WATER_MAX, TREE_WATER_MID } from '../sim/soil.ts'
+import { PLANT_FERT_PER_SEC, TREE_WATER_MAX, TREE_WATER_MID } from '../sim/soil.ts'
 import { compute, snapshot, toCsv } from './debug-balance.ts'
 
 test('Constant settings **Water per day** is `waterUsePerSec × daySeconds`; the field writes `n / daySeconds`. CSV `water_use_per_day`. **Water consumed (L)** stays `waterUsePerSec × growSeconds`.', () => {
@@ -66,6 +66,6 @@ test('tree water and Fertilizer are not 0', () => {
   expect(apple.totalWater).toBeGreaterThan(0)
   expect(apple.pours).toBeCloseTo(totalWater / span, 10)
   expect(apple.pours).toBeGreaterThan(0)
-  expect(apple.fertL).toBeCloseTo((TREE_FERT_PER_DAY.apple / DAY_SECONDS) * growSeconds, 10)
+  expect(apple.fertL).toBeCloseTo(PLANT_FERT_PER_SEC * CROPS.apple.fertUseMul * growSeconds, 10)
   expect(apple.fertL).toBeGreaterThan(0)
 })

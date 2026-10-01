@@ -78,3 +78,17 @@ describe('save.recaps', () => {
     expect(loaded.world.tally.contracts).toEqual([])
   })
 })
+
+describe('rules.saved', () => {
+  test('rules.saved', () => {
+    const rules = { difficulty: 'peaceful' as const, speed: 'leisurely' as const }
+    const w = new World(1, undefined, rules)
+    const s = dump(w)
+    expect(s.rules).toEqual(rules)
+    const loaded = parse(JSON.stringify(s))
+    expect(loaded.ok).toBe(true)
+    if (!loaded.ok) return
+    expect(loaded.world.rules).toEqual(rules)
+    expect(loaded.world.pace).toBe(w.pace)
+  })
+})

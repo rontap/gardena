@@ -14,6 +14,6 @@ export function settleLoan(world: World): { loan: number; payback: number } {
   if (pack.kind !== 'seeds') throw new Error('pack')
   world.silo.put(pack.crop, pack.variety, boughtSeedQuality(world, pack.crop), LOAN_PACKS * pack.count)
   world.money += LOAN_CASH
-  world.loanDays += LOAN_DAYS
+  if (world.hard.loanPayback) world.loanDays += LOAN_DAYS
   return { loan: LOAN_CASH, payback }
 }

@@ -1,4 +1,4 @@
-import { FRESH_FULL } from '../../defs/crops.ts'
+
 import { GRASS_GROW, GRASS_WATER_PER_SEC } from '../../defs/items.ts'
 import { jamRotMul } from '../../defs/skills.ts'
 import { TREES, TREE_OFF_CHANCE, TREE_RATE_HAPPY, TREE_RATE_OFF, TREE_RATE_ON, TREE_YIELD_DAYS } from '../../defs/trees.ts'
@@ -8,15 +8,15 @@ import { DAY_SECONDS } from '../clock.ts'
 import { onCell } from '../drop.ts'
 import { statsOf } from '../modifiers.ts'
 import { Weed } from '../plant.ts'
-import { isPlot, isTilled } from '../plot.ts'
+import { isPlot, isTilled, recovers } from '../plot.ts'
 import {
   fertBand,
   GRASS_CHANCE,
+  GRASS_RAMP_START,
   happyBand,
   ramped,
   STUNT,
   waterBand,
-  WEED_CHANCE,
   WEED_FERT_PER_SEC,
   WEED_GONE_DAYS,
   WEED_GROW,
@@ -79,13 +79,13 @@ export function tickField(w: World, dt: number): void {
   let dirty = false
   for (const [k, at] of w.recover) {
     const c = w.cell(at)
-    if (!isTilled(c) || c.soil.weedChance >= WEED_CHANCE) {
+    if (!recovers(c) || c.soil.weedChance >= w.hard.weedChance) {
       w.recover.delete(k)
       continue
     }
     const next = c.soil.weedChance + (0.15 * dt) / DAY_SECONDS
-    c.soil.weedChance = next > WEED_CHANCE ? WEED_CHANCE : next
-    if (c.soil.weedChance >= WEED_CHANCE) w.recover.delete(k)
+    c.soil.weedChance = next > w.hard.weedChance ? w.hard.weedChance : next
+    if (c.soil.weedChance >= w.hard.weedChance) w.recover.delete(k)
   }
   for (const at of w.grow.values()) {
     const c = w.cell(at)
@@ -129,7 +129,7 @@ export function tickField(w: World, dt: number): void {
       const water = waterBand(c.soil.water, st.waterTolerance, c.soil.waterMid)
       const fert = fertBand(c.soil.fertilizer, st.fertTolerance, c.soil.fertMax)
       const q = w.bakeQuality(c.plant)
-      const harm = age(c.plant, c.soil, water, fert, dt)
+      const harm = age(w, c.plant, c.soil, water, fert, dt)
       if (harm.kind === 'hurt' && c.plant.happiness <= 0) {
         w.setCell(at, doomed(harm.by, c.soil, c.plant))
         w.tally.died += 1
@@ -152,14 +152,14 @@ export function tickField(w: World, dt: number): void {
       }
     }
     if (c.kind === 'ripe') {
-      const bar0Fresh = c.plant.freshness < FRESH_FULL
+      const bar0Fresh = c.plant.freshness < w.hard.freshFull
       c.plant.freshness -= dt / (st.rotSeconds * jamRotMul(w.skillTier('jam'), c.plant.freshness))
       if (c.plant.freshness <= 0) {
         w.setCell(at, { kind: 'rotten', soil: c.soil, crop: c.plant.crop })
         dirty = true
         continue
       }
-      if (c.plant.freshness < FRESH_FULL !== bar0Fresh) dirty = true
+      if (c.plant.freshness < w.hard.freshFull !== bar0Fresh) dirty = true
     }
     const now = w.cell(at)
     if (now.kind !== 'growing' && now.kind !== 'ripe') continue
@@ -220,7 +220,7 @@ export function tickTree(w: World, t: Tree, dt: number): boolean {
   t.soil.starve(st.fertUsePerSec * dt)
   const water = waterBand(t.soil.water, st.waterTolerance, t.soil.waterMid)
   const fert = fertBand(t.soil.fertilizer, st.fertTolerance, t.soil.fertMax)
-  ageTree(t, t.soil, water, fert, dt)
+  ageTree(w, t, t.soil, water, fert, dt)
   if (t.juvenile < 1) {
     t.juvenile += dt / TREES[t.species].juvenileSeconds + extractGain(dt, t)
     if (t.juvenile < 1) return false
@@ -286,7 +286,7 @@ export function sproutWeeds(w: World): boolean {
   for (const at of w.empty.values()) {
     const c = w.cell(at)
     if (c.kind !== 'empty') continue
-    if (w.rng.stream('weed').at(at.col, at.row, w.bigTicks) >= ramped(c.soil.weedChance, w.bigTicks) * mul) continue
+    if (w.rng.stream('weed').at(at.col, at.row, w.bigTicks) >= ramped(c.soil.weedChance, w.bigTicks, w.hard.weedStart) * mul) continue
     const variant = w.rng.stream('weed').at(at.col, at.row, w.bigTicks, 1) < 0.5 ? 0 : 1
     w.setCell(at, { kind: 'weed', soil: c.soil, weed: new Weed(variant) })
     grew = true
@@ -304,7 +304,7 @@ export function outbreak(w: World, at: Coord): void {
     if (!w.inWorld(n)) return
     const c = w.cell(n)
     if (c.kind !== 'empty') return
-    c.soil.weedChance += 0.05
+    c.soil.weedChance += w.hard.weedNeighbour
     w.track(n, c)
   })
 }
@@ -315,7 +315,7 @@ export function sproutGrass(w: World): boolean {
   if (grassCount(w) >= CHUNK * w.owned.length) return false
   const grass = w.rng.stream('grass')
   const ownedCellCount = w.owned.length * CHUNK * CHUNK
-  if (!(Math.min(1, ramped(GRASS_CHANCE, w.bigTicks) * ownedCellCount) * mul > grass.at(w.bigTicks))) return false
+  if (!(Math.min(1, ramped(GRASS_CHANCE, w.bigTicks, GRASS_RAMP_START) * ownedCellCount) * mul > grass.at(w.bigTicks))) return false
   const per = CHUNK * CHUNK
   for (let i = 0; i < 24; i++) {
     const u = grass.at(w.bigTicks, i, 0)

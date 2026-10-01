@@ -37,7 +37,7 @@ Prompt: **Distill**. State **Needs water** while waiting for water.
 
 ## Art
 
-`prop-still.svg`.
+`prop-still.svg`. While working, a bar along the bottom of the footprint shows `progress` ([[features/machines]]).
 
 ## Sound
 

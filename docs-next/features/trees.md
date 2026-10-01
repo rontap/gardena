@@ -1,6 +1,6 @@
 # Trees
 
-Code: `Tree` and `TreeYield` in `building.ts`; `tickTree`, `tickTreesSeam`, `advanceYield`, `dropTreeFruit` in `feature-field/field.ts`; planting, chopping, grafting, tending and digging in `feature-field/field.helpers.ts`; `makeTreeSoil` and the `TREE_WATER_*` / `TREE_FERT_MAX` constants in `soil.ts`; `defs/trees.ts`; `TREE_FERT_PER_DAY` and the tree rows of `CROPS` in `defs/crops.ts`; see [[code-map]].
+Code: `Tree` and `TreeYield` in `building.ts`; `tickTree`, `tickTreesSeam`, `advanceYield`, `dropTreeFruit` in `feature-field/field.ts`; planting, chopping, grafting, tending and digging in `feature-field/field.helpers.ts`; `makeTreeSoil` and the `TREE_WATER_*` / `TREE_FERT_MAX` constants in `soil.ts`; `defs/trees.ts`; the tree rows of `CROPS` in `defs/crops.ts`; see [[code-map]].
 Unlocked: from the start; tree seeds come from the sources in **Getting a tree**.
 
 ## Purpose
@@ -11,7 +11,7 @@ A tree is a fruit crop the player plants once. It takes a long time before its f
 
 ### Species
 
-Four species (`TREE_IDS`): apple, apricot, olive, cherry. Each is a row of `TREES` (`juvenileSeconds`, `fruitSeconds`), a row of `CROPS` (`waterUsePerSec`, `waterTolerance`, `fertTolerance`, `sale`, `rotSeconds`), and a row of `TREE_FERT_PER_DAY`. Per-species pages: [[items/crops/apple]], [[items/crops/apricot]], [[items/crops/olive]], [[items/crops/cherry]].
+Four species (`TREE_IDS`): apple, apricot, olive, cherry. Each is a row of `TREES` (`juvenileSeconds`, `fruitSeconds`) and a row of `CROPS` (`waterUsePerSec`, `waterTolerance`, `fertTolerance`, `fertUseMul`, `sale`, `rotSeconds`). Per-species pages: [[items/crops/apple]], [[items/crops/apricot]], [[items/crops/olive]], [[items/crops/cherry]].
 
 ### Getting a tree
 
@@ -63,13 +63,13 @@ fertilizer green from  TREE_FERT_MAX − fertTolerance
 At every stage — sapling, stump, waiting, in season, out of season — each tree uses, per second:
 
 - water: `CROPS[species].waterUsePerSec` × the water-use modifiers (`statsOf`);
-- fertilizer: `TREE_FERT_PER_DAY[species]` ÷ `DAY_SECONDS`, the same for every variety.
+- fertilizer: `PLANT_FERT_PER_SEC` × `CROPS[species].fertUseMul`, the same for every variety.
 
 Because the soil is larger and the use is small against it, a full tree stays in its green range for:
 
 ```
 water       2 × waterTolerance ÷ (waterUsePerSec × DAY_SECONDS)     days, from a bucket fill to the bottom of green
-fertilizer  fertTolerance ÷ TREE_FERT_PER_DAY[species]              days, from TREE_FERT_MAX to the bottom of green
+fertilizer  fertTolerance ÷ (PLANT_FERT_PER_SEC × fertUseMul × DAY_SECONDS)   days, from TREE_FERT_MAX to the bottom of green
 ```
 
 A Named or Heirloom tree has a narrower tolerance (`VARIETY_TOL`), so it leaves the green range sooner at the same use.
@@ -267,7 +267,7 @@ Chopping with an axe or chainsaw plays a knock on every stretch of work and a cr
 
 | id | rule | test |
 |---|---|---|
-| `trees.drink` | every stage uses `waterUsePerSec` and `TREE_FERT_PER_DAY ÷ DAY_SECONDS` from the tree's soil, once per tree | `trees.test.ts` |
+| `trees.drink` | every stage uses `waterUsePerSec` and `PLANT_FERT_PER_SEC × fertUseMul` from the tree's soil, once per tree | `trees.test.ts` |
 | `trees.happy` | tree happiness uses the `TREE_HAPPY_*` times; at happiness 0 the tree stays, the sapling grows and fruit fills | `trees.test.ts` |
 | `trees.chance` | out of season, each end of day adds `TREE_OFF_CHANCE` of the happiness range; a season ends with `chance = −0.25 + 0.1 × happiness` | `trees.test.ts` |
 | `trees.yield` | sapling for `juvenileSeconds`, then waiting, then `TREE_YIELD_DAYS` in season; fruit rates `2.75 + 0.5 × happiness` and `0.25 + 0.5 × happiness` | `plants.test.ts` |
@@ -283,7 +283,7 @@ Chopping with an axe or chainsaw plays a knock on every stretch of work and a cr
 
 ## When you change this
 
-- New tree species: `TreeId`, `TREE_IDS`, a `TREES` row, a `CROPS` row, a `TREE_FERT_PER_DAY` row, `VARIETIES`, the Market rows for its fruit ([[features/market]]), the contract tables `GOOD_COST`, `GOOD_TIER`, `FEASIBLE_PER_DAY` ([[features/contracts]]), art with one ripe group per variety, a species page in `items/crops/`.
+- New tree species: `TreeId`, `TREE_IDS`, a `TREES` row, a `CROPS` row with `fertUseMul`, `VARIETIES`, the Market rows for its fruit ([[features/market]]), the contract tables `GOOD_COST`, `GOOD_TIER`, `FEASIBLE_PER_DAY` ([[features/contracts]]), art with one ripe group per variety, a species page in `items/crops/`.
 - Soil or range rules: the tree shares `waterBand`, `fertBand`, `ageHappiness` and `Soil` with annual crops ([[features/plants]]); change both on purpose.
 - Anything that waters or fertilizes tiles (a new trailer, sprinkler or weather kind) must treat a tree as one target with its own soil.
 

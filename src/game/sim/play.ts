@@ -241,7 +241,7 @@ function contractRows(world: World): ContractRow[] {
 }
 
 function boardRows(world: World): BoardRow[] {
-  return rollBoard(world.rng, world.clock.day, world.contractSlots(), world.contracts.repDay)
+  return rollBoard(world.rng, world.clock.day, world.contractSlots(), world.contracts.repDay, world.hard.penaltyRate)
     .filter(o => !world.contracts.takenToday.includes(o.id))
     .map(o => ({
       id: o.id,

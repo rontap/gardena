@@ -6,6 +6,8 @@ Code: `view/vfx.ts` (the `VFX` table and `vfxReduced`), `view/layers/vfx.ts` (dr
 
 An effect on the map tells the player that something is happening now: a machine is working, a job is in progress, water is moving. Effects are for reading the farm, not decoration; an idle machine draws no effect.
 
+The working bar on a machine is not one of these effects. `view/meter.ts` draws it on the building while `craftState` is `working` ([[features/machines]]).
+
 ## Three kinds
 
 | kind | shows | lasts | comes from |

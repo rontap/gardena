@@ -21,7 +21,7 @@ Planting: a soft untilled tile whose upper neighbour is also soft untilled (bare
 
 ## Growing
 
-Fields of `TREES.cherry` (`juvenileSeconds`, `fruitSeconds`), `CROPS.cherry` (`waterUsePerSec`, `waterTolerance`, `fertTolerance`, `rotSeconds`) and `TREE_FERT_PER_DAY.cherry`. Rules: [[features/trees]].
+Fields of `TREES.cherry` (`juvenileSeconds`, `fruitSeconds`) and `CROPS.cherry` (`waterUsePerSec`, `waterTolerance`, `fertTolerance`, `fertUseMul`, `rotSeconds`). Rules: [[features/trees]].
 
 ## Selling
 

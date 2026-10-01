@@ -16,8 +16,14 @@ import {
   JAM_SUGAR,
   JAM_SALE,
   KETCHUP_SUGAR,
+  INFUSE_EXTRACT_SECONDS,
+  INFUSE_SECONDS,
   MILL_GRASS,
+  MILL_GRASS_WORK,
   MILL_IN,
+  MILL_OLIVE_WORK,
+  MILL_WHEAT_WORK,
+  MILL_WORK,
   MILL_CHILLI_IN,
   MILL_CHILLI_OUT,
   MILL_TRUFFLE_IN,
@@ -101,6 +107,18 @@ export function millNeed(recipe: MillRecipe): number {
   if (recipe === 'chilli') return MILL_CHILLI_IN
   if (recipe === 'truffle') return MILL_TRUFFLE_IN
   return MILL_IN
+}
+
+export function millWork(recipe: MillRecipe): number {
+  if (recipe === 'olive') return MILL_OLIVE_WORK
+  if (recipe === 'wheat') return MILL_WHEAT_WORK
+  if (recipe === 'grass') return MILL_GRASS_WORK
+  return MILL_WORK
+}
+
+export function infuseSeconds(kind: Infusable['kind']): number {
+  if (kind === 'extract') return INFUSE_EXTRACT_SECONDS
+  return INFUSE_SECONDS
 }
 
 export function barrelNeed(crop: BarrelCrop): number {
@@ -421,7 +439,7 @@ export function infuseReagent(c: Infuser): Reagent | undefined {
   return INFUSE_REAGENTS[lock.kind].find(r => c.reagents[r] >= INFUSE_REAGENT)
 }
 
-export function infuserWorking(c: Infuser): boolean {
+export function infuserWorking(c: Infuser): c is Infuser & { lock: Infusable } {
   return c.inn !== 1 && c.lock !== 'none' && c.units >= INFUSE_IN && infuseReagent(c) !== undefined
 }
 

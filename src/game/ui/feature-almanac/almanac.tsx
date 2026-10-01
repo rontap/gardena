@@ -1,7 +1,7 @@
-import { m } from '../../paraglide/messages.js'
+import { m } from '../../../paraglide/messages.js'
 import { createContext, Fragment, useContext, useState, type ReactNode } from 'react'
 import * as Tabs from '@radix-ui/react-tabs'
-import { catalogEntries, type CatalogEntry } from '../defs/catalog.ts'
+import { catalogEntries, type CatalogEntry } from '../../defs/catalog.ts'
 import {
   AGARIC_LOOT_COUNT,
   BURROW_ENTRIES,
@@ -12,7 +12,7 @@ import {
   WEED_LOOT_COUNT,
   type BurrowEntry,
   type BurrowRarity,
-} from '../defs/burrow.ts'
+} from '../../defs/burrow.ts'
 import {
   MUSHROOM_CHANCE,
   MUSHROOM_DAYS,
@@ -20,9 +20,9 @@ import {
   MUSHROOM_HAPPY_MIN,
   MUSHROOM_MYCOLOGIST,
   MUSHROOM_TRUFFLE,
-} from '../defs/mushroom.ts'
-import { WEATHER_KINDS, WEATHER_NAME } from '../defs/weather.ts'
-import { CROP_NAME, CROPS, varietyName } from '../defs/crops.ts'
+} from '../../defs/mushroom.ts'
+import { WEATHER_KINDS, WEATHER_NAME } from '../../defs/weather.ts'
+import { CROP_NAME, CROPS, varietyName } from '../../defs/crops.ts'
 import {
   ALMANAC_AT,
   HEIRLOOM_AT,
@@ -39,17 +39,17 @@ import {
   type AlmanacEntry,
   type Purpose,
   type VarietyId,
-} from '../defs/varieties.ts'
-import { JAM_ROT, SKILLS } from '../defs/skills.ts'
-import { TREES, TREE_RATE_HAPPY, TREE_RATE_ON, TREE_YIELD_DAYS } from '../defs/trees.ts'
-import { INFUSABLE_KINDS, PLANT_CROPS, TREE_IDS, type GrownCrop, type SkuId, type TreeId } from '../sim/ids.ts'
-import { toolItem } from '../sim/feature-burrow/burrow.ts'
-import { faceName, infuseGoodsText, REAGENT_NAME, tierLabel, type Face } from '../sim/item.ts'
-import { difficultyModifier, statsOf, type Stats } from '../sim/modifiers.ts'
-import { HARDNESS, type Rules } from '../defs/rules.ts'
-import { FERT_PLOT_MAX, SOIL_WATER_MID, TREE_FERT_MAX, TREE_WATER_MID } from '../sim/soil.ts'
-import { DAY_SECONDS, days } from '../sim/clock.ts'
-import type { World } from '../sim/world.ts'
+} from '../../defs/varieties.ts'
+import { JAM_ROT, SKILLS } from '../../defs/skills.ts'
+import { TREES, TREE_RATE_HAPPY, TREE_RATE_ON, TREE_YIELD_DAYS } from '../../defs/trees.ts'
+import { INFUSABLE_KINDS, PLANT_CROPS, TREE_IDS, type GrownCrop, type SkuId, type TreeId } from '../../sim/ids.ts'
+import { toolItem } from '../../sim/feature-burrow/burrow.ts'
+import { faceName, infuseGoodsText, REAGENT_NAME, tierLabel, type Face } from '../../sim/item.ts'
+import { difficultyModifier, statsOf, type Stats } from '../../sim/modifiers.ts'
+import { HARDNESS, type Rules } from '../../defs/rules.ts'
+import { FERT_PLOT_MAX, SOIL_WATER_MID, TREE_FERT_MAX, TREE_WATER_MID } from '../../sim/soil.ts'
+import { DAY_SECONDS, days } from '../../sim/clock.ts'
+import type { World } from '../../sim/world.ts'
 import {
   AXES,
   CONTAINERS,
@@ -59,8 +59,8 @@ import {
   NEIGHBOUR_REACH,
   PICKAXES,
   SHOVELS,
-} from '../defs/items.ts'
-import { SKUS } from '../defs/research.ts'
+} from '../../defs/items.ts'
+import { SKUS } from '../../defs/research.ts'
 import {
   buttonArt,
   counterArt,
@@ -86,10 +86,10 @@ import {
   vehicleDetectorArt,
   waterSensorArt,
   weatherSensorArt,
-} from '../view/svgs.ts'
-import { CalloutHover } from './callout-hover.tsx'
-import { Coin, Label, Overlay, tabSelectClass, tabSelectListClass, tabTriggerClass } from './frame.tsx'
-import { useCycle } from './cycle.ts'
+} from '../../view/svgs.ts'
+import { CalloutHover } from '../callout-hover.tsx'
+import { Coin, Label, Overlay, tabSelectClass, tabSelectListClass, tabTriggerClass } from '../frame.tsx'
+import { useCycle } from '../cycle.ts'
 import {
   BAG_FACES,
   BAG_IDS,
@@ -104,8 +104,8 @@ import {
   Portrait,
   type MachineLook,
 } from './almanac-cards.tsx'
-import { MACHINE_IDS, recipesMaking, recipesUsing, type MachineId, type Recipe } from '../sim/feature-machines/recipe.ts'
-import { Recipes } from './recipe.tsx'
+import { MACHINE_IDS, recipesMaking, recipesUsing, type MachineId, type Recipe } from '../../sim/feature-machines/recipe.ts'
+import { Recipes } from '../recipe.tsx'
 
 type AlmanacTab = 'fruits' | 'utility' | 'water' | 'machines' | 'vehicles' | 'sensors' | 'concepts' | 'misc'
 

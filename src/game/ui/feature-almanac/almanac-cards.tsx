@@ -1,9 +1,9 @@
-import { m } from '../../paraglide/messages.js'
+import { m } from '../../../paraglide/messages.js'
 import type { ReactNode } from 'react'
-import { VFX_FRAMES, type VfxId } from '../sim/ids.ts'
-import { MILL_DUST_X, MILL_DUST_Y } from '../sim/feature-machines/machine.ts'
-import { VFX } from '../view/vfx.ts'
-import { atlasHtml, vfxKey } from '../view/atlas.ts'
+import { VFX_FRAMES, type VfxId } from '../../sim/ids.ts'
+import { MILL_DUST_X, MILL_DUST_Y } from '../../sim/feature-machines/machine.ts'
+import { VFX } from '../../view/vfx.ts'
+import { atlasHtml, vfxKey } from '../../view/atlas.ts'
 import {
   BARREL,
   COMPOST_BOX,
@@ -20,10 +20,10 @@ import {
   PIPE_X,
   stationArt,
   STILL,
-} from '../view/svgs.ts'
-import { COMPOST_LITERS, FERT_BAG_LITERS, SUGAR_BAG, SUGAR_SHOP, WEED_SPRAY_BAG } from '../defs/items.ts'
-import { makeExtract, type Face } from '../sim/item.ts'
-import { useCycle } from './cycle.ts'
+} from '../../view/svgs.ts'
+import { COMPOST_LITERS, FERT_BAG_LITERS, SUGAR_BAG, SUGAR_SHOP, WEED_SPRAY_BAG } from '../../defs/items.ts'
+import { makeExtract, type Face } from '../../sim/item.ts'
+import { useCycle } from '../cycle.ts'
 
 export const BROWN = 'bg-dirt-dark'
 export const GREEN = 'bg-grass'

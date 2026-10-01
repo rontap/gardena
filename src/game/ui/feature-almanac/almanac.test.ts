@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { catalogEntries } from '../defs/catalog.ts'
+import { catalogEntries } from '../../defs/catalog.ts'
 import { linksResolve, WATER_OVERVIEW } from './almanac.tsx'
 
 describe('almanac.links', () => {

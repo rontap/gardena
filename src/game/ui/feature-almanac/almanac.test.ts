@@ -1,7 +1,6 @@
 import { describe, expect, test } from 'vitest'
-import { catalogEntries } from '../../defs/catalog.ts'
-import { WATER_OVERVIEW } from './almanac.tsx'
-import { linksResolve } from './nav.tsx'
+import { catalogEntries } from '../defs/catalog.ts'
+import { linksResolve, WATER_OVERVIEW } from './almanac.tsx'
 
 describe('almanac.links', () => {
   test('Every `[label](tab:id)` link in an Almanac description or the Water overview opens an existing row; an unknown tab or row does not resolve.', () => {

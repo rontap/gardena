@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest'
 import { atlasVb, faceKey, treeAtlasStage } from './atlas.ts'
 import { faceInfused, fruitGroup, graftSpecies, itemInner, jamArt, OVERLAY_INFUSED, ripeGroup, spiritArt, varietyGroup } from './svgs.ts'
-import { CONCEPT_IDS } from '../ui/feature-almanac/nav.tsx'
+import { CONCEPT_IDS } from '../ui/feature-almanac/almanac.tsx'
 import { catalogEntries } from '../defs/catalog.ts'
 import { caskGroup, VARIETIES, VARIETY_IDS } from '../defs/varieties.ts'
 import { PLANT_CROPS, CASK_IDS, JAM_CROPS, SPIRIT_KINDS, TREE_IDS, type GrownCrop } from '../sim/ids.ts'

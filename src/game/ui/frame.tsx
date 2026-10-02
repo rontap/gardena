@@ -343,7 +343,7 @@ export function Window({
   className,
   fill,
 }: {
-  title: string
+  title: ReactNode
   onClose?: () => void
   children: ReactNode
   footer?: ReactNode
@@ -390,7 +390,7 @@ export function Overlay({
   aside,
   className,
 }: {
-  title: string
+  title: ReactNode
   onClose: () => void
   children: ReactNode
   aside?: ReactNode

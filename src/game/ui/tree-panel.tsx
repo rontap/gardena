@@ -245,8 +245,7 @@ function skillFace(world: World, id: SkillId): Face {
   if (!world.skillKnown(id)) return 'mystery'
   if (world.skillTier(id) >= def.maxTier) return 'done'
   const next = world.skillTier(id) + 1
-  const locked = def.gate.kind === 'research' && !world.done.has(def.gate.id)
-  if (!world.skillOpen(id) || locked || world.local !== 0 || world.points < next) return 'gated'
+  if (!world.skillOpen(id) || world.local !== 0 || world.points < next) return 'gated'
   return 'open'
 }
 
@@ -673,24 +672,21 @@ function SkillDetail({ world, id, armed }: { world: World; id: SkillId; armed: b
   const have = world.skillTier(id)
   const done = have >= def.maxTier
   const next = have + 1
-  const locked = def.gate.kind === 'research' && !world.done.has(def.gate.id)
   const gated = !world.skillOpen(id)
   const guest = world.local !== 0
   const poor = world.points < next
-  const can = known && !done && !locked && !gated && !guest && !poor
+  const can = known && !done && !gated && !guest && !poor
   const why = !known
     ? undefined
     : guest
       ? m.family_guest_pick()
       : done
         ? m.hud_done()
-        : locked && def.gate.kind === 'research'
-          ? m.hud_needs_first({ names: RESEARCH[def.gate.id].name })
-          : gated && def.parent !== null
-            ? m.hud_needs_first({ names: SKILLS[def.parent].name })
-            : poor
-              ? m.family_need_points({ n: next })
-              : undefined
+        : gated && def.parent !== null
+          ? m.hud_needs_first({ names: SKILLS[def.parent].name })
+          : poor
+            ? m.family_need_points({ n: next })
+            : undefined
   const kids = SKILL_IDS.filter(s => SKILLS[s].parent === id)
   return (
     <div className="flex min-h-0 flex-col border-l border-ink/15 pl-3">
@@ -714,7 +710,7 @@ function SkillDetail({ world, id, armed }: { world: World; id: SkillId; armed: b
                   <UnlockRow
                     key={cid}
                     tint="bg-leaf/30"
-                    icon={skillInner(cid)}
+                    icon={world.skillKnown(cid) ? skillInner(cid) : SKILL_UNKNOWN}
                     label={world.skillKnown(cid) ? SKILLS[cid].name : m.skills_unknown_name()}
                   />
                 ))}

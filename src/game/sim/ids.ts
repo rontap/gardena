@@ -165,6 +165,9 @@ export type SkillId =
   | 'heirloom'
   | 'specialty'
   | 'broker'
+  | 'market-research'
+  | 'export-contracts'
+  | 'expert-brewer'
 
 export type ResearchId =
   | 'unlock-multi-crop'

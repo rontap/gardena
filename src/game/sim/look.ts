@@ -129,7 +129,7 @@ export function lookText(world: World, hit: PromptHit | undefined, plantStats: b
   else if (cell.kind === 'station') lines.push(stationLook(cell, hand, crop => world.familiarity[crop]))
   else if (cell.kind === 'necronomicon') lines.push(necronomiconLook(world, cell))
   else if (cell.kind === 'sorter') lines.push(sorterLook(cell))
-  else if (cell.kind === 'barrel') lines.push(barrelLine(cell))
+  else if (cell.kind === 'barrel') lines.push(barrelLine(cell, world.hasSkill('expert-brewer')))
   else if (cell.kind === 'jam') lines.push(jamLook(cell, hand))
   else if (cell.kind === 'tree') lines.push(treeLine(cell))
   else if (cell.kind === 'untilled') {
@@ -222,7 +222,7 @@ export function cellGauge(cell: Cell): Gauge | undefined {
   return undefined
 }
 
-function barrelLine(c: Barrel): string {
+function barrelLine(c: Barrel, brewer: boolean): string {
   const name = m.names_building_barrel()
   if (c.crop === 'none') return labeled(name, m.prompt_empty())
   const need = barrelNeed(c.crop)
@@ -231,6 +231,7 @@ function barrelLine(c: Barrel): string {
     return labeled(name, m.prompt_n_cap_crop({ n, cap: need, crop: cropVariety(c.crop, c.feed[0]?.variety ?? 'base') }))
   }
   if (c.age < BARREL_MATURE) return labeled(name, m.prompt_maturing_pct({ n: Math.floor((c.age / BARREL_MATURE) * 100) }))
+  if (!brewer) return labeled(name, m.prompt_collect({ name: caskName(CASK_OF[c.crop], feedVariety(c.feed)).toLowerCase() }))
   const quality = meanQuality(c.feed)
   const mul = caskAgeMul(c.age, quality)
   const line = labeled(name, m.prompt_aging_sells({ n: Math.floor(c.age / DAY_SECONDS), mul: Math.visualRound(mul) }))

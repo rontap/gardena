@@ -4,12 +4,12 @@ import { m } from '../../../paraglide/messages.js'
 import { catalogEntries, type CatalogEntry } from '../../defs/catalog.ts'
 import { TREE_YIELD_DAYS } from '../../defs/trees.ts'
 import type { World } from '../../sim/world.ts'
-import { itemInner } from '../../view/svgs.ts'
+import { itemInner, UI_ARROW_FILL, UI_ARROW_INK } from '../../view/svgs.ts'
 import { CalloutHover } from '../callout-hover.tsx'
 import { Label, Overlay, tabTriggerClass } from '../frame.tsx'
 import { Recipes } from '../recipe.tsx'
 import { ConceptPane } from './concepts.tsx'
-import { AlmanacGo, AlmanacLink, AlmanacTip, firstId, LISTS, Rich, rowId, rowsOf, rowTitle, skuEntry, tabOf, TABS, type AlmanacNav, type AlmanacTab, type ListRow, type Tip } from './nav.tsx'
+import { AlmanacGo, AlmanacLink, AlmanacTip, firstId, LISTS, Rich, rowId, rowsOf, rowTitle, skuEntry, tabOf, TABS, trailBack, trailForward, trailPush, trailStart, type AlmanacNav, type AlmanacTab, type ListRow, type Tip, type Trail } from './nav.tsx'
 import { FormCards, Pane } from './panes.tsx'
 import { RecipeSale, ToolPane } from './stats.tsx'
 
@@ -17,23 +17,53 @@ export { CONCEPT_IDS, linksResolve } from './nav.tsx'
 
 export const WATER_OVERVIEW = [m.almanac_water_p1, m.almanac_water_p2, m.almanac_water_p3, m.almanac_water_p4] as const
 
+function NavArrow({ back, disabled, onClick }: { back: boolean; disabled: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      aria-label={back ? '←' : '→'}
+      disabled={disabled}
+      onClick={onClick}
+      className="cursor-pointer rounded-sm p-2.5 hover:bg-dirt disabled:cursor-default disabled:opacity-30 disabled:hover:bg-transparent"
+    >
+      <span className={`relative block h-6 w-12 ${back ? 'rotate-180' : ''}`}>
+        <svg viewBox="0 0 24 24" className="absolute inset-0 h-full w-full" dangerouslySetInnerHTML={{ __html: UI_ARROW_INK }} />
+        <svg viewBox="0 0 24 24" className="absolute inset-0 h-full w-full" dangerouslySetInnerHTML={{ __html: UI_ARROW_FILL }} />
+      </span>
+    </button>
+  )
+}
+
 export function Almanac({ world, onClose }: { world: World; onClose: () => void }) {
   const entries = catalogEntries(world.pace)
-  const [tab, setTab] = useState<AlmanacTab>('fruits')
-  const [id, setId] = useState(firstId('fruits'))
+  const [trail, setTrail] = useState<Trail>(() => trailStart({ tab: 'fruits', id: firstId('fruits') }))
   const [tip, setTip] = useState<Tip>(undefined)
+  const here = trail.stack[trail.at]
+  const tab = here.tab
+  const id = here.id
   const byId = new Map(entries.map(e => [e.id, e]))
   const rows = rowsOf(tab)
   const row = rows.find(r => rowId(r) === id)
   if (row === undefined) throw new Error('AlmanacNav')
   const go = (to: AlmanacNav) => {
-    setTab(to.tab)
-    setId(to.id)
+    setTrail(cur => trailPush(cur, to))
+    setTip(undefined)
+  }
+  const step = (move: (cur: Trail) => Trail) => {
+    setTrail(move)
     setTip(undefined)
   }
   return (
     <Overlay
-      title={m.hud_almanac()}
+      title={
+        <span className="inline-flex items-center gap-4">
+          <span className="inline-flex items-center gap-1">
+            <NavArrow back disabled={trail.at === 0} onClick={() => step(trailBack)} />
+            <NavArrow back={false} disabled={trail.at === trail.stack.length - 1} onClick={() => step(trailForward)} />
+          </span>
+          <span>{m.hud_almanac()}</span>
+        </span>
+      }
       onClose={onClose}
       className="h-[min(48rem,calc(100vh-6rem))] w-[48rem]"
       aside={
@@ -54,12 +84,7 @@ export function Almanac({ world, onClose }: { world: World; onClose: () => void 
         <AlmanacTip.Provider value={setTip}>
         <Tabs.Root
           value={tab}
-          onValueChange={v => {
-            const next = tabOf(v)
-            setTab(next)
-            setId(firstId(next))
-            setTip(undefined)
-          }}
+          onValueChange={v => go({ tab: tabOf(v), id: firstId(tabOf(v)) })}
           className="relative z-20 flex min-h-0 flex-1 flex-col"
         >
           <Tabs.List className="sticky top-0 z-10 flex shrink-0 flex-wrap gap-1 border-b border-ink/20 bg-house px-4">
@@ -87,10 +112,7 @@ export function Almanac({ world, onClose }: { world: World; onClose: () => void 
                     className={`flex w-full items-center gap-2 px-2 py-1.5 text-left text-lg ${
                       rid === id ? 'bg-dirt text-house' : 'text-ink hover:bg-dirt/30'
                     }`}
-                    onClick={() => {
-                      setId(rid)
-                      setTip(undefined)
-                    }}
+                    onClick={() => go({ tab, id: rid })}
                   >
                     {r.kind === 'sku' || r.kind === 'forms' || r.kind === 'tools' ? (
                       <svg

@@ -1,6 +1,6 @@
 # Almanac
 
-Code: `ui/feature-almanac/` (`almanac.tsx`, `nav.tsx` for `LISTS` and `linksResolve`, `concepts.tsx`, `crops.tsx`, `cards.tsx` for `Portrait` and the machine cards, `almanac.test.ts`), `defs/catalog.ts` (`catalogEntries`, one `CatalogEntry` per page), strings in `messages/en/almanac.json` and `messages/en/catalog.json`; see [[code-map]].
+Code: `ui/feature-almanac/` (`almanac.tsx`, `nav.tsx` for `LISTS` and `linksResolve`, `concepts.tsx`, `stats.tsx`, `panes.tsx`, `almanac-cards.tsx` for `Portrait` and the machine cards, `almanac.test.ts`), `defs/catalog.ts` (`catalogEntries`, one `CatalogEntry` per page), strings in `messages/en/almanac.json` and `messages/en/catalog.json`; see [[code-map]].
 Unlocked: from the start.
 
 ## Purpose
@@ -86,7 +86,7 @@ No asset of its own except `ui-arrow-right`. Cards reuse item icons (`itemInner`
 
 - A new page for a SKU: a `CatalogEntry` in `catalogEntries`, its id in `LISTS`, and its colour (`MADE_IDS`, `GROWN_IDS`, or green by default).
 - A row id that a `[label](tab:id)` link points at: renaming or removing it fails `almanac.links`.
-- A new card page goes in `ui/feature-almanac/cards.tsx`. A Game concepts page goes in `concepts.tsx`. A crop or tree stat goes in `crops.tsx`. Tab rows are `LISTS` in `nav.tsx`.
+- A new card page goes in `ui/feature-almanac/almanac-cards.tsx`. A Game concepts page goes in `concepts.tsx`. A crop or tree stat goes in `stats.tsx`. Tab rows are `LISTS` in `nav.tsx`.
 - A new machine: its id in `MACHINE_TAB_IDS` and a `MACHINE_LOOK` with its art and working effects ([[art/vfx]]).
 - A new burrow entry kind: its order and colour in `ENTRY_SLOT` ([[features/burrow]]).
 - Description text: `messages/en/catalog.json`, numbers through `fill` from `src/game/defs/` ([[name-map]]).

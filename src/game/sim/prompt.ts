@@ -727,7 +727,7 @@ export function readPrompt(w: World, at: Coord): Prompt {
     return { kind: 'blocked', text: m.names_building_weather_station() }
   }
   if (cell.kind === 'barrel') {
-    const look = barrelLook(cell, w.act.hand)
+    const look = barrelLook(cell, w.act.hand, w.hasSkill('expert-brewer'))
     if (barrelCollectOk(cell, w.act.hand) && cell.crop !== 'none') {
       const name = caskName(CASK_OF[cell.crop], feedVariety(cell.feed)).toLowerCase()
       return intent(m.prompt_collect({ name }), { act: 'barrel', at })
@@ -1030,10 +1030,13 @@ export function stillLook(still: PotStill, hand: Hand): string {
   return labeled(name, m.prompt_n_cap({ n, cap }))
 }
 
-export function barrelLook(barrel: Barrel, hand: Hand): string {
+export function barrelLook(barrel: Barrel, hand: Hand, brewer: boolean): string {
   const name = m.names_building_barrel()
   const n = feedUnits(barrel.feed)
   const need = barrel.crop === 'none' ? 5 : barrelNeed(barrel.crop)
+  if (n === need && barrel.age >= BARREL_MATURE && barrel.crop !== 'none' && !brewer) {
+    return labeled(name, m.prompt_collect({ name: caskName(CASK_OF[barrel.crop], feedVariety(barrel.feed)).toLowerCase() }))
+  }
   if (n === need && barrel.age >= BARREL_MATURE) {
     return labeled(name, m.prompt_aging_d({ n: Math.floor(barrel.age / DAY_SECONDS) }))
   }

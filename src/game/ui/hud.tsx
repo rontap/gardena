@@ -174,7 +174,9 @@ export function Hud({
         <div className="relative z-20 flex flex-col py-1.5">
           <FaceBtn art={UI_BTN_BUILD} label={m.hud_build()} selected={panel === 'build'} onClick={onBuild} />
           <FaceBtn art={UI_BTN_RESEARCH} label={m.names_role_research()} selected={panel === 'research'} onClick={onResearch} />
-          <FaceBtn art={UI_BTN_MARKET} label={m.names_role_market()} selected={panel === 'market'} onClick={onMarket} />
+          {world.hasSkill('market-research') && (
+            <FaceBtn art={UI_BTN_MARKET} label={m.names_role_market()} selected={panel === 'market'} onClick={onMarket} />
+          )}
           {world.done.has('unlock-contracts') && (
             <FaceBtn
               art={UI_BTN_CONTRACTS}

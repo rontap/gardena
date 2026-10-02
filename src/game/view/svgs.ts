@@ -281,6 +281,9 @@ import skillIndustrial from '../../assets/skills/skill-industrial.svg?raw'
 import skillJam from '../../assets/skills/skill-jam.svg?raw'
 import skillMycologist from '../../assets/skills/skill-mycologist.svg?raw'
 import skillSeedBank from '../../assets/skills/skill-seed-bank.svg?raw'
+import skillMarketResearch from '../../assets/skills/skill-market-research.svg?raw'
+import skillExportContracts from '../../assets/skills/skill-export-contracts.svg?raw'
+import skillExpertBrewer from '../../assets/skills/skill-expert-brewer.svg?raw'
 import skillPoint from '../../assets/skills/skill-point.svg?raw'
 import statReputation from '../../assets/skills/stat-reputation.svg?raw'
 import portraitPlayer from '../../assets/skills/portrait-player.svg?raw'
@@ -982,6 +985,9 @@ const SKILL_ART: { readonly [K in SkillId]: string } = {
   jam: svgInner(skillJam),
   mycologist: svgInner(skillMycologist),
   'seed-bank': svgInner(skillSeedBank),
+  'market-research': svgInner(skillMarketResearch),
+  'export-contracts': svgInner(skillExportContracts),
+  'expert-brewer': svgInner(skillExpertBrewer),
 }
 
 export function fruitInner(crop: GrownCrop): string {

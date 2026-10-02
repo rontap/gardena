@@ -62,7 +62,9 @@ import { applyClaim, pageClaim } from './feature-necronomicon/necronomicon.ts'
 import {
   addStillFeed,
   bakeBreadSale,
+  barrelCask,
   barrelNeed,
+  barrelTop,
   feedUnits,
   feedVariety,
   feedVarietyOf,
@@ -1183,8 +1185,19 @@ export class Barrel extends BaseBuilding {
       this.n += 1
       w.cue({ kind: 'machine', machine: 'barrel' })
     }
+    const top = barrelTop(w.hasSkill('expert-brewer'))
+    if (this.age >= top && emitProduct(w, this.base, barrelCask(this.crop, this.feed, top))) {
+      this.empty()
+      w.track(at, this)
+      return true
+    }
     w.track(at, this)
     return was < BARREL_AGE && this.age >= BARREL_AGE
+  }
+  empty(): void {
+    this.feed = []
+    this.age = 0
+    this.crop = 'none'
   }
 }
 

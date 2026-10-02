@@ -53,5 +53,11 @@
   "skills_jam_skillblurb": "Fruit below half freshness rots {pct}% slower.",
   "skills_mycologist_name": "Mycologist",
   "skills_mycologist_blurb": "Grown trees get mushrooms more often, and new burrows appear on your land more often. Each rank raises both.",
-  "skills_mycologist_skillblurb": "After a day of Rain, a grown tree at half happiness gets a mushroom {rain}% of the time. Overnight, the land you started with gets a new burrow {start}% of the time, and every other piece of land you own {other}%."
+  "skills_mycologist_skillblurb": "After a day of Rain, a grown tree at half happiness gets a mushroom {rain}% of the time. Overnight, the land you started with gets a new burrow {start}% of the time, and every other piece of land you own {other}%.",
+  "skills_market_research_name": "Market research",
+  "skills_market_research_blurb": "Adds the Market button. Its window shows what each good sells for today, how far that is from MSRP, and how many days until it is back to baseline, so you can choose what to grow and sell next.",
+  "skills_export_contracts_name": "Export contracts",
+  "skills_export_contracts_blurb": "Once a day, swap every offer on the Contracts board that you have not taken for new offers. Use it on a day when the offers ask for goods your farm does not make.",
+  "skills_expert_brewer_name": "Expert Brewer",
+  "skills_expert_brewer_blurb": "Wine and Cider keep Aging in the Barrel after they mature, and the bottle sells for more the longer it ages. Once Aging is complete, the Barrel puts the bottle out. Without this skill, it puts the bottle out as soon as it matures."
 }

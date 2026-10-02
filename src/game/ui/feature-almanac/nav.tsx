@@ -261,6 +261,28 @@ export function firstId(tab: AlmanacTab): string {
   return rowId(rowsOf(tab)[0])
 }
 
+export type Trail = { stack: AlmanacNav[]; at: number }
+
+export function trailStart(loc: AlmanacNav): Trail {
+  return { stack: [loc], at: 0 }
+}
+
+export function trailPush(trail: Trail, loc: AlmanacNav): Trail {
+  const here = trail.stack[trail.at]
+  if (here.tab === loc.tab && here.id === loc.id) return trail
+  const stack = trail.stack.slice(0, trail.at + 1)
+  stack.push(loc)
+  return { stack, at: stack.length - 1 }
+}
+
+export function trailBack(trail: Trail): Trail {
+  return trail.at === 0 ? trail : { stack: trail.stack, at: trail.at - 1 }
+}
+
+export function trailForward(trail: Trail): Trail {
+  return trail.at === trail.stack.length - 1 ? trail : { stack: trail.stack, at: trail.at + 1 }
+}
+
 export function tabOf(id: string): AlmanacTab {
   const t = TABS.find(x => x.id === id)
   if (t === undefined) throw new Error(id)

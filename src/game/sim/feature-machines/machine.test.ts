@@ -202,6 +202,7 @@ describe('machines', () => {
     w.enqueue({ act: 'barrel', at })
     while (w.seats[0].queue.length > 0) w.tick(DT_MAX)
     expect(barrel.feed[0].count).toBe(barrelNeed('apple'))
+    w.family.owned.set('expert-brewer', 1)
     barrel.age = BARREL_MATURE
     w.seats[0].hand = {
       kind: 'hold',
@@ -880,8 +881,9 @@ describe('station.cut', () => {
 })
 
 describe('machines.barrel aging look', () => {
-  test('An aging barrel names the cask, the variety it was made from, the days it can still age and the sale multiplier at the top.', () => {
+  test('With `expert-brewer`, an aging barrel names the cask, the variety it was made from, the days it can still age and the sale multiplier at the top. Without it, a matured barrel reads Collect.', () => {
     const w = new World(1)
+    w.family.owned.set('expert-brewer', 1)
     const barrel = new Barrel(CELL)
     barrel.crop = 'grape'
     barrel.feed = [{ variety: 'keknyelu', quality: 1, count: barrelNeed('grape') }]
@@ -899,6 +901,51 @@ describe('machines.barrel aging look', () => {
     barrel.age = BARREL_MATURE - 1
     const young = lookText(w, { kind: 'cell', at: AT }, false).split('\n')
     expect(young.some(l => l.includes(caskName('wine', 'keknyelu')))).toBe(false)
+
+    w.family.owned.delete('expert-brewer')
+    barrel.age = BARREL_MATURE
+    const plain = lookText(w, { kind: 'cell', at: AT }, false).split('\n')
+    expect(plain.some(l => l.includes(String(caskAgeTop(1))))).toBe(false)
+    expect(plain.some(l => l.includes(m.prompt_collect({ name: caskName('wine', 'keknyelu').toLowerCase() })))).toBe(true)
+  })
+})
+
+describe('machines.expert-brewer', () => {
+  function full(w: World): Barrel {
+    const barrel = new Barrel(CELL)
+    barrel.crop = 'grape'
+    barrel.feed = [{ variety: 'base', quality: 1, count: barrelNeed('grape') }]
+    w.setCell(AT, barrel)
+    const east = { col: AT.col + 1, row: AT.row }
+    w.setCell(east, new Chest({ shape: 'rect', col: east.col, row: east.row, w: 1, h: 1 }))
+    return barrel
+  }
+  function bottles(w: World): Item[] {
+    const chest = w.cell({ col: AT.col + 1, row: AT.row }) as Chest
+    return chest.slots.flatMap(s => (s.kind === 'hold' ? [s.item] : []))
+  }
+
+  test('Without `expert-brewer`, a full Barrel puts its bottle out at `BARREL_MATURE`, at the maturity value, and empties.', () => {
+    const w = new World(1)
+    const barrel = full(w)
+    barrel.age = BARREL_MATURE - DT_MAX / 2
+    w.tick(DT_MAX)
+    expect(barrel.crop).toBe('none')
+    expect(bottles(w)).toMatchObject([{ kind: 'cask', cask: 'wine', count: 1, unitSale: bakeCaskSale('wine', 'base', 1, BARREL_MATURE) }])
+  })
+
+  test('With `expert-brewer`, the Barrel keeps Aging past `BARREL_MATURE` and puts its bottle out at `BARREL_MATURE + BARREL_AGE`, at the top value.', () => {
+    const w = new World(1)
+    w.family.owned.set('expert-brewer', 1)
+    const barrel = full(w)
+    barrel.age = BARREL_MATURE
+    w.tick(DT_MAX)
+    expect(barrel.crop).toBe('grape')
+    barrel.age = BARREL_MATURE + BARREL_AGE - DT_MAX / 2
+    w.tick(DT_MAX)
+    expect(barrel.crop).toBe('none')
+    expect(bottles(w)).toMatchObject([{ kind: 'cask', cask: 'wine', count: 1, unitSale: bakeCaskSale('wine', 'base', 1, BARREL_MATURE + BARREL_AGE) }])
+    expect(bakeCaskSale('wine', 'base', 1, BARREL_MATURE + BARREL_AGE)).toBeCloseTo(bakeCaskSale('wine', 'base', 1, BARREL_MATURE) * caskAgeTop(1), 9)
   })
 })
 

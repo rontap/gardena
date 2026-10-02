@@ -1,4 +1,4 @@
-import { SKILLS, SKILL_IDS, type SkillDef } from '../defs/skills.ts'
+import { DEPRECATED_SKILL_IDS, SKILLS, SKILL_IDS, type SkillDef } from '../defs/skills.ts'
 import type { SkillId } from './ids.ts'
 import type { World } from './world.ts'
 
@@ -12,15 +12,15 @@ export function skillOpen(w: World, id: SkillId): boolean {
 }
 
 export function skillKnown(w: World, id: SkillId): boolean {
-  const parent = SKILLS[id].parent
-  return parent === null || skillOpen(w, parent)
+  const { parent, gate } = SKILLS[id]
+  const researched = gate.kind === 'none' || w.done.has(gate.id)
+  return !DEPRECATED_SKILL_IDS.includes(id) && researched && (parent === null || skillOpen(w, parent))
 }
 
 export function pickSkillBody(w: World, id: SkillId): void {
   if (w.local !== 0) return
   if (!skillKnown(w, id) || !skillOpen(w, id)) return
   const def: SkillDef = SKILLS[id]
-  if (def.gate.kind === 'research' && !w.done.has(def.gate.id)) return
   const have = w.skillTier(id)
   if (have >= def.maxTier) return
   const rank = have + 1

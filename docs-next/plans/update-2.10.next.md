@@ -127,7 +127,7 @@ Developer: convert. Every player string that prints a number of seconds shows re
 | `hud_secs` | research-card duration and the running job, `ui/tree-panel.tsx` | `world.realSeconds(d.seconds)`; the running job is `Math.ceil(world.realSeconds(job.left))` |
 | `hud_station_left` | `ui/station.tsx` | `world.realSeconds(left)` |
 | `hud_clock_sec` | `clockText` in `feature-machines/recipe.ts`; callers `ui/recipe.tsx` (three) and `view/motion.ts` | callers pass `world.realSeconds(...)` |
-| `almanac_seconds` | `familyRows`, tool use time, `ui/feature-almanac/cards.tsx` | `world.realSeconds(t.workSeconds)` |
+| `almanac_seconds` | `familyRows`, tool use time, `ui/feature-almanac/stats.tsx` | `world.realSeconds(t.workSeconds)` |
 | `catalog_shovel`, `catalog_better_shovel`, `catalog_pickaxe`, `catalog_better_pickaxe`, `catalog_diamond_pickaxe`, `catalog_rotary_shovel`, `catalog_axe`, `catalog_chainsaw`, `catalog_electric_chainsaw`, `catalog_compost_box`, `catalog_weed`, `catalog_grass_seeds`, `catalog_grinder`, `catalog_mill`, `catalog_jam`, `catalog_still`, `catalog_furnace`, `catalog_infuser`, `catalog_station`, `catalog_extract` | `catalogEntries` in `defs/catalog.ts`, called by `Almanac` | `catalogEntries(pace)`; every seconds fill divided by `pace` |
 | `catalog_shovel`, `catalog_better_shovel`, `catalog_pickaxe`, `catalog_better_pickaxe`, `catalog_axe`, `catalog_chainsaw`, `catalog_grinder`, `catalog_sku_buy_compost_box`, `catalog_sku_buy_mill`, `catalog_sku_buy_jam`, `catalog_sku_buy_still`, `catalog_sku_buy_barrel`, `catalog_sku_buy_furnace`, `catalog_sku_buy_research_station`, `catalog_sku_buy_infuser` | `SKU_DESC` / `skuDesc` in `sim/item.ts`; callers `matches` and the SKU callout in `ui/sku-card.tsx`, `matches` from `ui/build.tsx` | `skuDesc(id, pace)`, `matches(id, q, pace)`; every seconds fill divided by `pace` |
 
@@ -167,7 +167,7 @@ These replace `FRESH_FULL`, `HAPPY_WILT_SECONDS`, `HAPPY_DROWN_SECONDS`, `HAPPY_
 |---|---|---|
 | fertilizer, rot | `sim/modifiers.ts` | `Modifier` gains `fertUseMul` and `rotMul`; `source` gains `'difficulty'`. `apply` multiplies `fertUsePerSec` (`PLANT_FERT_PER_SEC × fertUseMul`, crops and trees) by the product of `fertUseMul`, and `rotSeconds` by the product of `rotMul`. New `difficultyModifier(d)`: `id: 'difficulty'`, `source: 'difficulty'`, no `crop`, `saleMul`, `growSpeed`, `waterUseMul` 1, `fertUseMul: HARDNESS[d].plantFertPerSec / PLANT_FERT_PER_SEC`, `rotMul: HARDNESS[d].rotMul` |
 | | `sim/family.ts` | both skill modifiers set `fertUseMul: 1`, `rotMul: 1` |
-| | `ui/feature-almanac/crops.tsx` | `plantLines` and `treeLines` use `[difficultyModifier(rules.difficulty)]` instead of `[]`, so the freshness time matches the farm. `groupScales` and `GROW_SCALE` stay on `[]`: a factor on every crop leaves those ratings as they are |
+| | `ui/feature-almanac/stats.tsx` | `plantLines` and `treeLines` use `[difficultyModifier(rules.difficulty)]` instead of `[]`, so the freshness time matches the farm. `groupScales` and `GROW_SCALE` stay on `[]`: a factor on every crop leaves those ratings as they are |
 | full-price freshness | `defs/crops.ts` | `freshMul(f, full)` |
 | | `sim/store.ts` `toStall`; `sim/item.ts` `fruitMoney` | pass `world.hard.freshFull`; `fruitMoney` takes `full` |
 | | `feature-field/field.ts` `tickField` | the ripe-plant freshness redraw check reads `w.hard.freshFull` |

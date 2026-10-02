@@ -854,7 +854,7 @@ describe('1.5.2', () => {
   })
 
   test("`driving-classes` max 3, gate `unlock-vehicles`. `machinery` gated on `unlock-grinder`. Hangar-buys still not `skuPrice`. Drought ×2 on `seeds` | `utility`. `jam` max 3, `JAM_ROT`. `industrial` max 3, complete `× (1 + 0.03 × tier)`. `broker` max 3, gate `unlock-contracts`; each rank `+1` offered and `+1` active.", () => {
-    expect(SKILL_IDS.includes('driving-classes')).toBe(true)
+    expect(SKILL_IDS.includes('driving-classes')).toBe(false)
     expect(SKILLS['driving-classes'].maxTier).toBe(3)
     expect(SKILLS['driving-classes'].gate).toEqual({ kind: 'research', id: 'unlock-vehicles' })
     expect(SKILLS.machinery.gate).toEqual({ kind: 'research', id: 'unlock-grinder' })

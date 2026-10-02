@@ -46,7 +46,7 @@ import {
 import { familiarityMax, purposeMul, qualityMul, tierOf, type VarietyId } from '../../defs/varieties.ts'
 import { FAMILIARITY_GAIN } from '../../defs/items.ts'
 import type { BarrelCrop, CaskId, GrownCrop, Infusable, JamCrop, MillRecipe, Reagent, SkuId, SpiritKind, StillCrop } from '../ids.ts'
-import { isAnnualId, SPIRIT_OF } from '../ids.ts'
+import { CASK_OF, isAnnualId, SPIRIT_OF } from '../ids.ts'
 import type {
   Barrel,
   CompostBox,
@@ -356,6 +356,28 @@ export function caskAgeMul(age: number, quality: number): number {
 
 export function bakeCaskSale(cask: CaskId, variety: VarietyId, quality: number, age: number): number {
   return CASK_SALE[cask] * purposeMul(variety, 'alcohol') * qualityMul(quality) * caskAgeMul(age, quality)
+}
+
+export function barrelTop(brewer: boolean): number {
+  return brewer ? BARREL_MATURE + BARREL_AGE : BARREL_MATURE
+}
+
+export function barrelCask(
+  crop: BarrelCrop,
+  feed: readonly { variety: VarietyId; quality: number; count: number }[],
+  age: number,
+): Extract<Item, { kind: 'cask' }> {
+  const variety = feedVariety(feed)
+  const quality = meanQuality(feed)
+  return {
+    kind: 'cask',
+    cask: CASK_OF[crop],
+    variety,
+    quality,
+    count: 1,
+    unitSale: bakeCaskSale(CASK_OF[crop], variety, quality, age),
+    infused: false,
+  }
 }
 
 export function jamSale(crop: JamCrop, variety: VarietyId, quality: number): number {

@@ -1,19 +1,19 @@
 import { BARREL_MATURE } from '../../defs/items.ts'
 import type { Coord } from '../building.ts'
 import { CASK_OF } from '../ids.ts'
-import { mergeInto, type Item } from '../item.ts'
+import { mergeInto } from '../item.ts'
 import { HAND_FULL } from '../prompt.ts'
 import type { World } from '../world.ts'
 import {
   addBarrelFeed,
-  bakeCaskSale,
   barrelAccept,
+  barrelCask,
   barrelNeed,
+  barrelTop,
   feedUnits,
   feedVariety,
   grindAccept,
   grindApply,
-  meanQuality,
   millAccept,
   stationAccept,
   stationApply,
@@ -143,17 +143,7 @@ export function doBarrel(w: World, at: Coord): void {
     const barrel = w.cell(at)
     if (barrel.kind !== 'barrel') return
     if (barrel.crop === 'none') return
-    const variety = feedVariety(barrel.feed)
-    const quality = meanQuality(barrel.feed)
-    const cask: Item = {
-      kind: 'cask',
-      cask: CASK_OF[barrel.crop],
-      variety,
-      quality,
-      count: 1,
-      unitSale: bakeCaskSale(CASK_OF[barrel.crop], variety, quality, barrel.age),
-      infused: false,
-    }
+    const cask = barrelCask(barrel.crop, barrel.feed, Math.min(barrel.age, barrelTop(w.hasSkill('expert-brewer'))))
     if (w.act.hand.kind === 'empty') w.act.hand = { kind: 'hold', item: cask }
     else if (w.act.hand.item.kind === 'cask') {
       const it = w.act.hand.item
@@ -163,9 +153,7 @@ export function doBarrel(w: World, at: Coord): void {
       }
       mergeInto(it, cask, 1)
     }
-    barrel.feed = []
-    barrel.age = 0
-    barrel.crop = 'none'
+    barrel.empty()
     w.track(at, barrel)
     return
   }

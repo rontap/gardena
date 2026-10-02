@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { m } from '../../paraglide/messages.js'
 import { QUAD_PRICE, TRACTOR_PRICE } from '../defs/items.ts'
-import { SKILLS, SKILL_IDS, jamRotMul } from '../defs/skills.ts'
+import { DEPRECATED_SKILL_IDS, SKILLS, SKILL_IDS, jamRotMul } from '../defs/skills.ts'
 import { RESEARCH, SKUS } from '../defs/research.ts'
 import { statsOf } from './modifiers.ts'
 import { Plant } from './plant.ts'
@@ -76,29 +76,40 @@ describe('family.lens', () => {
 })
 
 describe('family.skills', () => {
-  test("One pool: `boots` `tending` `seed-bank` `better-wheat` `better-potato` `better-tomato` `better-grape` `better-raspberry` `grafting` `mycologist` `bulk-up` `driving-classes` `machinery` `industrial` `inherit-land` `saleswoman` `jam` `heirloom` `specialty` `broker`; parent known/open as this note; research lock as this note; cap III on the I–III ids; hangar-buys are not `skuPrice`; drought ×2 on `seeds` | `utility`.", () => {
+  test("One pool, in the tree's drawing order: `boots` `tending` `grafting` `seed-bank` `better-wheat` `better-potato` `better-tomato` `better-grape` `better-raspberry` `mycologist` `bulk-up` `machinery` `inherit-land` `expert-brewer` `market-research` `broker` `industrial` `export-contracts` `saleswoman` `specialty` `jam`; `driving-classes` and `heirloom` deprecated: kept in `SKILLS`, never known; known needs the parent open and the research done; cap III on the I–III ids; hangar-buys are not `skuPrice`; drought ×2 on `seeds` | `utility`.", () => {
     expect([...SKILL_IDS]).toEqual([
       'boots',
       'tending',
+      'grafting',
       'seed-bank',
       'better-wheat',
       'better-potato',
       'better-tomato',
       'better-grape',
       'better-raspberry',
-      'grafting',
       'mycologist',
       'bulk-up',
-      'driving-classes',
       'machinery',
-      'industrial',
       'inherit-land',
-      'saleswoman',
-      'jam',
-      'heirloom',
-      'specialty',
+      'expert-brewer',
+      'market-research',
       'broker',
+      'industrial',
+      'export-contracts',
+      'saleswoman',
+      'specialty',
+      'jam',
     ])
+    expect([...DEPRECATED_SKILL_IDS]).toEqual(['driving-classes', 'heirloom'])
+    expect(SKILLS['market-research'].parent).toBe(null)
+    expect(SKILLS['market-research'].gate).toEqual({ kind: 'none' })
+    expect(SKILLS['export-contracts'].parent).toBe('broker')
+    expect(SKILLS['export-contracts'].gate).toEqual({ kind: 'research', id: 'unlock-contracts' })
+    expect(SKILLS['expert-brewer'].parent).toBe('bulk-up')
+    expect(SKILLS['expert-brewer'].gate).toEqual({ kind: 'research', id: 'unlock-fermentation' })
+    expect(SKILLS['market-research'].maxTier).toBe(1)
+    expect(SKILLS['export-contracts'].maxTier).toBe(1)
+    expect(SKILLS['expert-brewer'].maxTier).toBe(1)
     expect(SKILLS.boots.parent).toBe(null)
     expect(SKILLS.tending.parent).toBe('boots')
     expect(SKILLS['seed-bank'].parent).toBe('boots')
@@ -110,11 +121,11 @@ describe('family.skills', () => {
     expect(SKILLS.machinery.parent).toBe('bulk-up')
     expect(SKILLS.industrial.parent).toBe('broker')
     expect(SKILLS['inherit-land'].parent).toBe('bulk-up')
-    expect(SKILLS.saleswoman.parent).toBe(null)
-    expect(SKILLS.jam.parent).toBe('saleswoman')
+    expect(SKILLS.saleswoman.parent).toBe('market-research')
+    expect(SKILLS.jam.parent).toBe('market-research')
     expect(SKILLS.heirloom.parent).toBe('saleswoman')
-    expect(SKILLS.specialty.parent).toBe('heirloom')
-    expect(SKILLS.broker.parent).toBe('saleswoman')
+    expect(SKILLS.specialty.parent).toBe('saleswoman')
+    expect(SKILLS.broker.parent).toBe('market-research')
     expect(SKILLS['driving-classes'].maxTier).toBe(3)
     expect(SKILLS['driving-classes'].gate).toEqual({ kind: 'research', id: 'unlock-vehicles' })
     expect(SKILLS.machinery.maxTier).toBe(3)
@@ -138,10 +149,28 @@ describe('family.skills', () => {
     expect(w.skillOpen('tending')).toBe(false)
     w.family.owned.set('boots', 1)
     expect(w.skillOpen('tending')).toBe(true)
-    expect(w.skillKnown('better-wheat')).toBe(true)
+    expect(w.skillKnown('better-wheat')).toBe(false)
     expect(w.skillOpen('better-wheat')).toBe(false)
     w.family.owned.set('seed-bank', 1)
     expect(w.skillOpen('better-wheat')).toBe(true)
+    expect(w.skillKnown('better-wheat')).toBe(false)
+    w.grantPoints(1)
+    w.pickSkill('better-wheat')
+    expect(w.skillTier('better-wheat')).toBe(0)
+    w.done.add('unlock-crop-variants')
+    expect(w.skillKnown('better-wheat')).toBe(true)
+    w.pickSkill('better-wheat')
+    expect(w.skillTier('better-wheat')).toBe(1)
+    w.family.owned.set('bulk-up', 1)
+    w.family.owned.set('machinery', 1)
+    w.family.owned.set('market-research', 1)
+    w.family.owned.set('saleswoman', 1)
+    expect(w.skillKnown('driving-classes')).toBe(false)
+    expect(w.skillKnown('heirloom')).toBe(false)
+    w.done.add('unlock-vehicles')
+    w.grantPoints(1)
+    w.pickSkill('driving-classes')
+    expect(w.skillTier('driving-classes')).toBe(0)
     expect(w.skuPrice('buy-shovel')).toBe(SKUS['buy-shovel'].price)
     expect(w.skuPrice('buy-hangar')).toBe(SKUS['buy-hangar'].price)
     expect(QUAD_PRICE).not.toBe(w.skuPrice('buy-hangar'))
@@ -220,9 +249,9 @@ describe('family.cost', () => {
     const w = new World(1)
     w.grantPoints(POINTS_PER_DAY)
     expect(w.points).toBe(1)
-    w.pickSkill('saleswoman')
+    w.pickSkill('market-research')
     expect(w.points).toBe(0)
-    expect(w.family.owned.get('saleswoman')).toBe(1)
+    expect(w.family.owned.get('market-research')).toBe(1)
   })
 })
 

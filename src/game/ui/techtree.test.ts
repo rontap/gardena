@@ -1,8 +1,8 @@
 // COMMANDMENT: never test specifically for versions, ever. expect(GAME_VERSION).toBe is disallowed.
 import { describe, expect, it, test } from 'vitest'
 import { RESEARCH, SKUS } from '../defs/research.ts'
-import { SKILLS } from '../defs/skills.ts'
-import type { ResearchId, SkillId, SkuId } from '../sim/ids.ts'
+import { DEPRECATED_SKILL_IDS, SKILLS, SKILL_IDS } from '../defs/skills.ts'
+import type { ResearchId, SkuId } from '../sim/ids.ts'
 import { buildTree, keyFromDomId, keyOfGrant, keyOfResearch, researchIds } from './techtree.ts'
 
 const tree = buildTree()
@@ -69,12 +69,17 @@ describe('techtree', () => {
   })
 
   it('attaches every research-gated skill', () => {
-    for (const id of Object.keys(SKILLS) as SkillId[]) {
+    for (const id of SKILL_IDS) {
       const gate = SKILLS[id].gate
       if (gate.kind !== 'research') continue
       const leaves = tree.nodes.get(gate.id)?.leaves ?? []
       expect(leaves.some(l => l.kind === 'skill' && l.id === id), id).toBe(true)
     }
+  })
+
+  it('attaches no deprecated skill', () => {
+    const skills = [...tree.nodes.values()].flatMap(n => n.leaves.filter(l => l.kind === 'skill').map(l => l.id))
+    for (const id of DEPRECATED_SKILL_IDS) expect(skills.includes(id), id).toBe(false)
   })
 
   it('attaches every grant', () => {

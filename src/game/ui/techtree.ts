@@ -1,6 +1,6 @@
 import { RESEARCH, SKUS } from '../defs/research.ts'
 import type { ResearchDef, Sku } from '../defs/research.ts'
-import { SKILLS } from '../defs/skills.ts'
+import { SKILLS, SKILL_IDS } from '../defs/skills.ts'
 import type { SkillDef } from '../defs/skills.ts'
 import { skuLabel } from '../sim/item.ts'
 import type { ResearchId, SkillId, SkuId } from '../sim/ids.ts'
@@ -78,7 +78,7 @@ export function buildTree(): Tree {
     }
   }
 
-  for (const id of Object.keys(SKILLS) as SkillId[]) {
+  for (const id of SKILL_IDS) {
     const def: SkillDef = SKILLS[id]
     if (def.gate.kind !== 'research') continue
     nodes.get(def.gate.id)?.leaves.push({ kind: 'skill', id, label: def.name, def })

@@ -17,25 +17,28 @@ export function seedBankQuality(tier: number): number {
 export const SKILL_IDS: readonly SkillId[] = [
     'boots',
     'tending',
+    'grafting',
     'seed-bank',
     'better-wheat',
     'better-potato',
     'better-tomato',
     'better-grape',
     'better-raspberry',
-    'grafting',
     'mycologist',
     'bulk-up',
-    'driving-classes',
     'machinery',
-    'industrial',
     'inherit-land',
-    'saleswoman',
-    'jam',
-    'heirloom',
-    'specialty',
+    'expert-brewer',
+    'market-research',
     'broker',
+    'industrial',
+    'export-contracts',
+    'saleswoman',
+    'specialty',
+    'jam',
 ]
+
+export const DEPRECATED_SKILL_IDS: readonly SkillId[] = ['driving-classes', 'heirloom']
 
 export type BetterCrop = 'potato' | 'wheat' | 'tomato' | 'raspberry' | 'grape'
 
@@ -87,6 +90,9 @@ export type SkillEffect =
     | { kind: 'grafting' }
     | { kind: 'mycologist' }
     | { kind: 'seed-bank' }
+    | { kind: 'market-research' }
+    | { kind: 'export-contracts' }
+    | { kind: 'expert-brewer' }
 
 export type SkillDef = {
     id: SkillId
@@ -226,7 +232,7 @@ export const SKILLS: { readonly [K in SkillId]: SkillDef } = {
         m.skills_saleswoman_name(),
         m.skills_saleswoman_blurb({pct: SALE_PCT}),
         3,
-        null,
+        'market-research',
         {kind: 'saleswoman', mul: 1.02},
     ),
     jam: row(
@@ -234,7 +240,7 @@ export const SKILLS: { readonly [K in SkillId]: SkillDef } = {
         m.skills_jam_name(),
         m.skills_jam_blurb({pct: JAM_PCT}),
         3,
-        'saleswoman',
+        'market-research',
         {kind: 'jam'},
     ),
     heirloom: row(
@@ -251,7 +257,7 @@ export const SKILLS: { readonly [K in SkillId]: SkillDef } = {
         m.skills_specialty_name(),
         m.skills_specialty_blurb({pct: SPECIALTY_PCT}),
         3,
-        'heirloom',
+        'saleswoman',
         {kind: 'specialty', mul: 1.05},
         {kind: 'research', id: 'unlock-preservatives'},
     ),
@@ -260,9 +266,35 @@ export const SKILLS: { readonly [K in SkillId]: SkillDef } = {
         m.skills_broker_name(),
         m.skills_broker_blurb(),
         3,
-        'saleswoman',
+        'market-research',
         {kind: 'broker'},
         {kind: 'research', id: 'unlock-contracts'},
+    ),
+    'market-research': row(
+        'market-research',
+        m.skills_market_research_name(),
+        m.skills_market_research_blurb(),
+        1,
+        null,
+        {kind: 'market-research'},
+    ),
+    'export-contracts': row(
+        'export-contracts',
+        m.skills_export_contracts_name(),
+        m.skills_export_contracts_blurb(),
+        1,
+        'broker',
+        {kind: 'export-contracts'},
+        {kind: 'research', id: 'unlock-contracts'},
+    ),
+    'expert-brewer': row(
+        'expert-brewer',
+        m.skills_expert_brewer_name(),
+        m.skills_expert_brewer_blurb(),
+        1,
+        'bulk-up',
+        {kind: 'expert-brewer'},
+        {kind: 'research', id: 'unlock-fermentation'},
     ),
 }
 

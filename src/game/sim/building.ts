@@ -1078,9 +1078,10 @@ export class Infuser extends Machine {
     this.units -= INFUSE_IN
     this.reagents[reagent] -= INFUSE_REAGENT
     if (this.units === 0) {
-      this.lock = 'none'
-      this.quality = 0
-      this.unitSale = 0
+      const infuser: Infuser = this
+      infuser.lock = 'none'
+      infuser.quality = 0
+      infuser.unitSale = 0
     }
     w.track(at, this)
     return true

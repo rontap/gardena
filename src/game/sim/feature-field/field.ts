@@ -8,7 +8,7 @@ import { DAY_SECONDS } from '../clock.ts'
 import { onCell } from '../drop.ts'
 import { statsOf } from '../modifiers.ts'
 import { Weed } from '../plant.ts'
-import { isPlot, isTilled, recovers } from '../plot.ts'
+import { isPlot, recovers } from '../plot.ts'
 import {
   fertBand,
   GRASS_CHANCE,

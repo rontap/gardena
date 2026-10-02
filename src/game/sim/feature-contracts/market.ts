@@ -394,21 +394,21 @@ export const GOOD_TIER: { readonly [K in StallGoodId]: Stars } = {
 
 export const GROUP_TIER: { readonly [K in GroupId]: Stars } = { jam: 3, spirit: 2 }
 
-export const GROUP_SHARES: { readonly [K in GroupId]: Range } = { jam: [2, 70], spirit: [2, 70] }
+export const GROUP_SHARES: { readonly [K in GroupId]: Range } = { jam: [0, 60], spirit: [0, 60] }
 
 export const CONTRACT_OFF: readonly StallGoodId[] = ['sugar', 'beer', 'flour']
 
 export const GOOD_SHARES: { readonly [K in StallGoodId]: Range } = {
-  carrot: [90, 0],
-  potato: [70, 10],
-  wheat: [60, 15],
-  tomato: [40, 35],
+  carrot: [90, -5],
+  potato: [70, 5],
+  wheat: [60, 10],
+  tomato: [35, 45],
   raspberry: [15, 50],
-  grape: [30, 50],
+  grape: [35, 45],
   vanilla: [-15, 40],
   chilli: [0, 20],
   'sugar-cane': [0, 20],
-  apple: [0, 45],
+  apple: [2, 50],
   apricot: [-8, 50],
   olive: [-15, 55],
   cherry: [-10, 50],
@@ -419,10 +419,10 @@ export const GOOD_SHARES: { readonly [K in StallGoodId]: Range } = {
   mixed: [-5, 45],
   wine: [-12, 60],
   cider: [-12, 60],
-  'jam-apricot': [-12, 65],
-  'jam-grape': [-5, 65],
-  'jam-raspberry': [-10, 65],
-  'jam-cherry': [-15, 65],
+  'jam-apricot': [-12, 55],
+  'jam-grape': [-5, 55],
+  'jam-raspberry': [-10, 55],
+  'jam-cherry': [-15, 55],
   'jam-tomato': [0, 55],
   oil: [-20, 65],
   flour: [-10, 50],

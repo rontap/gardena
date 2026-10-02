@@ -1,4 +1,5 @@
 import { CASK_OF, SPIRIT_OF, type GrownCrop, type JamCrop } from '../sim/ids.ts'
+import type { Item } from '../sim/item.ts'
 import { VARIETIES } from './varieties.ts'
 
 export declare const Base: 'base'
@@ -93,7 +94,7 @@ export type Jam<C> = C extends Fruit<infer Crop extends JamCrop, infer V>
   ? { readonly kind: 'jam'; readonly crop: Crop; readonly variety: V }
   : never
 
-export type Oil<V extends VOf<'olive'> = Base> = { readonly kind: 'oil'; readonly variety: V }
+export type Oil = { readonly kind: 'oil' }
 export type Flour = { readonly kind: 'flour' }
 
 export declare const Alcohol: ((
@@ -109,11 +110,7 @@ export declare const Jam: ((
   readonly kind: 'jam'
 }
 
-export declare const Oil: (<V extends VOf<'olive'>>(variety: V) => Oil<V>) & {
-  readonly pattern: 'oil'
-  readonly kind: 'oil'
-  materialize(): Oil<Base>
-}
+export declare const Oil: Oil
 
 export declare const Flour: Flour
 
@@ -150,17 +147,33 @@ export declare const Processed: readonly [
   Jam<Apricot>,
   Jam<Grape>,
   Flour,
-  Oil<Base>,
+  Oil,
 ]
 export declare const SpecialtyProcessed: readonly [
   Jam<Raspberry<BlackRaspberry>>,
   Jam<Tomato<SanMarzano>>,
   Jam<Grape<Concord>>,
-  Oil<Arbequina>,
 ]
 export declare const Utility: readonly [typeof Vanilla, typeof SugarCane, typeof Chilli]
 
-type Pin<P> = P extends { readonly variety: unknown } | { readonly kind: 'flour' } ? P : P & { readonly variety: Base }
+type Pin<P> = P extends { readonly variety: unknown } | { readonly kind: 'flour' } | { readonly kind: 'oil' }
+  ? P
+  : P & { readonly variety: Base }
+
+type Keys = 'kind' | 'crop' | 'variety' | 'spirit' | 'cask' | 'infused'
+type Fields<P> = Pick<P, Extract<keyof P, Keys>>
+
+export type Infer<P> = P extends readonly (infer U)[]
+  ? Infer<U>
+  : P extends FruitCtor<infer C>
+    ? Extract<Item, { kind: 'fruit'; crop: C }>
+    : P extends { readonly pattern: 'alcohol' }
+      ? Extract<Item, { kind: 'spirit' } | { kind: 'cask' }>
+      : P extends { readonly pattern: 'jam' }
+        ? Extract<Item, { kind: 'jam' }>
+        : P extends { readonly infused: true }
+          ? Extract<Item, Fields<P> & { infused: true }>
+          : Extract<Item, Fields<P>>
 
 export type Get<P> = P extends readonly unknown[]
   ? { readonly [I in keyof P]: Get<P[I]> }
@@ -192,5 +205,24 @@ export type GoodGroup =
 
 export type Line<G extends GoodGroup = GoodGroup> = G & { readonly amount: number }
 
+export declare const Fruits: {
+  readonly carrot: typeof Carrot
+  readonly potato: typeof Potato
+  readonly wheat: typeof Wheat
+  readonly tomato: typeof Tomato
+  readonly apple: typeof Apple
+  readonly apricot: typeof Apricot
+  readonly cherry: typeof Cherry
+  readonly olive: typeof Olive
+  readonly grape: typeof Grape
+  readonly raspberry: typeof Raspberry
+  readonly vanilla: typeof Vanilla
+  readonly 'sugar-cane': typeof SugarCane
+  readonly chilli: typeof Chilli
+}
+
+export declare const Infused: ((inner: object) => object) & { readonly infused: true }
+
 export declare function get<P>(pattern: P): Get<P>
-export declare function is(value: GoodGroup): (pattern: object) => boolean
+export declare function is(value: Item | GoodGroup): <P>(pattern: P) => boolean
+export declare function matching<P>(pattern: P): (value: Item | GoodGroup) => value is Infer<P>

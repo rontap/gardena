@@ -6,10 +6,14 @@ import {
   Apricot,
   Arbequina,
   Base,
+  Cherry,
+  Fruits,
   get,
+  Infused,
   is,
   Jam,
   Klosterneuburger,
+  matching,
   MidProduce,
   Oil,
   Olive,
@@ -19,10 +23,11 @@ import {
 
 const olive = { kind: 'fruit', crop: 'olive', variety: Base } as const
 const pinkLady = { kind: 'fruit', crop: 'apple', variety: PinkLady } as const
-const oil = { kind: 'oil', variety: Base } as const
-const arbequinaOil = { kind: 'oil', variety: Arbequina } as const
+const oil = { kind: 'oil' } as const
 const brandy = { kind: 'spirit', spirit: 'brandy', variety: Base } as const
 const kloster = { kind: 'spirit', spirit: 'brandy', variety: Klosterneuburger } as const
+const jam = { kind: 'jam', crop: 'cherry', variety: Base, infused: false } as const
+const jamInfused = { kind: 'jam', crop: 'cherry', variety: Base, infused: true } as const
 
 describe('contracts.is', () => {
   test('crop root matches every variety; applied pins it', () => {
@@ -38,14 +43,12 @@ describe('contracts.is', () => {
     expect(is(olive)(MidProduce)).toBe(false)
   })
 
-  test('Oil root matches every oil; Oil(Arbequina) pins', () => {
+  test('Oil is kind-only', () => {
     expect(is(oil)(Oil)).toBe(true)
-    expect(is(arbequinaOil)(Oil)).toBe(true)
-    expect(is(oil)(Oil(Base))).toBe(true)
-    expect(is(oil)(Oil(Arbequina))).toBe(false)
-    expect(is(arbequinaOil)(Oil(Arbequina))).toBe(true)
-    expect(is(arbequinaOil)(Processed)).toBe(false)
     expect(is(oil)(Processed)).toBe(true)
+    expect(is(olive)(Oil)).toBe(false)
+    expect(is(olive)(Olive(Arbequina))).toBe(false)
+    expect(is(olive)(Fruits.olive)).toBe(true)
   })
 
   test('Alcohol root matches every alcohol; Alcohol(Apricot) is brandy any variety', () => {
@@ -57,6 +60,20 @@ describe('contracts.is', () => {
     expect(is(kloster)(Alcohol(Apricot(Klosterneuburger)))).toBe(true)
     expect(is(olive)(Alcohol)).toBe(false)
     expect(is(brandy)(Jam)).toBe(false)
+  })
+
+  test('Infused pins infused; Jam still matches both', () => {
+    expect(is(jam)(Jam)).toBe(true)
+    expect(is(jamInfused)(Jam)).toBe(true)
+    expect(is(jam)(Infused)).toBe(false)
+    expect(is(jamInfused)(Infused)).toBe(true)
+    expect(is(jamInfused)(Infused(Jam))).toBe(true)
+    expect(is(jamInfused)(Infused(Jam(Cherry)))).toBe(true)
+    expect(is(jam)(Infused(Jam))).toBe(false)
+  })
+
+  test('matching is is flipped for filter', () => {
+    expect([olive, pinkLady].filter(matching(Olive))).toEqual([olive])
   })
 })
 
@@ -74,7 +91,6 @@ describe('contracts.get', () => {
       { kind: 'fruit', crop: 'apple', variety: Base },
       { kind: 'fruit', crop: 'apricot', variety: Base },
     ])
-    expect(get(Oil)).toEqual({ kind: 'oil', variety: Base })
-    expect(get(Oil(Arbequina))).toEqual({ kind: 'oil', variety: Arbequina })
+    expect(get(Oil)).toEqual({ kind: 'oil' })
   })
 })

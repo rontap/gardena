@@ -1,5 +1,6 @@
 import { CASK_OF, SPIRIT_OF, type GrownCrop, type JamCrop } from '../sim/ids.ts'
-import type { Distill, DistillCrop, Flour as FlourT, Fruit, FruitCtor, Get, GoodGroup, Oil as OilT, VOf } from './contracts.h.ts'
+import type { Item } from '../sim/item.ts'
+import type { Distill, DistillCrop, Flour as FlourT, Fruit, FruitCtor, Get, GoodGroup, Infer, Oil as OilT, VOf } from './contracts.h.ts'
 
 export const Base = 'base' as const
 export const Mixed = 'mixed' as const
@@ -59,17 +60,24 @@ function jamOf(of: { crop: JamCrop; variety?: VOf<JamCrop> }) {
 
 export const Jam = Object.assign(jamOf, { pattern: 'jam' as const, kind: 'jam' as const })
 
-function oilOf<V extends VOf<'olive'>>(variety: V): OilT<V> {
-  return { kind: 'oil', variety }
-}
-
-export const Oil = Object.assign(oilOf, {
-  pattern: 'oil' as const,
-  kind: 'oil' as const,
-  materialize: () => oilOf(Base),
-})
-
+export const Oil: OilT = { kind: 'oil' }
 export const Flour: FlourT = { kind: 'flour' }
+
+export const Fruits = {
+  carrot: Carrot,
+  potato: Potato,
+  wheat: Wheat,
+  tomato: Tomato,
+  apple: Apple,
+  apricot: Apricot,
+  cherry: Cherry,
+  olive: Olive,
+  grape: Grape,
+  raspberry: Raspberry,
+  vanilla: Vanilla,
+  'sugar-cane': SugarCane,
+  chilli: Chilli,
+} as const
 
 export const BaseProduce = [Carrot, Potato, Wheat] as const
 export const MidProduce = [Tomato, Apple, Apricot] as const
@@ -89,18 +97,22 @@ export const Processed = [
   Jam(Apricot(Base)),
   Jam(Grape(Base)),
   Flour,
-  Oil(Base),
+  Oil,
 ] as const
 export const SpecialtyProcessed = [
   Jam(Raspberry(BlackRaspberry)),
   Jam(Tomato(SanMarzano)),
   Jam(Grape(Concord)),
-  Oil(Arbequina),
 ] as const
 export const Utility = [Vanilla, SugarCane, Chilli] as const
 
 function pin(pattern: object): object {
-  if ('variety' in pattern || ('kind' in pattern && pattern.kind === 'flour')) return pattern
+  if (
+    'variety' in pattern ||
+    ('kind' in pattern && (pattern.kind === 'flour' || pattern.kind === 'oil'))
+  ) {
+    return pattern
+  }
   return { ...pattern, variety: Base }
 }
 
@@ -115,18 +127,35 @@ export function get<P>(pattern: P): Get<P> {
   return getOne(pattern as object) as Get<P>
 }
 
-const FIELD = { kind: 1, crop: 1, variety: 1, spirit: 1, cask: 1 }
+const FIELD = { kind: 1, crop: 1, variety: 1, spirit: 1, cask: 1, infused: 1 }
 
-function match(value: GoodGroup, pattern: object): boolean {
-  return Object.keys(pattern)
+function takeFields(p: object): object {
+  return Object.keys(p)
     .filter(k => k in FIELD)
-    .every(k => k in value && value[k as keyof GoodGroup] === pattern[k as keyof typeof pattern])
+    .reduce((o, k) => ({ ...o, [k]: p[k as keyof typeof p] }), {})
 }
 
-export function is(value: GoodGroup) {
-  return (pattern: object): boolean => {
-    if (0 in pattern) return (pattern as readonly object[]).some(p => is(value)(p))
-    if ('pattern' in pattern && pattern.pattern === 'alcohol') return is(value)(Alcohols)
-    return match(value, pattern)
+function infusedOf(inner: object): object {
+  return { ...takeFields(inner), infused: true as const }
+}
+
+export const Infused = Object.assign(infusedOf, { infused: true as const })
+
+function match(value: object, pattern: object): boolean {
+  return Object.keys(pattern)
+    .filter(k => k in FIELD)
+    .every(k => k in value && value[k as keyof typeof value] === pattern[k as keyof typeof pattern])
+}
+
+export function is(value: Item | GoodGroup) {
+  return <P>(pattern: P): boolean => {
+    const p = pattern as object
+    if (0 in p) return (p as readonly object[]).some(x => is(value)(x))
+    if ('pattern' in p && p.pattern === 'alcohol') return is(value)(Alcohols)
+    return match(value, p)
   }
+}
+
+export function matching<P>(pattern: P) {
+  return (value: Item | GoodGroup): value is Infer<P> => is(value)(pattern)
 }

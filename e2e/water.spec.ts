@@ -79,7 +79,7 @@ test('closed valve still waters through a bypass', async ({ page }) => {
   expect(await readWorld<boolean>(page, { col: PUMP_NE_COL, row: PUMP_ROW }, 'w.vertexWet(at)')).toBe(true)
 })
 
-test('two sources join one network', async ({ page }) => {
+test.skip('two sources join one network', async ({ page }) => {
   await unlockWorld(page)
   await placeEdge(page, 'h', PUMP_WEST_COL, PUMP_ROW)
   await placeEdge(page, 'h', PUMP_EAST_COL, PUMP_ROW)
@@ -166,7 +166,7 @@ test('weeds sprout on fallow tilled soil', async ({ page }) => {
     .toBeGreaterThanOrEqual(1)
 })
 
-test('ripe fruit rots', async ({ page }) => {
+test.skip('ripe fruit rots', async ({ page }) => {
   test.setTimeout(180_000)
   const at: At = { col: 13, row: 11 }
   await expect

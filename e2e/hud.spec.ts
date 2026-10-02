@@ -14,7 +14,7 @@ test('hud shots', async ({ page }) => {
   await expect(page.getByText('Research', { exact: true }).first()).toBeVisible()
   await page.screenshot({ path: 'e2e/shots/research.png' })
   await page.getByRole('button', { name: 'Almanac', exact: true }).click()
-  await expect(page.locator('div.font-display').filter({ hasText: /^Almanac$/ })).toBeVisible()
+  await expect(page.getByRole('tab', { name: 'Fruits' })).toBeVisible()
   await page.getByRole('button', { name: 'Carrot' }).click()
   await page.waitForTimeout(1000)
   await page.screenshot({ path: 'e2e/shots/almanac.png' })

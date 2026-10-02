@@ -802,7 +802,6 @@ export class World {
       : STACK_MAX + BULK_UP_STEP * this.skillTier('bulk-up')
   }
 
-  
   expandSlots(): number {
     return (
       (this.done.has('unlock-expand') ? 1 : 0) +
@@ -813,7 +812,6 @@ export class World {
     )
   }
 
-  
   expandLeft(): number {
     const left = this.expandSlots() - this.purchases
     return left < 0 ? 0 : left
@@ -1839,7 +1837,6 @@ export class World {
     return place.buyPacksFail(this, id, at)
   }
 
-  
   putSilo(crop: AnnualId, variety: VarietyId, quality: number, count: number): number {
     return store.putSilo(this, crop, variety, quality, count)
   }
@@ -1848,9 +1845,6 @@ export class World {
     this.commit({ a: Act.takeStore, t: this.now, p: this.local, k: 'silo', s: [at.col, at.row], c: crop, r: variety })
   }
 
-  
-
-  
   putAdditive(id: AdditiveId, liters: number): number {
     return store.putAdditive(this, id, liters)
   }
@@ -1866,8 +1860,6 @@ export class World {
   takeAdditive(at: Coord, id: AdditiveId): void {
     this.commit({ a: Act.takeStore, t: this.now, p: this.local, k: 'additive', s: [at.col, at.row], d: id })
   }
-
-  
 
   marketQuote(): SellAllQuote {
     return store.marketQuote(this)
@@ -1925,7 +1917,6 @@ export class World {
     this.ping()
   }
 
-  
   researchOpen(id: ResearchId): boolean {
     if (id === NECRO_RESEARCH) return this.grandma === 'told' && this.done.has('unlock-grinder')
     const p = RESEARCH[id].parent
@@ -1985,40 +1976,16 @@ export class World {
     this.bursts.push({ id, at: { ...at }, seq: this.burstSeq })
   }
 
-  drainBursts(): Burst[] {
-    return this.bursts.splice(0, this.bursts.length)
-  }
-
-  cue(c: SoundCue): void {
-    this.cues.push(c)
-  }
-
-  drainCues(): SoundCue[] {
-    return this.cues.splice(0, this.cues.length)
-  }
-
-  dropSpot(base: RectBase): Coord | undefined {
-    return machines.dropSpot(this, base)
-  }
-
-  canTend(at: Coord): boolean {
-    return field.canTend(this, at)
-  }
-
+  drainBursts(): Burst[] { return this.bursts.splice(0, this.bursts.length) }
+  cue(c: SoundCue): void { this.cues.push(c) }
+  drainCues(): SoundCue[] { return this.cues.splice(0, this.cues.length) }
+  dropSpot(base: RectBase): Coord | undefined { return machines.dropSpot(this, base) }
+  canTend(at: Coord): boolean { return field.canTend(this, at) }
   neighbourWatch(at: Coord): { crop: CropId; tree: boolean; reach: Coord[]; ok: boolean } | undefined {
     return field.neighbourWatch(this, at)
   }
-
-  canGraft(at: Coord): boolean {
-    return field.canGraft(this, at)
-  }
-
-  padBuildings(): PadCell[] {
-    return vehicles.padBuildings(this)
-  }
-
-  canStation(at: Coord): boolean {
-    return machines.canStation(this, at)
-  }
+  canGraft(at: Coord): boolean { return field.canGraft(this, at) }
+  padBuildings(): PadCell[] { return vehicles.padBuildings(this) }
+  canStation(at: Coord): boolean { return machines.canStation(this, at) }
 }
 

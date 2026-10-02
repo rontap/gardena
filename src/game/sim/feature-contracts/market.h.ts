@@ -1,5 +1,6 @@
 import type { AxeId, CaskId, CropId, JamId, PickaxeId, PlantCrop, ShovelId, StallGoodId, TreeId } from '../ids.ts'
 import type { VarietyId } from '../../defs/varieties.ts'
+import type { Item } from '../item.ts'
 
 export declare const SAT_MAX_CUT: number
 
@@ -66,10 +67,18 @@ export type GroupId = 'jam' | 'spirit'
 
 export type PlainGoodId = StallGoodId
 
+export type VarietyNeed = { kind: 'any' } | { kind: 'exact'; variety: VarietyId }
+
+export type Need = { variety: VarietyNeed; quality: number; freshness: number }
+
+export type Condition = 'pair' | 'freshness' | 'quality' | 'variety' | 'short' | 'large'
+
 export type Demand =
-  | { kind: 'plain'; good: StallGoodId; amount: number }
-  | { kind: 'group'; group: 'jam'; amount: number }
-  | { kind: 'group'; group: 'spirit'; amount: number }
+  | { kind: 'plain'; good: StallGoodId; amount: number; need: Need }
+  | { kind: 'group'; group: 'jam'; amount: number; need: Need }
+  | { kind: 'group'; group: 'spirit'; amount: number; need: Need }
+
+export type Delivered = Extract<Item, { kind: 'fruit' | 'sugar' | 'spirit' | 'cask' | 'jam' | 'oil' | 'flour' | 'bread' }>
 
 export type Lines = readonly [Demand] | readonly [Demand, Demand]
 
@@ -115,7 +124,9 @@ export type PrizeBand = 0 | 1 | 2 | 3
 
 export type PrizeBandMin = readonly [number, number, number, number]
 
-export type DeadlineBand = 'tight' | 'normal' | 'long'
+export type DeadlineBand = 'short' | 'normal'
+
+export type Range = readonly [number, number]
 
 export type GoodTuning = {
   on: boolean
@@ -124,10 +135,10 @@ export type GoodTuning = {
   feasible: number
   price: number
   starter: boolean
+  shares: Range
 }
 
 export type DeadlineTuning = {
-  weight: number
   lo: number
   hi: number
   cost: number
@@ -151,6 +162,7 @@ export type ContractTuning = {
   groupCost: number
   groupChance: number
   groupTier: { readonly [K in GroupId]: Stars }
+  groupShares: { readonly [K in GroupId]: Range }
   loadMin: number
   loadMax: number
   loadCurve: number
@@ -161,6 +173,14 @@ export type ContractTuning = {
   markupPerDifficulty: number
   prizeSlots: number
   prizeBandMin: PrizeBandMin
+  conditionsPerLevel: number
+  conditionsJitter: number
+  conditionsMax: number
+  conditionWeight: { readonly [K in Condition]: number }
+  freshnessRange: Range
+  qualityRange: Range
+  heirloomRange: Range
+  largeMul: number
   goods: { readonly [K in StallGoodId]: GoodTuning }
 }
 
@@ -174,6 +194,7 @@ export type ContractOffer = {
   stars: Stars
   band: DeadlineBand
   days: number
+  conditions: readonly Condition[]
   lines: Lines
   prize: Prize
   clean: number
@@ -266,4 +287,4 @@ export type CancelFee = (a: Active, nowDay: number, cancelMin: number) => number
 
 export type MissPenalty = (a: Active) => number
 
-export type Accepts = (d: Demand, good: StallGoodId) => boolean
+export type Accepts = (d: Demand, good: StallGoodId, item: Delivered) => boolean

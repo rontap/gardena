@@ -10,8 +10,8 @@ const root = fileURLToPath(new URL('..', import.meta.url))
 const src = join(root, 'src')
 
 const banned = [
-  /typeof\s+[^;=()\n]+\s*[!=]==/,
-  /typeof\s*\([^)]*\)\s*[!=]==/,
+  /(?<!keyof\s)typeof\s+[^;=()\n]+\s*[!=]==/,
+  /(?<!keyof\s)typeof\s*\([^)]*\)\s*[!=]==/,
   /Array\.isArray\s*\(/,
   /Number\.isFinite\s*\(/,
 ]

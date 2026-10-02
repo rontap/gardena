@@ -14,9 +14,15 @@ import { DOOR } from '../building.ts'
 import { DAY_SECONDS } from '../clock.ts'
 import {
   ANNUAL_IDS,
+  BARREL_CROPS,
   CASK_IDS,
+  CASK_OF,
+  JAM_CROPS,
   JAM_IDS,
+  PLANT_CROPS,
   SPIRIT_KINDS,
+  SPIRIT_OF,
+  STILL_CROPS,
   TREE_IDS,
   isAnnualId,
   type CaskId,
@@ -34,22 +40,28 @@ import type {
   Bins,
   CompanyBook,
   CompanyId,
+  Condition,
   ContractId,
   ContractOffer,
   Contracts,
   ContractTuning,
   DeadlineBand,
   DeadlineTuning,
+  Delivered,
   Demand,
   GoodTuning,
   GroupId,
   HistoryEntry,
   Lines,
+  Need,
   Prize,
   PrizePool,
   PrizeTool,
+  Range,
   Stars,
+  VarietyNeed,
 } from './market.h.ts'
+import { NamedProduce, OfftypeNamedProduce, SpecialtyAlcohol, SpecialtyProcessed, is } from '../../defs/contracts.ts'
 import { isBakedStall, isCropStall, STALL_IDS } from '../stall.ts'
 import { WEATHER_FRUIT_IMPACT } from '../../defs/weather.ts'
 import { FAMILIARITY_RECOVER, VARIETIES, tierOf, type VarietyId, type VarietyTier } from '../../defs/varieties.ts'
@@ -249,9 +261,8 @@ export const MARKUP_BASE = 0.15
 export const MARKUP_PER_DIFFICULTY = 0.004
 
 export const MARKUP_BAND: { readonly [K in DeadlineBand]: number } = {
-  tight: 0.11,
+  short: 0.11,
   normal: 0.05,
-  long: 0,
 }
 
 export const LOAD_MIN = 0.12
@@ -280,26 +291,44 @@ export const GROUP_CHANCE = 0.5
 
 export const PRIZE_SLOTS = 2
 
-export const DEADLINE_DAYS: { readonly [K in DeadlineBand]: readonly [number, number] } = {
-  tight: [1, 2],
-  normal: [2, 3],
-  long: [3, 4],
+export const DEADLINE_DAYS: { readonly [K in DeadlineBand]: Range } = {
+  short: [1, 2.5],
+  normal: [2, 3.5],
 }
 
-/** Deadlines land on half days, so a band offers three lengths, not two. */
 export const DEADLINE_STEP = 0.5
 
 export const DEADLINE_COST: { readonly [K in DeadlineBand]: number } = {
-  tight: 8,
+  short: 8,
   normal: 0,
-  long: -4,
 }
 
-export const DEADLINE_WEIGHT: { readonly [K in DeadlineBand]: number } = {
-  tight: 2,
-  normal: 5,
-  long: 2,
+export const CONDITIONS: readonly Condition[] = ['pair', 'freshness', 'quality', 'variety', 'short', 'large']
+
+export const CONDITIONS_PER_LEVEL = 0.1
+
+export const CONDITIONS_JITTER = 1
+
+export const CONDITIONS_MAX = 6
+
+export const CONDITION_WEIGHT: { readonly [K in Condition]: number } = {
+  pair: 1,
+  freshness: 1,
+  quality: 1,
+  variety: 1,
+  short: 1,
+  large: 1,
 }
+
+export const FRESHNESS_RANGE: Range = [0.4, 0.8]
+
+export const QUALITY_RANGE: Range = [0, 0.9]
+
+export const HEIRLOOM_RANGE: Range = [0, 1]
+
+export const LARGE_MUL = 2
+
+export const ANY_NEED: Need = { variety: { kind: 'any' }, quality: 0, freshness: 0 }
 
 export const GOOD_COST: { readonly [K in StallGoodId]: number } = {
   carrot: 0,
@@ -365,6 +394,41 @@ export const GOOD_TIER: { readonly [K in StallGoodId]: Stars } = {
 
 export const GROUP_TIER: { readonly [K in GroupId]: Stars } = { jam: 3, spirit: 2 }
 
+export const GROUP_SHARES: { readonly [K in GroupId]: Range } = { jam: [2, 70], spirit: [2, 70] }
+
+export const CONTRACT_OFF: readonly StallGoodId[] = ['sugar', 'beer', 'flour']
+
+export const GOOD_SHARES: { readonly [K in StallGoodId]: Range } = {
+  carrot: [90, 0],
+  potato: [70, 10],
+  wheat: [60, 15],
+  tomato: [40, 35],
+  raspberry: [15, 50],
+  grape: [30, 50],
+  vanilla: [-15, 40],
+  chilli: [0, 20],
+  'sugar-cane': [0, 20],
+  apple: [0, 45],
+  apricot: [-8, 50],
+  olive: [-15, 55],
+  cherry: [-10, 50],
+  sugar: [60, 10],
+  vodka: [-5, 55],
+  beer: [-10, 50],
+  brandy: [-15, 60],
+  mixed: [-5, 45],
+  wine: [-12, 60],
+  cider: [-12, 60],
+  'jam-apricot': [-12, 65],
+  'jam-grape': [-5, 65],
+  'jam-raspberry': [-10, 65],
+  'jam-cherry': [-15, 65],
+  'jam-tomato': [0, 55],
+  oil: [-20, 65],
+  flour: [-10, 50],
+  bread: [-5, 55],
+}
+
 export const FEASIBLE_PER_DAY: { readonly [K in StallGoodId]: number } = {
   carrot: 21,
   potato: 16,
@@ -396,14 +460,52 @@ export const FEASIBLE_PER_DAY: { readonly [K in StallGoodId]: number } = {
   cider: 0.6,
 }
 
-const DEADLINE_BANDS: readonly DeadlineBand[] = ['tight', 'normal', 'long']
-
 const JAM_MIN = Math.min(...JAM_IDS.map(id => JAM_SALE[jamCrop(id)]))
 
 type Shape =
-  | { kind: 'plain'; good: StallGoodId }
+  | { kind: 'plain'; good: StallGoodId; variety: VarietyNeed }
   | { kind: 'group'; group: 'jam' }
   | { kind: 'group'; group: 'spirit' }
+
+type Option = { good: StallGoodId; variety: VarietyNeed; weight: number }
+
+type Frame = { band: DeadlineBand; days: number; pair: boolean; budget: number; solo: number; share: number }
+
+const VARIETY_GROUPS = [NamedProduce, OfftypeNamedProduce, SpecialtyAlcohol, SpecialtyProcessed]
+
+export function lineItem(good: StallGoodId, variety: VarietyId, count: number): Delivered {
+  if (good === 'sugar') return { kind: 'sugar', liters: count, capacityLiters: count, unitSale: SUGAR_MILL, quality: 0 }
+  if (good === 'flour' || good === 'bread') return { kind: good, quality: 0, count, unitSale: unitOf(good) }
+  if (good === 'oil') return { kind: 'oil', quality: 0, count, unitSale: OIL, infused: false }
+  if (isCaskClass(good)) return { kind: 'cask', cask: good, variety, quality: 0, count, unitSale: CASK_SALE[good], infused: false }
+  if (isSpiritClass(good)) return { kind: 'spirit', spirit: good, variety, quality: 0, count, unitSale: unitOf(good), infused: false }
+  if (isJamClass(good)) {
+    return { kind: 'jam', crop: jamCrop(good), variety, quality: 0, count, unitSale: JAM_SALE[jamCrop(good)], infused: false }
+  }
+  return { kind: 'fruit', crop: good, variety, quality: 0, cut: false, count, unitSale: CROPS[good].sale, freshness: 1 }
+}
+
+function productsOf(crop: GrownCrop): readonly StallGoodId[] {
+  const jam = JAM_CROPS.find(c => c === crop)
+  const still = STILL_CROPS.find(c => c === crop)
+  const barrel = BARREL_CROPS.find(c => c === crop)
+  return [
+    crop,
+    ...(jam === undefined ? [] : [`jam-${jam}` as const]),
+    ...(still === undefined ? [] : [SPIRIT_OF[still]]),
+    ...(barrel === undefined ? [] : [CASK_OF[barrel]]),
+  ]
+}
+
+export const VARIETY_GOODS: readonly { good: StallGoodId; variety: VarietyId }[] = [...PLANT_CROPS, ...TREE_IDS].flatMap(crop =>
+  VARIETIES[crop]
+    .filter(v => tierOf(v) !== 'base')
+    .flatMap(variety =>
+      productsOf(crop)
+        .filter(good => is(lineItem(good, variety, 1))(VARIETY_GROUPS))
+        .map(good => ({ good, variety })),
+    ),
+)
 
 function isJamClass(g: StallGoodId): g is JamId {
   return (JAM_IDS as readonly string[]).includes(g)
@@ -421,8 +523,21 @@ function jamCrop(id: JamId): JamCrop {
   return id.slice(4) as JamCrop
 }
 
-function pick<T>(xs: readonly T[], u: number): T {
-  return xs[Math.floor(u * xs.length)]
+function weightedPick<T>(xs: readonly T[], weight: (x: T) => number, u: number): T {
+  let acc = u * xs.reduce((n, x) => n + weight(x), 0)
+  for (const x of xs) {
+    acc -= weight(x)
+    if (acc < 0) return x
+  }
+  return xs[xs.length - 1]
+}
+
+function lerp([lo, hi]: Range, x: number): number {
+  return lo + (hi - lo) * x
+}
+
+function percent(n: number): number {
+  return Math.round(n * 100) / 100
 }
 
 function starsOf(t: ContractTuning, D: number): Stars {
@@ -468,17 +583,18 @@ export function unitOf(good: StallGoodId): number {
 
 function deadlineOf(band: DeadlineBand): DeadlineTuning {
   const [lo, hi] = DEADLINE_DAYS[band]
-  return { weight: DEADLINE_WEIGHT[band], lo, hi, cost: DEADLINE_COST[band], markup: MARKUP_BAND[band] }
+  return { lo, hi, cost: DEADLINE_COST[band], markup: MARKUP_BAND[band] }
 }
 
 function goodOf(good: StallGoodId): GoodTuning {
   return {
-    on: good !== 'sugar',
+    on: !CONTRACT_OFF.includes(good),
     tier: GOOD_TIER[good],
     cost: GOOD_COST[good],
     feasible: FEASIBLE_PER_DAY[good],
     price: unitOf(good),
     starter: (STARTER_CROPS as readonly string[]).includes(good),
+    shares: GOOD_SHARES[good],
   }
 }
 
@@ -491,7 +607,7 @@ export const CONTRACT_TUNING: ContractTuning = {
   starMin: STAR_MIN,
   dStarter: D_STARTER,
   deadlineStep: DEADLINE_STEP,
-  deadlines: { tight: deadlineOf('tight'), normal: deadlineOf('normal'), long: deadlineOf('long') },
+  deadlines: { short: deadlineOf('short'), normal: deadlineOf('normal') },
   mixFloor: MIX_FLOOR,
   mixShare: MIX_SHARE,
   budgetOverdraft: BUDGET_OVERDRAFT,
@@ -499,6 +615,7 @@ export const CONTRACT_TUNING: ContractTuning = {
   groupCost: GROUP_COST,
   groupChance: GROUP_CHANCE,
   groupTier: GROUP_TIER,
+  groupShares: GROUP_SHARES,
   loadMin: LOAD_MIN,
   loadMax: LOAD_MAX,
   loadCurve: LOAD_CURVE,
@@ -509,6 +626,14 @@ export const CONTRACT_TUNING: ContractTuning = {
   markupPerDifficulty: MARKUP_PER_DIFFICULTY,
   prizeSlots: PRIZE_SLOTS,
   prizeBandMin: PRIZE_BAND_MIN,
+  conditionsPerLevel: CONDITIONS_PER_LEVEL,
+  conditionsJitter: CONDITIONS_JITTER,
+  conditionsMax: CONDITIONS_MAX,
+  conditionWeight: CONDITION_WEIGHT,
+  freshnessRange: FRESHNESS_RANGE,
+  qualityRange: QUALITY_RANGE,
+  heirloomRange: HEIRLOOM_RANGE,
+  largeMul: LARGE_MUL,
   goods: Object.fromEntries(STALL_IDS.map(g => [g, goodOf(g)])) as { readonly [K in StallGoodId]: GoodTuning },
 }
 
@@ -529,28 +654,19 @@ export function priceOf(t: ContractTuning, d: Demand): number {
   return t.goods.vodka.price
 }
 
-function demandOf(shape: Shape, amount: number): Demand {
-  if (shape.kind === 'plain') return { kind: 'plain', good: shape.good, amount }
-  if (shape.group === 'jam') return { kind: 'group', group: 'jam', amount }
-  return { kind: 'group', group: 'spirit', amount }
+function demandOf(shape: Shape, amount: number, need: Need): Demand {
+  if (shape.kind === 'plain') return { kind: 'plain', good: shape.good, amount, need }
+  if (shape.group === 'jam') return { kind: 'group', group: 'jam', amount, need }
+  return { kind: 'group', group: 'spirit', amount, need }
 }
 
 function shapeGood(shape: Shape): StallGoodId {
-  return demandGood(demandOf(shape, AMOUNT_MIN))
+  if (shape.kind === 'plain') return shape.good
+  return shape.group === 'jam' ? 'jam-cherry' : 'vodka'
 }
 
 function lineAmount(t: ContractTuning, shape: Shape, target: number): number {
-  return nice(t, target / priceOf(t, demandOf(shape, t.amountMin)))
-}
-
-function weighted(t: ContractTuning, u: number): DeadlineBand {
-  const total = DEADLINE_BANDS.reduce((n, b) => n + t.deadlines[b].weight, 0)
-  let acc = u * total
-  for (const b of DEADLINE_BANDS) {
-    acc -= t.deadlines[b].weight
-    if (acc < 0) return b
-  }
-  return DEADLINE_BANDS[DEADLINE_BANDS.length - 1]
+  return nice(t, target / priceOf(t, demandOf(shape, t.amountMin, ANY_NEED)))
 }
 
 function sameFamily(a: StallGoodId, b: StallGoodId): boolean {
@@ -579,6 +695,51 @@ function shapeD(t: ContractTuning, shape: Shape): number {
   return t.goods[shapeGood(shape)].starter ? t.dStarter : 0
 }
 
+function anyOf(goods: readonly StallGoodId[]): readonly Option[] {
+  return goods.map(good => ({ good, variety: { kind: 'any' }, weight: 1 }))
+}
+
+function lineOne(t: ContractTuning, cs: readonly Condition[], f: Frame, tier: Stars, x: number): readonly Option[] {
+  const goods = candidates(t, f.budget, undefined, f.share, tier).filter(g => !cs.includes('freshness') || isCropStall(g))
+  if (!cs.includes('variety')) return anyOf(goods)
+  const heirloom = lerp(t.heirloomRange, x)
+  return VARIETY_GOODS.filter(v => goods.includes(v.good))
+    .map(v => ({
+      good: v.good,
+      variety: { kind: 'exact' as const, variety: v.variety },
+      weight: tierOf(v.variety) === 'heirloom' ? heirloom : 1 - heirloom,
+    }))
+    .filter(o => o.weight > 0)
+}
+
+function frameOf(t: ContractTuning, stream: Spatial, day: number, slot: number, D: number, cs: readonly Condition[]): Frame {
+  const band: DeadlineBand = cs.includes('short') ? 'short' : 'normal'
+  const deadline = t.deadlines[band]
+  const steps = Math.round((deadline.hi - deadline.lo) / t.deadlineStep) + 1
+  const days = deadline.lo + t.deadlineStep * Math.floor(stream.at(day, slot, 6) * steps)
+  const floor = -t.budgetOverdraft
+  const opened = t.mixFloor + D * t.mixShare - deadline.cost
+  const open = opened < floor ? floor : opened
+  const pair = cs.includes('pair')
+  const solo = referenceGoldPerDay(t) * days * load(t, D) * (cs.includes('large') ? t.largeMul : 1)
+  return { band, days, pair, budget: pair ? (open - t.pairCost) / 2 : open, solo, share: pair ? solo / 2 : solo }
+}
+
+function conditionsOf(t: ContractTuning, stream: Spatial, day: number, slot: number, D: number, tier: Stars, x: number): readonly Condition[] {
+  const jitter = (stream.at(day, slot, 40) * 2 - 1) * t.conditionsJitter
+  const wanted = Math.round(D * t.conditionsPerLevel + jitter)
+  const n = wanted < 0 ? 0 : wanted > t.conditionsMax ? t.conditionsMax : wanted
+  let chosen: readonly Condition[] = []
+  let left = CONDITIONS.filter(c => t.conditionWeight[c] > 0)
+  for (let k = 0; chosen.length < n && left.length > 0; k++) {
+    const c = weightedPick(left, w => t.conditionWeight[w], stream.at(day, slot, 41 + k))
+    left = left.filter(w => w !== c)
+    const next = [...chosen, c]
+    if (lineOne(t, next, frameOf(t, stream, day, slot, D, next), tier, x).length > 0) chosen = next
+  }
+  return chosen
+}
+
 function spendLine(
   t: ContractTuning,
   stream: Spatial,
@@ -586,22 +747,20 @@ function spendLine(
   slot: number,
   kGood: number,
   budget: number,
-  pool: readonly StallGoodId[],
+  options: readonly Option[],
   tier: Stars,
+  groupable: boolean,
 ): { shape: Shape; budget: number } {
-  const good = pick(pool, stream.at(day, slot, kGood))
-  const left = budget - t.goods[good].cost
-  const grouped = stream.at(day, slot, kGood + 1) < t.groupChance
-  if (isJamClass(good)) {
-    if (grouped && t.groupTier.jam <= tier) {
-      return { shape: { kind: 'group', group: 'jam' }, budget: left - t.groupCost }
-    }
-    return { shape: { kind: 'plain', good }, budget: left }
+  const o = weightedPick(options, w => w.weight, stream.at(day, slot, kGood))
+  const left = budget - t.goods[o.good].cost
+  const grouped = groupable && stream.at(day, slot, kGood + 1) < t.groupChance
+  if (isJamClass(o.good) && grouped && t.groupTier.jam <= tier) {
+    return { shape: { kind: 'group', group: 'jam' }, budget: left - t.groupCost }
   }
-  if (isSpiritClass(good) && grouped && t.groupTier.spirit <= tier) {
+  if (isSpiritClass(o.good) && grouped && t.groupTier.spirit <= tier) {
     return { shape: { kind: 'group', group: 'spirit' }, budget: left - t.groupCost }
   }
-  return { shape: { kind: 'plain', good }, budget: left }
+  return { shape: { kind: 'plain', good: o.good, variety: o.variety }, budget: left }
 }
 
 function shuffled(stream: Spatial, day: number, n: number): readonly CompanyId[] {
@@ -625,38 +784,38 @@ function offerAt(
   penaltyRate: number,
 ): ContractOffer {
   const tier = starsOf(t, D)
-  const band = weighted(t, stream.at(day, slot, 5))
-  const deadline = t.deadlines[band]
-  const steps = Math.round((deadline.hi - deadline.lo) / t.deadlineStep) + 1
-  const days = deadline.lo + t.deadlineStep * Math.floor(stream.at(day, slot, 6) * steps)
+  const x = D < 0 ? 0 : D > t.difficultyCeiling ? 1 : D / t.difficultyCeiling
+  const drawn = conditionsOf(t, stream, day, slot, D, tier, x)
+  const f = frameOf(t, stream, day, slot, D, drawn)
   const floor = -t.budgetOverdraft
-  const opened = t.mixFloor + D * t.mixShare - deadline.cost
-  const solo = referenceGoldPerDay(t) * days * load(t, D)
-  let budget = opened < floor ? floor : opened
-  const wantsPair = budget >= t.pairCost
-  if (wantsPair) budget = (budget - t.pairCost) / 2
-  const share = wantsPair ? solo / 2 : solo
-  const line1 = spendLine(t, stream, day, slot, 2, budget, candidates(t, budget, undefined, share, tier), tier)
+  const line1 = spendLine(t, stream, day, slot, 2, f.budget, lineOne(t, drawn, f, tier, x), tier, !drawn.includes('variety'))
   const spare = line1.budget < floor ? floor : line1.budget
-  const pool2 = wantsPair ? candidates(t, budget + spare, shapeGood(line1.shape), share, tier) : []
-  const line2 = pool2.length === 0 ? undefined : spendLine(t, stream, day, slot, 7, budget + spare, pool2, tier)
+  const pool2 = f.pair ? anyOf(candidates(t, f.budget + spare, shapeGood(line1.shape), f.share, tier)) : []
+  const line2 = pool2.length === 0 ? undefined : spendLine(t, stream, day, slot, 7, f.budget + spare, pool2, tier, true)
+  const conditions = line2 === undefined ? drawn.filter(c => c !== 'pair') : drawn
   const bump = shapeD(t, line1.shape) + (line2 === undefined ? 0 : shapeD(t, line2.shape))
   const raw = D + bump
   const eff = raw < 0 ? 0 : raw > t.difficultyCeiling ? t.difficultyCeiling : raw
-  const target = line2 === undefined ? solo : solo / 2
-  const lines: Lines = line2 === undefined
-    ? [demandOf(line1.shape, lineAmount(t, line1.shape, target))]
-    : [demandOf(line1.shape, lineAmount(t, line1.shape, target)), demandOf(line2.shape, lineAmount(t, line2.shape, target))]
+  const target = line2 === undefined ? f.solo : f.solo / 2
+  const need: Need = {
+    variety: line1.shape.kind === 'plain' ? line1.shape.variety : ANY_NEED.variety,
+    quality: drawn.includes('quality') ? percent(lerp(t.qualityRange, x)) : 0,
+    freshness: drawn.includes('freshness') ? percent(lerp(t.freshnessRange, x)) : 0,
+  }
+  const first = demandOf(line1.shape, lineAmount(t, line1.shape, target), need)
+  const lines: Lines =
+    line2 === undefined ? [first] : [first, demandOf(line2.shape, lineAmount(t, line2.shape, target), ANY_NEED)]
   const clean = Math.round(lines.reduce((n, d) => n + d.amount * priceOf(t, d), 0))
-  const markup = Math.round((t.markupBase + t.markupPerDifficulty * eff + deadline.markup) * 100) / 100
+  const markup = Math.round((t.markupBase + t.markupPerDifficulty * eff + t.deadlines[f.band].markup) * 100) / 100
   return {
     id: day * CONTRACT_SLOT_MAX + slot,
     slot,
     company,
     difficulty: eff,
     stars: starsOf(t, eff),
-    band,
-    days,
+    band: f.band,
+    days: f.days,
+    conditions,
     lines,
     prize: { kind: 'cash' },
     clean,
@@ -805,7 +964,21 @@ export function rollBoardAtD(rng: Rng, D: number, slots: number, penaltyRate: nu
   return withPrizes(t, stream, D, base)
 }
 
-export function Accepts(d: Demand, good: StallGoodId): boolean {
+export function varietyOf(item: Delivered): VarietyId {
+  if (item.kind === 'fruit' || item.kind === 'jam' || item.kind === 'spirit' || item.kind === 'cask') return item.variety
+  return 'base'
+}
+
+export function meets(need: Need, item: Delivered): boolean {
+  return (
+    item.quality >= need.quality &&
+    (item.kind !== 'fruit' || item.freshness >= need.freshness) &&
+    (need.variety.kind === 'any' || varietyOf(item) === need.variety.variety)
+  )
+}
+
+export function Accepts(d: Demand, good: StallGoodId, item: Delivered): boolean {
+  if (!meets(d.need, item)) return false
   if (d.kind === 'plain') return good === d.good
   if (d.group === 'jam') return (JAM_IDS as readonly string[]).includes(good)
   return (SPIRIT_KINDS as readonly string[]).includes(good)

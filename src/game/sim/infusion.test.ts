@@ -35,7 +35,7 @@ const ASSETS = import.meta.glob('../../assets/**/*.svg', { query: '?raw', import
 >
 import { Furnace, Infuser, Mill, occupiedCells, PAD } from './building.ts'
 import { dump, parse } from './feature-save/save.ts'
-import { Accepts, mul, SAT_IMPACT_CRAFT, SAT_MAX_CUT, SAT_STEP_CRAFT, saleUnits, REP_DONE, REP_MAX } from './feature-contracts/market.ts'
+import { Accepts, ANY_NEED, lineItem, mul, SAT_IMPACT_CRAFT, SAT_MAX_CUT, SAT_STEP_CRAFT, saleUnits, REP_DONE, REP_MAX } from './feature-contracts/market.ts'
 import type { Demand } from './feature-contracts/market.h.ts'
 import { DT_MAX, World } from './world.ts'
 
@@ -408,15 +408,16 @@ describe('infusion.stall', () => {
 
 describe('infusion.rep', () => {
   test('Complete: `REP_DONE[stars] × (1 + 0.25 × infusedFilled / amount)`, clamp `[0, REP_MAX]`. Miss and cancel do not.', () => {
-    const demand: Demand = { kind: 'plain', good: 'jam-grape', amount: 4 }
+    const demand: Demand = { kind: 'plain', good: 'jam-grape', amount: 4, need: ANY_NEED }
     const offer = {
       id: 0,
       slot: 0,
       company: 'whole-cart' as const,
       difficulty: 1,
       stars: 1 as const,
-      band: 'long' as const,
+      band: 'normal' as const,
       days: 4,
+      conditions: [],
       lines: [demand] as const,
       prize: { kind: 'cash' } as const,
       clean: 4,
@@ -495,6 +496,6 @@ describe('infusion.rep', () => {
     expect(parsed.ok).toBe(true)
     if (!parsed.ok) return
     expect(parsed.world.contracts.active[0].bins[0].infusedFilled).toBe(2)
-    expect(Accepts({ kind: 'plain', good: 'jam-grape', amount: 1 }, 'jam-grape')).toBe(true)
+    expect(Accepts(demand, 'jam-grape', lineItem('jam-grape', 'base', 1))).toBe(true)
   })
 })

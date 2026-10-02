@@ -17,6 +17,8 @@ import { DAY_SECONDS } from '../clock.ts'
 import type { Active, ContractOffer, Demand, Lines, Prize, PrizePool } from './market.h.ts'
 import {
   AMOUNT_MIN,
+  ANY_NEED,
+  lineItem,
   BROKER_MAX_TIER,
   CONTRACT_OFFERS,
   CONTRACT_SLOT_MAX,
@@ -54,6 +56,7 @@ import {
   STARTER_CROPS,
   load,
   Accepts,
+  VARIETY_GOODS,
   cancelFee,
   cleanUnit,
   demandGood,
@@ -66,7 +69,7 @@ import {
   rollBoardAtD as rollBoardAtDRate,
 } from './market.ts'
 import { Rng } from '../rng.ts'
-import { STALL_IDS } from '../stall.ts'
+import { STALL_IDS, isCropStall } from '../stall.ts'
 import { DT_MAX, World } from '../world.ts'
 
 const AT = { col: 10, row: 12 }
@@ -185,7 +188,7 @@ describe('contracts', () => {
     expect(miss.money - afterMiss).toBeCloseTo(potato, 9)
     expect(worthOf(miss, 'carrot')).toBe(0)
     const inf = new World(1)
-    const jamDemand: Demand = { kind: 'plain', good: 'jam-grape', amount: 4 }
+    const jamDemand: Demand = { kind: 'plain', good: 'jam-grape', amount: 4, need: ANY_NEED }
     inf.contracts.active.push({
       offer: { ...carrotOffer(4), lines: [jamDemand], clean: 4 * cleanUnit(jamDemand), reward: 1, penalty: 1 },
       dueDay: 10,
@@ -246,7 +249,7 @@ describe('contracts', () => {
   })
 
   test('A `Demand` never carries a rarity for a `PlainGoodId`, and `Lines` never nests.', () => {
-    const demand: Demand = { kind: 'plain', good: 'sugar', amount: 4 }
+    const demand: Demand = { kind: 'plain', good: 'sugar', amount: 4, need: ANY_NEED }
     const lines: Lines = [demand]
     expect(lines).toHaveLength(1)
   })
@@ -501,8 +504,8 @@ describe('contracts', () => {
 
   test('Consign fills `active` in array order, then the stall. A full bin passes through.', () => {
     const w = new World(1)
-    const carrot: Demand = { kind: 'plain', good: 'carrot', amount: 1 }
-    const potato: Demand = { kind: 'plain', good: 'potato', amount: 4 }
+    const carrot: Demand = { kind: 'plain', good: 'carrot', amount: 1, need: ANY_NEED }
+    const potato: Demand = { kind: 'plain', good: 'potato', amount: 4, need: ANY_NEED }
     const first: Active = {
       offer: { ...carrotOffer(1), id: 1, lines: [carrot, potato] },
       dueDay: 10,
@@ -519,8 +522,8 @@ describe('contracts', () => {
     expect(w.contracts.active[0].bins[1]?.filled).toBe(0)
     expect(w.contracts.active[1].bins[0].filled).toBe(2)
     expect(worthOf(w, 'carrot')).toBe(0)
-    expect(Accepts({ kind: 'plain', good: 'carrot', amount: 1 }, 'carrot')).toBe(true)
-    expect(Accepts({ kind: 'plain', good: 'carrot', amount: 1 }, 'potato')).toBe(false)
+    expect(Accepts(carrot, 'carrot', lineItem('carrot', 'base', 1))).toBe(true)
+    expect(Accepts(carrot, 'potato', lineItem('potato', 'base', 1))).toBe(false)
     dropFruit(w, 'carrot', 1, 0)
     expect(w.contracts.active[1].bins[0].filled).toBe(2)
     expect(w.stall.carrot.stock.base.plain).toBe(1)
@@ -547,15 +550,16 @@ describe('contracts', () => {
   })
 
   test('Complete: `addRep(REP_DONE[stars] × (1 + 0.25 × infusedFilled / amount))`, clamp `[0, REP_MAX]`. `Bin.infusedFilled` counts infused jam / cask / spirit / oil only. `Accepts` ignores `infused`. Miss and cancel do not take the mul.', () => {
-    const demand: Demand = { kind: 'plain', good: 'jam-grape', amount: 4 }
+    const demand: Demand = { kind: 'plain', good: 'jam-grape', amount: 4, need: ANY_NEED }
     const offer: ContractOffer = {
       id: 0,
       slot: 0,
       company: 'whole-cart',
       difficulty: 1,
       stars: 1,
-      band: 'long',
+      band: 'normal',
       days: 4,
+      conditions: [],
       lines: [demand],
       prize: { kind: 'cash' },
       clean: 4,
@@ -575,12 +579,88 @@ describe('contracts', () => {
     w.tick(DT_MAX)
     expect(w.contracts.active).toHaveLength(0)
     expect(w.contracts.rep).toBeCloseTo(REP_DONE[1] * 1.25, 9)
-    expect(Accepts(demand, 'jam-grape')).toBe(true)
+    expect(Accepts(demand, 'jam-grape', lineItem('jam-grape', 'base', 1))).toBe(true)
+  })
+})
+
+describe('conditions', () => {
+  test('contracts.conditions', () => {
+    const t = CONTRACT_TUNING
+    const within = (n: number, [lo, hi]: readonly [number, number]) => n >= lo - 0.005 && n <= hi + 0.005
+    const seen = new Set<string>()
+    let low = 0
+    let high = 0
+    for (const seed of [1, 7, 99, 12345, 4242]) {
+      for (const D of [0, 10, 25, 40, 60]) {
+        rollBoardAtD(new Rng(seed), D, CONTRACT_SLOT_MAX).forEach(o => {
+          const [first, second] = o.lines
+          o.conditions.forEach(c => seen.add(c))
+          if (D === 10) low += o.conditions.length
+          if (D === 60) high += o.conditions.length
+          expect(new Set(o.conditions).size).toBe(o.conditions.length)
+          expect(o.conditions.length).toBeLessThanOrEqual(t.conditionsMax)
+          expect(o.conditions.includes('short')).toBe(o.band === 'short')
+          expect(o.conditions.includes('pair')).toBe(o.lines.length === 2)
+          if (second !== undefined) expect(second.need).toEqual(ANY_NEED)
+          if (o.conditions.includes('quality')) expect(within(first.need.quality, t.qualityRange)).toBe(true)
+          else expect(first.need.quality).toBe(0)
+          if (o.conditions.includes('freshness')) {
+            expect(first.kind === 'plain' && isCropStall(first.good)).toBe(true)
+            expect(within(first.need.freshness, t.freshnessRange)).toBe(true)
+          } else expect(first.need.freshness).toBe(0)
+          if (o.conditions.includes('variety')) {
+            const v = first.need.variety
+            expect(first.kind === 'plain' && v.kind === 'exact').toBe(true)
+            if (first.kind !== 'plain' || v.kind !== 'exact') return
+            expect(['carrot', 'vanilla', 'chilli', 'sugar-cane']).not.toContain(first.good)
+            expect(VARIETY_GOODS.some(g => g.good === first.good && g.variety === v.variety)).toBe(true)
+          } else expect(first.need.variety).toEqual({ kind: 'any' })
+        })
+      }
+    }
+    expect([...seen].sort()).toEqual(['freshness', 'large', 'pair', 'quality', 'short', 'variety'])
+    expect(high).toBeGreaterThan(low)
+  })
+
+  test('contracts.need', () => {
+    const w = new World(1)
+    const withQuality = (a: Active, id: number, quality: number): Active => ({
+      ...a,
+      offer: { ...a.offer, id },
+      bins: [{ demand: { ...a.bins[0].demand, need: { ...ANY_NEED, quality } }, filled: 0, infusedFilled: 0 }],
+    })
+    w.contracts.active.push(withQuality(carrotActive(0, 10), 1, 0.4), withQuality(carrotActive(0, 10), 2, 0.2))
+    const drop = (n: number, quality: number) => {
+      w.seats[0].actor.x = PAD.col + 0.5
+      w.seats[0].actor.y = PAD.row + 0.5
+      w.seats[0].hand = {
+        kind: 'hold',
+        item: { kind: 'fruit', crop: 'carrot', variety: 'base', quality, count: n, unitSale: CROPS.carrot.sale, freshness: 1, cut: false },
+      }
+      w.enqueue({ act: 'consign' })
+      w.tick(DT_MAX)
+    }
+    const start = w.money
+    drop(3, 0.3)
+    expect(w.contracts.active[0].bins[0].filled).toBe(0)
+    expect(w.contracts.active[1].bins[0].filled).toBe(3)
+    expect(w.money).toBe(start)
+    drop(2, 0.1)
+    expect(w.contracts.active[0].bins[0].filled).toBe(0)
+    expect(w.contracts.active[1].bins[0].filled).toBe(3)
+    expect(w.money).toBeGreaterThan(start)
+    const pinkLady: Demand = { kind: 'plain', good: 'apple', amount: 2, need: { ...ANY_NEED, variety: { kind: 'exact', variety: 'pink-lady' } } }
+    expect(Accepts(pinkLady, 'apple', lineItem('apple', 'pink-lady', 1))).toBe(true)
+    expect(Accepts(pinkLady, 'apple', lineItem('apple', 'base', 1))).toBe(false)
+    const fresh: Demand = { kind: 'plain', good: 'carrot', amount: 2, need: { ...ANY_NEED, freshness: 0.6 } }
+    const stale = { kind: 'fruit' as const, crop: 'carrot' as const, variety: 'base' as const, quality: 0, count: 1, unitSale: 3, freshness: 0.5, cut: false }
+    expect(Accepts(fresh, 'carrot', stale)).toBe(false)
+    expect(Accepts(fresh, 'carrot', { ...stale, freshness: 0.6 })).toBe(true)
   })
 })
 
 function carrotOffer(amount = 4): ContractOffer {
-  const demand: Demand = { kind: 'plain', good: 'carrot', amount }
+  const demand: Demand = { kind: 'plain', good: 'carrot', amount, need: ANY_NEED }
   const unit = cleanUnit(demand)
   const clean = amount * unit
   return {
@@ -589,8 +669,9 @@ function carrotOffer(amount = 4): ContractOffer {
     company: 'whole-cart',
     difficulty: 1,
     stars: 1,
-    band: 'long',
+    band: 'normal',
     days: 4,
+    conditions: [],
     lines: [demand],
     prize: { kind: 'cash' },
     clean,
@@ -1014,7 +1095,7 @@ describe('prizes', () => {
     expect([30, DIFFICULTY_CEILING].map(bandOf)).toEqual([3, 3])
   })
 
-  test('Deadlines run 1-2 / 2-3 / 3-4 days on a half-day grid.', () => {
+  test('Deadlines run 1-2.5 (short) / 2-3.5 (normal) days on a half-day grid.', () => {
     const seen = new Set<number>()
     for (const seed of [1, 7, 99, 12345, 4242]) {
       for (const day of [0, 3, 11, 27]) {

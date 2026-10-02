@@ -1,23 +1,27 @@
 import { m } from '../../paraglide/messages.js'
-import { Component, useMemo, useState, type ReactNode } from 'react'
+import { Component, memo, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react'
 import { HARDNESS, type Difficulty } from '../defs/rules.ts'
 import type { Purpose } from '../defs/varieties.ts'
 import {
   BROKER_MAX_TIER,
+  CONDITIONS,
   CONTRACT_ACTIVE,
   CONTRACT_OFFERS,
   CONTRACT_TUNING,
   REP_MAX,
+  STARTER_CROPS,
   rollBoard,
   slotRange,
 } from '../sim/feature-contracts/market.ts'
 import type {
+  Condition,
   ContractTuning,
   DeadlineBand,
   DeadlineTuning,
   GoodTuning,
   GroupId,
   PrizeBandMin,
+  Range,
   Stars,
 } from '../sim/feature-contracts/market.h.ts'
 import type { StallGoodId } from '../sim/ids.ts'
@@ -26,21 +30,30 @@ import { stallGoodName } from '../sim/stall.ts'
 import { CalloutHover } from './callout-hover.tsx'
 import { Cat, Field, Num, Pair, Pct, Table, sticky, td, th } from './debug-balance.tsx'
 import {
+  ANY_GROUP,
   DEADLINE_KINDS,
   GROUPED_KEYS,
+  RANGE_KEYS,
   STAR_LIST,
+  isAnyKey,
   isStallKey,
+  levelsOf,
+  oddsOf,
   sample,
   statsOf,
   toCsv,
   withScalar,
+  type AnyKey,
   type LineKey,
   type LineKind,
+  type Measured,
+  type Odds,
   type PrizeKind,
   type RewardKind,
   type Sample,
   type ScalarKey,
   type Spread,
+  type VarietyAsked,
 } from './debug-contracts-balance.ts'
 import { OfferCard } from './feature-contracts/contracts.tsx'
 import { Btn, Chrome } from './frame.tsx'
@@ -68,9 +81,29 @@ const DIFFICULTY_NAME: { readonly [K in Difficulty]: () => string } = {
 }
 
 const DEADLINE_NAME: { readonly [K in DeadlineBand]: () => string } = {
-  tight: m.hud_debug_cb_tight,
+  short: m.hud_debug_cb_short,
   normal: m.hud_debug_cb_normal,
-  long: m.hud_debug_cb_long,
+}
+
+const CONDITION_NAME: { readonly [K in Condition]: () => string } = {
+  pair: m.hud_debug_cb_pair,
+  freshness: m.hud_debug_cb_c_freshness,
+  quality: m.hud_debug_cb_c_quality,
+  variety: m.hud_debug_cb_c_variety,
+  short: m.hud_debug_cb_c_short,
+  large: m.hud_debug_cb_c_large,
+}
+
+const VARIETY_NAME: { readonly [K in VarietyAsked]: () => string } = {
+  any: m.hud_debug_cb_any_variety,
+  variant: m.sensors_variant,
+  heirloom: m.sensors_heirloom,
+}
+
+const RANGE_NAME: { readonly [K in (typeof RANGE_KEYS)[number]]: () => string } = {
+  freshnessRange: m.hud_debug_cb_c_freshness,
+  qualityRange: m.hud_debug_cb_c_quality,
+  heirloomRange: m.hud_debug_cb_heirloom_chance,
 }
 
 const GROUP_NAME: { readonly [K in Purpose]: () => string } = {
@@ -109,7 +142,18 @@ const PIE: readonly string[] = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e8
 
 const PIE_OTHER = '#8f8775'
 
+type Family = Purpose | 'base'
+
+const BAND_HUE: { readonly [K in Family]: string } = {
+  base: '180, 60%',
+  produce: '130, 40%',
+  processed: '28, 75%',
+  alcohol: '275, 40%',
+}
+
 const R = 40
+
+const SETTLE_MS = 300
 
 const BROKER_RANKS: readonly number[] = Array.from({ length: BROKER_MAX_TIER + 1 }, (_, i) => i)
 
@@ -168,9 +212,30 @@ function slicesOf(rows: readonly Row[]): readonly Slice[] {
   return [...head, { label: m.almanac_group_other(), share: rest, color: PIE_OTHER }]
 }
 
+function familyOf(r: Odds): Family {
+  return (STARTER_CROPS as readonly string[]).includes(r.key) ? 'base' : r.group
+}
+
+function bandColor(rows: readonly Odds[], r: Odds): string {
+  const family = familyOf(r)
+  const kin = rows.filter(x => familyOf(x) === family)
+  const i = kin.indexOf(r)
+  const l = (i % 2 === 0 ? 30 : 56) + (16 * Math.floor(i / 2)) / Math.ceil(kin.length / 2)
+  return `hsl(${BAND_HUE[family]}, ${l}%)`
+}
+
 function wedge(a0: number, a1: number): string {
   const at = (a: number) => `${R + R * Math.sin(a)} ${R - R * Math.cos(a)}`
   return `M ${R} ${R} L ${at(a0)} A ${R} ${R} 0 ${a1 - a0 > Math.PI ? 1 : 0} 1 ${at(a1)} Z`
+}
+
+function useSettled<T>(value: T): T {
+  const [settled, setSettled] = useState(value)
+  useEffect(() => {
+    const id = setTimeout(() => setSettled(value), SETTLE_MS)
+    return () => clearTimeout(id)
+  }, [value])
+  return settled
 }
 
 class Guard extends Component<{ children: ReactNode }, { error: string | undefined }> {
@@ -249,6 +314,8 @@ export function DebugContractsBalance() {
   const [tip, setTip] = useState<Tip>(undefined)
   const slots = CONTRACT_OFFERS + broker
   const s = useMemo<Sample>(() => ({ day, rep, slots, difficulty, boards }), [day, rep, slots, difficulty, boards])
+  const shownT = useSettled(t)
+  const shownS = useSettled(s)
   const pristine = JSON.stringify(t) === JSON.stringify(CONTRACT_TUNING)
   const o = CONTRACT_TUNING
 
@@ -257,11 +324,33 @@ export function DebugContractsBalance() {
   )
   const setGood = (g: StallGoodId, patch: Partial<GoodTuning>) =>
     setT(x => ({ ...x, goods: { ...x.goods, [g]: { ...x.goods[g], ...patch } } }))
+  const setGroupShares = (g: GroupId, shares: Range) => setT(x => ({ ...x, groupShares: { ...x.groupShares, [g]: shares } }))
+  const anyRow = (k: AnyKey) => {
+    const g = ANY_GROUP[k]
+    const v = t.groupShares[g]
+    const d = o.groupShares[g]
+    return (
+      <tr key={k} className="border-t border-ink/10">
+        <td className={`${td} ${sticky}`}>{lineName(k)}</td>
+        <td className={td} colSpan={2} />
+        <td className={td}>
+          <Num value={v[0]} dirty={v[0] !== d[0]} onChange={n => setGroupShares(g, [n, v[1]])} />
+        </td>
+        <td className={td}>
+          <Num value={v[1]} dirty={v[1] !== d[1]} onChange={n => setGroupShares(g, [v[0], n])} />
+        </td>
+        <td className={td} colSpan={5} />
+      </tr>
+    )
+  }
   const setDeadline = (b: DeadlineBand, patch: Partial<DeadlineTuning>) =>
     setT(x => ({ ...x, deadlines: { ...x.deadlines, [b]: { ...x.deadlines[b], ...patch } } }))
   const setSlot = (i: number, lo: number, hi: number) =>
     setT(x => ({ ...x, slotBands: x.slotBands.map((b, j) => (j === i ? ([lo, hi] as const) : b)) }))
-  const totalWeight = DEADLINE_KINDS.reduce((n, b) => n + t.deadlines[b].weight, 0)
+  const setWeight = (c: Condition, v: number) => setT(x => ({ ...x, conditionWeight: { ...x.conditionWeight, [c]: v } }))
+  const setRange = (k: (typeof RANGE_KEYS)[number], i: 0 | 1, v: number) =>
+    setT(x => ({ ...x, [k]: i === 0 ? ([v, x[k][1]] as const) : ([x[k][0], v] as const) }))
+  const totalWeight = CONDITIONS.reduce((n, c) => n + t.conditionWeight[c], 0)
 
   return (
     <div className="h-screen overflow-hidden bg-ink p-4">
@@ -297,6 +386,17 @@ export function DebugContractsBalance() {
               <Field k={m.hud_debug_cb_boards()}>
                 <Num wide value={boards} min={1} onChange={n => setBoards(Math.round(n))} />
               </Field>
+            </Cat>
+
+            <Cat title={m.hud_debug_cb_cat_conditions()}>
+              <Pair>
+                {scalar('conditionsPerLevel', m.hud_debug_cb_per_level(), NUM)}
+                {scalar('conditionsJitter', m.hud_debug_cb_jitter(), NUM)}
+              </Pair>
+              <Pair>
+                {scalar('conditionsMax', m.hud_debug_cb_max(), NUM)}
+                {scalar('largeMul', m.hud_debug_cb_large_mul(), NUM)}
+              </Pair>
             </Cat>
 
             <Cat title={m.hud_debug_cb_cat_difficulty()}>
@@ -405,6 +505,8 @@ export function DebugContractsBalance() {
                     <th className={`${th} ${sticky}`}>{m.hud_debug_cb_good()}</th>
                     <th className={th}>{m.hud_debug_cb_offered()}</th>
                     <th className={th}>{m.hud_debug_cb_stars()}</th>
+                    <th className={th}>{m.hud_debug_cb_shares_start()}</th>
+                    <th className={th}>{m.hud_debug_cb_shares_final()}</th>
                     <th className={th}>{m.hud_debug_cb_cost()}</th>
                     <th className={th}>{m.hud_debug_cb_feasible()}</th>
                     <th className={th}>{m.hud_debug_cb_price()}</th>
@@ -415,7 +517,7 @@ export function DebugContractsBalance() {
                 {GROUPED_KEYS.map(({ group, keys }) => (
                   <tbody key={group}>
                     <tr>
-                      <td colSpan={8} className={`${groupRow} ${sticky}`}>
+                      <td colSpan={10} className={`${groupRow} ${sticky}`}>
                         {GROUP_NAME[group]()}
                       </td>
                     </tr>
@@ -430,6 +532,20 @@ export function DebugContractsBalance() {
                           </td>
                           <td className={td}>
                             <StarPick value={v.tier} dirty={v.tier !== d.tier} onChange={tier => setGood(g, { tier })} />
+                          </td>
+                          <td className={td}>
+                            <Num
+                              value={v.shares[0]}
+                              dirty={v.shares[0] !== d.shares[0]}
+                              onChange={n => setGood(g, { shares: [n, v.shares[1]] })}
+                            />
+                          </td>
+                          <td className={td}>
+                            <Num
+                              value={v.shares[1]}
+                              dirty={v.shares[1] !== d.shares[1]}
+                              onChange={n => setGood(g, { shares: [v.shares[0], n] })}
+                            />
                           </td>
                           <td className={td}>
                             <Num value={v.cost} dirty={v.cost !== d.cost} onChange={cost => setGood(g, { cost })} />
@@ -447,16 +563,63 @@ export function DebugContractsBalance() {
                         </tr>
                       )
                     })}
+                    {keys.filter(isAnyKey).map(anyRow)}
                   </tbody>
                 ))}
+              </Table>
+
+              <Table title={m.hud_debug_cb_cat_conditions()}>
+                <thead>
+                  <tr>
+                    <th className={th}>{m.hud_debug_cb_condition()}</th>
+                    <th className={th}>{m.hud_debug_cb_weight()}</th>
+                    <th className={th}>{m.hud_debug_cb_chance()}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {CONDITIONS.map(c => (
+                    <tr key={c} className="border-t border-ink/10">
+                      <td className={td}>{CONDITION_NAME[c]()}</td>
+                      <td className={td}>
+                        <Num
+                          value={t.conditionWeight[c]}
+                          dirty={t.conditionWeight[c] !== o.conditionWeight[c]}
+                          min={0}
+                          onChange={v => setWeight(c, v)}
+                        />
+                      </td>
+                      <td className={`${td} font-mono tabular-nums`}>{share(t.conditionWeight[c] / totalWeight)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+
+              <Table title={m.hud_debug_cb_strength()}>
+                <thead>
+                  <tr>
+                    <th className={th}>{m.hud_debug_cb_condition()}</th>
+                    <th className={th}>{m.hud_debug_cb_at_low()}</th>
+                    <th className={th}>{m.hud_debug_cb_at_high({ n: t.difficultyCeiling })}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {RANGE_KEYS.map(k => (
+                    <tr key={k} className="border-t border-ink/10">
+                      <td className={td}>{RANGE_NAME[k]()}</td>
+                      {([0, 1] as const).map(i => (
+                        <td key={i} className={td}>
+                          <Pct value={t[k][i]} max={100} dirty={t[k][i] !== o[k][i]} onChange={v => setRange(k, i, v)} />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
               </Table>
 
               <Table title={m.hud_debug_cb_deadlines()}>
                 <thead>
                   <tr>
                     <th className={th}>{m.hud_debug_cb_kind()}</th>
-                    <th className={th}>{m.hud_debug_cb_weight()}</th>
-                    <th className={th}>{m.hud_debug_cb_chance()}</th>
                     <th className={th}>{m.hud_debug_cb_shortest()}</th>
                     <th className={th}>{m.hud_debug_cb_longest()}</th>
                     <th className={th}>{m.hud_debug_cb_cost()}</th>
@@ -470,10 +633,6 @@ export function DebugContractsBalance() {
                     return (
                       <tr key={b} className="border-t border-ink/10">
                         <td className={td}>{DEADLINE_NAME[b]()}</td>
-                        <td className={td}>
-                          <Num value={v.weight} dirty={v.weight !== d.weight} min={0} onChange={weight => setDeadline(b, { weight })} />
-                        </td>
-                        <td className={`${td} font-mono tabular-nums`}>{share(v.weight / totalWeight)}</td>
                         <td className={td}>
                           <Num value={v.lo} dirty={v.lo !== d.lo} min={0} onChange={lo => setDeadline(b, { lo })} />
                         </td>
@@ -545,13 +704,14 @@ export function DebugContractsBalance() {
                   <span className="text-sm text-ink/45">{m.hud_debug_seed({ n: seed })}</span>
                 </div>
               </div>
-              <Guard key={JSON.stringify([t, s, seed])}>
+              <Guard key={JSON.stringify([shownT, shownS, seed])}>
                 <div className="relative">
-                  <Cards t={t} s={s} seed={seed} onTip={setTip} />
+                  <Cards t={shownT} s={shownS} seed={seed} onTip={setTip} />
                   {tip !== undefined ? <CalloutHover title={tip.title} description={tip.description} placement="below" /> : undefined}
                 </div>
-                <Results t={t} s={s} />
+                <Results t={shownT} s={shownS} />
               </Guard>
+              <ShareChart t={shownT} />
             </section>
           </main>
         </div>
@@ -560,7 +720,66 @@ export function DebugContractsBalance() {
   )
 }
 
-function Cards({ t, s, seed, onTip }: { t: ContractTuning; s: Sample; seed: number; onTip: (tip: Tip) => void }) {
+const ShareChart = memo(function ShareChart({ t }: { t: ContractTuning }) {
+  const canvas: RefObject<HTMLCanvasElement | null> = useRef(null)
+  useEffect(() => {
+    const el = canvas.current
+    if (el === null) return
+    let chart: { destroy: () => void } | null = null
+    let dead = false
+    void import('chart.js/auto').then(mod => {
+      if (dead) return
+      const rows = oddsOf(t)
+      chart = new mod.default(el, {
+        type: 'line',
+        data: {
+          labels: [...levelsOf(t)],
+          datasets: rows.map((r, i) => ({
+            label: lineName(r.key),
+            data: r.at.map(x => x * 100),
+            backgroundColor: bandColor(rows, r),
+            borderColor: 'rgba(255, 255, 255, 0.6)',
+            borderWidth: 1,
+            pointRadius: 0,
+            fill: i === 0 ? 'origin' : '-1',
+          })),
+        },
+        options: {
+          animation: false,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { position: 'right', reverse: true, labels: { boxWidth: 12, boxHeight: 12, padding: 6 } },
+            tooltip: {
+              itemSort: (a, b) => b.datasetIndex - a.datasetIndex,
+              filter: item => rows[item.datasetIndex].at[item.dataIndex] > 0,
+              callbacks: { label: item => `${item.dataset.label}: ${share(rows[item.datasetIndex].at[item.dataIndex])}` },
+            },
+          },
+          scales: {
+            x: { title: { display: true, text: m.hud_debug_cb_difficulty() } },
+            y: { stacked: true, min: 0, max: 100, title: { display: true, text: m.hud_debug_cb_chance() } },
+          },
+        },
+      })
+    })
+    return () => {
+      dead = true
+      chart?.destroy()
+    }
+  }, [t])
+  return (
+    <section className="flex flex-col gap-2">
+      <div className="font-display text-sm">{m.hud_debug_cb_shares_chart()}</div>
+      <div className="text-xs text-ink/45">{m.hud_debug_cb_shares_note({ n: t.difficultyCeiling })}</div>
+      <div className="h-[40rem]">
+        <canvas ref={canvas} />
+      </div>
+    </section>
+  )
+})
+
+const Cards = memo(function Cards({ t, s, seed, onTip }: { t: ContractTuning; s: Sample; seed: number; onTip: (tip: Tip) => void }) {
   const offers = rollBoard(new Rng(seed), s.day, s.slots, s.rep, HARDNESS[s.difficulty].penaltyRate, t)
   return (
     <div className="grid grid-cols-3 gap-2">
@@ -577,7 +796,7 @@ function Cards({ t, s, seed, onTip }: { t: ContractTuning; s: Sample; seed: numb
       ))}
     </div>
   )
-}
+})
 
 function Pie({ title, base, rows }: { title: string; base: string; rows: readonly Row[] }) {
   const slices = slicesOf(rows)
@@ -630,7 +849,19 @@ function SpreadRow({ label, n, d, percent }: { label: string; n: Spread; d: numb
   )
 }
 
-function Results({ t, s }: { t: ContractTuning; s: Sample }) {
+function MeasuredRow({ label, n }: { label: string; n: Measured }) {
+  if (n.kind === 'some') return <SpreadRow label={label} n={n.spread} d={0} percent />
+  return (
+    <tr className="border-t border-ink/10 text-ink/35">
+      <td className={td}>{label}</td>
+      <td className={td} colSpan={4}>
+        —
+      </td>
+    </tr>
+  )
+}
+
+const Results = memo(function Results({ t, s }: { t: ContractTuning; s: Sample }) {
   const stats = useMemo(() => statsOf(t, sample(t, s)), [t, s])
   const offers = m.hud_debug_cb_of_offers({ n: stats.offers })
   const lines = m.hud_debug_cb_of_lines({ n: stats.lines })
@@ -642,6 +873,8 @@ function Results({ t, s }: { t: ContractTuning; s: Sample }) {
       </div>
 
       <div className="grid grid-cols-[repeat(auto-fill,minmax(13rem,1fr))] gap-x-6 gap-y-4">
+        <Pie title={m.hud_debug_cb_pie_count()} base={offers} rows={stats.conditionCount.map(x => ({ label: String(x.key), share: x.share }))} />
+        <Pie title={m.hud_debug_cb_pie_variety()} base={offers} rows={stats.varieties.map(x => ({ label: VARIETY_NAME[x.key](), share: x.share }))} />
         <Pie
           title={m.hud_debug_cb_pie_goods()}
           base={offers}
@@ -679,6 +912,25 @@ function Results({ t, s }: { t: ContractTuning; s: Sample }) {
           <SpreadRow label={m.hud_debug_cb_clean()} n={stats.clean} d={0} percent={false} />
           <SpreadRow label={m.hud_debug_cb_markup()} n={stats.markup} d={0} percent />
           <SpreadRow label={m.hud_debug_cb_penalty()} n={stats.penalty} d={0} percent={false} />
+          <MeasuredRow label={m.hud_debug_cb_c_quality()} n={stats.minQuality} />
+          <MeasuredRow label={m.hud_debug_cb_c_freshness()} n={stats.minFreshness} />
+        </tbody>
+      </Table>
+
+      <Table title={m.hud_debug_cb_cat_conditions()}>
+        <thead>
+          <tr>
+            <th className={th}>{m.hud_debug_cb_condition()}</th>
+            <th className={th}>{m.hud_debug_cb_in_offers()}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {stats.conditions.map(c => (
+            <tr key={c.key} className="border-t border-ink/10">
+              <td className={td}>{CONDITION_NAME[c.key]()}</td>
+              <td className={`${td} font-mono tabular-nums`}>{share(c.share)}</td>
+            </tr>
+          ))}
         </tbody>
       </Table>
 
@@ -711,4 +963,4 @@ function Results({ t, s }: { t: ContractTuning; s: Sample }) {
       </Table>
     </div>
   )
-}
+})

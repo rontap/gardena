@@ -2,7 +2,7 @@ import { isValidElement, type ReactElement, type ReactNode } from 'react'
 import { describe, expect, test } from 'vitest'
 import { m } from '../../../paraglide/messages.js'
 import { HARDNESS } from '../../defs/rules.ts'
-import { DIFFICULTY_CEILING } from '../../sim/feature-contracts/market.ts'
+import { ANY_NEED, DIFFICULTY_CEILING } from '../../sim/feature-contracts/market.ts'
 import type { ContractOffer } from '../../sim/feature-contracts/market.h.ts'
 import { capFull, offerHover } from './contracts.tsx'
 
@@ -14,7 +14,8 @@ const offer: ContractOffer = {
   stars: 2,
   band: 'normal',
   days: 2,
-  lines: [{ kind: 'plain', good: 'carrot', amount: 4 }],
+  conditions: [],
+  lines: [{ kind: 'plain', good: 'carrot', amount: 4, need: ANY_NEED }],
   prize: { kind: 'cash' },
   clean: 80,
   markup: 0.2,

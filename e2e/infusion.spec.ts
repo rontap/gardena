@@ -388,7 +388,7 @@ test('contract complete uses infused reputation fraction', async ({ page }) => {
     ).__world
     if (w === undefined) throw new Error('no __world')
     w.unlockAll()
-    const demand = { kind: 'plain', good: 'jam-grape', amount: 4 }
+    const demand = { kind: 'plain', good: 'jam-grape', amount: 4, need: { variety: { kind: 'any' }, quality: 0, freshness: 0 } }
     w.contracts.active.push({
       offer: {
         id: 0,
@@ -396,8 +396,9 @@ test('contract complete uses infused reputation fraction', async ({ page }) => {
         company: 'whole-cart',
         difficulty: 1,
         stars: 1,
-        band: 'long',
+        band: 'normal',
         days: 4,
+        conditions: [],
         lines: [demand],
         prize: { kind: 'cash' },
         clean: 4,

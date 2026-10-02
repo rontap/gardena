@@ -222,7 +222,7 @@ test('a still with no water shows no steam; steam follows progress', async ({ pa
     w.buy('buy-still')
     w.confirmPlace(at)
     const c = w.cell(at)
-    c.feed = [{ crop: 'potato', variety: 'base', quality: 0, count: e.STILL_CAP }]
+    c.load = { kind: 'spirit', feed: [{ crop: 'potato', variety: 'base', quality: 0, count: e.STILL_CAP }] }
     c.progress = 0
     w.ping()
   })

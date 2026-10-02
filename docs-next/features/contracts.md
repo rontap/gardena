@@ -20,7 +20,7 @@ Goals. Generation is judged against these four:
 
 Each day has a fixed list of offers. `rollBoard(rng, day, slots, repDay, penaltyRate, t)` builds it from the world seed, the day number, the number of positions and the reputation at the start of the day, and from these alone; `penaltyRate` sets only the penalty. The Contracts panel, the accept command and the play API each call it and get the same list.
 
-- **Settings.** Every number generation reads comes from `t: ContractTuning`, never from a constant. The game passes `CONTRACT_TUNING`, built from the constants this page names: `goods[good]` from `GOOD_TIER`, `GOOD_COST`, `FEASIBLE_PER_DAY`, `unitOf` and `STARTER_CROPS`, with `on` for every Market good except `sugar`; `deadlines[kind]` from `DEADLINE_WEIGHT`, `DEADLINE_DAYS`, `DEADLINE_COST` and `MARKUP_BAND`; the rest one field per constant. `#debug-contracts-balance` passes an edited copy.
+- **Settings.** Every number generation reads comes from `t: ContractTuning`, never from a constant. The game passes `CONTRACT_TUNING`, built from the constants this page names: `goods[good]` from `GOOD_TIER`, `GOOD_COST`, `FEASIBLE_PER_DAY`, `unitOf` and `STARTER_CROPS`, with `on` for every Market good except `sugar`; `deadlines[kind]` from `DEADLINE_DAYS`, `DEADLINE_COST` and `MARKUP_BAND`; `conditionWeight` from `CONDITION_WEIGHT`; the rest one field per constant. `#debug-contracts-balance` passes an edited copy.
 
 - **Positions.** `contractSlots()` = `CONTRACT_OFFERS` + the `broker` rank. Offer ids are `day × CONTRACT_SLOT_MAX + slot`. A `broker` rank taken during the day adds positions at the end; positions `0` to `CONTRACT_OFFERS` − 1 stay the same.
 - **Lifetime.** An offer that is not accepted is gone at the end of the day, when the day number changes. An accepted offer's id goes into `takenToday`, and the list hides it for the rest of the day, also after the contract is cancelled.
@@ -33,10 +33,11 @@ Every random value comes from the `contract` stream, `stream.at(day, slot, k)` (
 | `k` | at | decides |
 |---|---|---|
 | 0 | `(day, slot)` | the position's difficulty |
-| 2 | `(day, slot)` | the good of line 1 |
+| 2 | `(day, slot)` | the good of line 1, by the options' weights |
 | 3 | `(day, slot)` | whether a jam or spirit line 1 becomes Any jam / Any spirit: below `GROUP_CHANCE` |
-| 5 | `(day, slot)` | the deadline kind |
 | 6 | `(day, slot)` | the deadline length |
+| 40 | `(day, slot)` | the condition count's random spread |
+| 41 + *n* | `(day, slot)` | the *n*-th condition draw |
 | 7 | `(day, slot)` | the good of line 2 |
 | 8 | `(day, slot)` | whether a jam or spirit line 2 becomes Any jam / Any spirit: below `GROUP_CHANCE` |
 | 20 + *i* | `(day, 0)` | the company order |
@@ -51,12 +52,13 @@ rollBoard(day, slots, repDay)
   for each position:
     slotD           D: the position's difficulty
     offerAt
-      deadline      kind, then days
-      budget        how much variety the goods may have; one line or two
-      money target  solo = referenceGoldPerDay(t) × days × load(t, D)
+      conditionsOf  which conditions the offer carries
+      frameOf       deadline kind and days, budget, one line or two, money target
+      lineOne       the goods line 1 may be, under the conditions
       spendLine     line 1 good, maybe grouped
-      spendLine     line 2 good, maybe grouped (pairs only)
+      spendLine     line 2 good, maybe grouped (two goods only)
       difficulty    D plus the goods' adjustment -> final difficulty, stars
+      need          line 1's minimum quality, freshness and variety
       lineAmount    amount of each line
       payment       clean value, markup, reward, penalty
   withPrizes        PRIZE_SLOTS positions get a prize from their company
@@ -79,12 +81,42 @@ D     = l + floor(u × (h − l + 1)) + repDay, at most DIFFICULTY_CEILING
 
 The difficulty rating before the goods are chosen, `starsOf(D)`, limits which goods may appear: a good is allowed when its `GOOD_TIER` is at most that rating. `starsOf` gives the highest rating whose `STAR_MIN` is at most the difficulty.
 
-#### Deadline
+#### Conditions
 
-The deadline kind is `tight`, `normal` or `long` (`DeadlineBand`), chosen with the weights `DEADLINE_WEIGHT`. Its length:
+An offer is one good at a normal deadline, plus the conditions it carries (`offer.conditions`, `Condition`):
+
+| condition | effect |
+|---|---|
+| `pair` | two lines |
+| `freshness` | line 1 is fruit, and takes only units at or above a minimum freshness |
+| `quality` | line 1 takes only units at or above a minimum quality |
+| `variety` | line 1 is one Named or Heirloom good, and takes only that variety |
+| `short` | the deadline kind is `short` |
+| `large` | the money target is multiplied by `LARGE_MUL` |
 
 ```
-lo, hi = DEADLINE_DAYS[kind]
+x      = clamp(D ÷ DIFFICULTY_CEILING, 0, 1)
+n      = clamp(round(D × CONDITIONS_PER_LEVEL + (2u − 1) × CONDITIONS_JITTER), 0, CONDITIONS_MAX)
+```
+
+`conditionsOf` draws up to `n` different conditions, one value `k` 41 + *n* per draw, each by `CONDITION_WEIGHT` among the ones not drawn yet. A condition that would leave line 1 with no good (`lineOne` empty) is dropped and the next draw is made, so an offer can carry fewer than `n`. When the two-good condition finds no good for line 2, the offer has one line and `pair` is left out of `offer.conditions`.
+
+The conditions apply to line 1 only. Line 2 takes any unit of its good (`ANY_NEED`). Strengths rise with `x`:
+
+```
+freshness = round(lerp(FRESHNESS_RANGE, x), to hundredths)
+quality   = round(lerp(QUALITY_RANGE, x), to hundredths)
+heirloom  = lerp(HEIRLOOM_RANGE, x)              the weight of each Heirloom option; Named options weigh 1 − heirloom
+```
+
+`VARIETY_GOODS` lists the goods the variety condition can ask for. They are every Named or Heirloom variety of every crop, as fruit and as the jam, spirit and cask of that crop, kept when `is(lineItem(good, variety, 1))` matches one of the `defs/contracts.ts` groups `NamedProduce`, `OfftypeNamedProduce`, `SpecialtyAlcohol` and `SpecialtyProcessed`. That gives the 13 fruit varieties plus Kingston Black cider, Barackpálinka, Kéknyelű wine, Black raspberry jam, Passata and Grape jelly. Carrot, Vanilla, Chilli and Sugar cane have no Named or Heirloom variety, so a variety offer never asks for them.
+
+#### Deadline
+
+The deadline kind is `short` when the offer carries `short`, else `normal` (`DeadlineBand`). Its length:
+
+```
+lo, hi = DEADLINE_DAYS[kind]                     short 1–2.5, normal 2–3.5
 steps  = (hi − lo) ÷ DEADLINE_STEP + 1
 days   = lo + DEADLINE_STEP × floor(u × steps)
 ```
@@ -98,16 +130,16 @@ The budget limits how varied and costly the goods may be. The money target, belo
 ```
 opened = MIX_FLOOR + D × MIX_SHARE − DEADLINE_COST[kind]
 budget = max(opened, −BUDGET_OVERDRAFT)
-pair   = budget ≥ PAIR_COST                      then each line's budget is (budget − PAIR_COST) ÷ 2
+pair   = the offer carries `pair`               then each line's budget is (budget − PAIR_COST) ÷ 2
 ```
 
-A tight deadline takes budget away and a long one adds it, so a long offer asks for two goods at a lower difficulty than a tight one.
+A short deadline takes budget away.
 
 #### Money target
 
 ```
 load(D) = LOAD_MIN + (LOAD_MAX − LOAD_MIN) × ((D + LOAD_D_OFFSET) ÷ (DIFFICULTY_CEILING + LOAD_D_OFFSET)) ^ LOAD_CURVE
-solo    = referenceGoldPerDay(t) × days × load(D)
+solo    = referenceGoldPerDay(t) × days × load(D), × LARGE_MUL when the offer carries `large`
 share   = solo ÷ 2 when a pair is wanted, else solo
 ```
 
@@ -115,13 +147,13 @@ share   = solo ÷ 2 when a pair is wanted, else solo
 
 #### Goods
 
-`contractGoods(t)` is every Market good whose `t.goods[good].on` is set; at `CONTRACT_TUNING`, every Market good except `sugar`. `spendLine` picks line 1 uniformly from the candidates:
+`contractGoods(t)` is every Market good whose `t.goods[good].on` is set; at `CONTRACT_TUNING`, every Market good except `sugar`. A good is a candidate when:
 
 - `GOOD_TIER[good]` is at most `starsOf(D)`;
 - `GOOD_COST[good]` is at most the line's budget + `BUDGET_OVERDRAFT`;
 - two units of it are worth no more than `share`: `unitOf(good) × AMOUNT_MIN ≤ share`.
 
-The line's budget then drops by `GOOD_COST[good]`. If the good is a jam or a spirit (`SPIRIT_KINDS`: vodka, beer, brandy, mixed), a second random value below `GROUP_CHANCE` (one in two) makes the line **Any jam** or **Any spirit**, which is allowed only when `GROUP_TIER` of that group is at most `starsOf(D)`. A grouped line gets `GROUP_COST` back (it is negative, so the budget rises).
+`lineOne` turns the candidates into line 1's options: with `freshness`, only fruit; with `variety`, the `VARIETY_GOODS` entries whose good is a candidate, weighted by `heirloom`, and no grouping. Otherwise every candidate weighs 1. `spendLine` picks by weight. The line's budget then drops by `GOOD_COST[good]`. If the good is a jam or a spirit (`SPIRIT_KINDS`: vodka, beer, brandy, mixed), a second random value below `GROUP_CHANCE` (one in two) makes the line **Any jam** or **Any spirit**, which is allowed only when `GROUP_TIER` of that group is at most `starsOf(D)`. A grouped line gets `GROUP_COST` back (it is negative, so the budget rises).
 
 When a pair is wanted, line 2 is picked the same way, with the budget `line budget + max(what line 1 left, −BUDGET_OVERDRAFT)`, and it may not be the same family as line 1 (`sameFamily`): not a second jam after a jam or Any jam, not a second spirit after a spirit or Any spirit, not the same good. Wine and cider are casks, not spirits, so they may appear beside a spirit or each other. When no good qualifies for line 2, the offer has one line.
 
@@ -193,7 +225,7 @@ The running contract (`Active`) keeps a copy of the offer, one order line (`Bin`
 
 ### Delivering
 
-Goods reach contracts only through **Drop off** at the Produce Warehouse, by hand or vehicle ([[features/market]]). `fillContracts` goes through the running contracts in list order, and through each contract's lines in order. A line takes units while it has room and accepts the good (`Accepts`):
+Goods reach contracts only through **Drop off** at the Produce Warehouse, by hand or vehicle ([[features/market]]). `fillContracts` goes through the running contracts in list order, and through each contract's lines in order. A line takes units while it has room, accepts the good (`Accepts`), and the dropped stack meets the line's `need` (`meets`):
 
 | line | accepts |
 |---|---|
@@ -201,7 +233,7 @@ Goods reach contracts only through **Drop off** at the Produce Warehouse, by han
 | Any jam | every jam in `JAM_IDS` |
 | Any spirit | `SPIRIT_KINDS`: vodka, beer, brandy, mixed; not wine or cider |
 
-`Accepts` checks the good only; any variety and quality, infused or plain, fills the line. Sugar fills in litres. Fruit at freshness 0 and rotten produce go straight to the Market. Infused units add to the line's `infusedFilled` as well as `filled`. Units taken by a contract skip the Market's stock and price drop; what is left is sold at the Market in the same drop-off.
+`meets` checks the stack's quality against `need.quality`, a fruit stack's freshness against `need.freshness`, and, when `need.variety` is `exact`, the stack's variety (`varietyOf`). A line without conditions has `ANY_NEED` and takes any variety and quality, infused or plain. A stack below one contract's minimum passes on to the next contract that it meets, and to the Market when it meets none. Sugar fills in litres. Fruit at freshness 0 and rotten produce go straight to the Market. Infused units add to the line's `infusedFilled` as well as `filled`. Units taken by a contract skip the Market's stock and price drop; what is left is sold at the Market in the same drop-off.
 
 The player sets the order with the ▲ ▼ buttons (`reorderContractBody` swaps a contract with its neighbour), which decides which contract gets goods first.
 
@@ -254,7 +286,7 @@ Right after accepting, the fee is `CANCEL_MIN` of the clean value; at the deadli
 | a contract is missed or cancelled | − `REP_LOST[stars]` |
 | end of a day with `unlock-contracts` done and no contract accepted that day | − `REP_IDLE` |
 
-Reputation is added to every position's difficulty, from the next day. A higher difficulty gives larger orders, two lines more often, more stars, a higher markup, and the company's prize entry for that difficulty.
+Reputation is added to every position's difficulty, from the next day. A higher difficulty gives larger orders, more conditions and stronger minimums, more stars, a higher markup, and the company's prize entry for that difficulty.
 
 ### End of day
 
@@ -268,8 +300,8 @@ In `tickWorld`, when the day changes: running contracts past their deadline are 
 
 - **Contracts** button on the HUD once `unlock-contracts` is done. It opens a window titled **Contracts**; in a solo game the game is paused while it is open.
 - Top: **Reputation** with a bar of `rep ÷ REP_MAX`; **Available {n}** over the offers, **Taken {n}/{max}** over the running contracts.
-- Offer card: company icon and name, one dot per star, one row per line (item face and name, or **Any jam** / **Any spirit**), **Deadline {n} days** / **Deadline 1 day**, then the coin reward or the prize face and name. Clicking accepts it; at the limit the cards are grey.
-- Offer hover: **{difficulty}/{DIFFICULTY_CEILING} difficulty contract for {company}.**, **Deliver {amount} {good}.** per line, **Contract duration is {days}, earn {reward} when completed ({markup}% more than farmer's market).** or **earn {prize} when completed.**, **Cancellation cost is {fee}.**, and **Click to accept offer**. The fee is `round(CANCEL_MIN × clean)`, the cost of cancelling right after accepting. At the limit it shows **Three contracts already running.**, **Four contracts already running.**, **Five contracts already running.** or **Six contracts already running.**, matching the limit.
+- Offer card: company icon and name, one dot per star, one row per line (item face and name, or **Any jam** / **Any spirit**), **Deadline {n} days** / **Deadline 1 day**, then the coin reward or the prize face and name. A line with a variety condition shows that variety's face and name (`lineItem`, `stallGoodName`), such as **Apple (Pink Lady)** or **Barackpálinka**; a line with a minimum shows **Quality at least {n}%.** and **Freshness at least {n}%.** under its name. Clicking accepts it; at the limit the cards are grey.
+- Offer hover: **{difficulty}/{DIFFICULTY_CEILING} difficulty contract for {company}.**, **Deliver {amount} {good}.** per line followed by that line's minimums, **Contract duration is {days}, earn {reward} when completed ({markup}% more than farmer's market).** or **earn {prize} when completed.**, **Cancellation cost is {fee}.**, and **Click to accept offer**. The fee is `round(CANCEL_MIN × clean)`, the cost of cancelling right after accepting. At the limit it shows **Three contracts already running.**, **Four contracts already running.**, **Five contracts already running.** or **Six contracts already running.**, matching the limit.
 - Running card: company, stars, ▲ ▼ to change the order, **×** to cancel with the hover **Cancelling this offer will incur a {fee} penalty.**; one row per line with the units still needed; **Deadline {x.x} days** with the time left; a bar of delivered ÷ required; the reward.
 - **Finished**: the history, one chip each: company icon, one face per line with its amount, the reputation change, and the money paid, the penalty, the fee or the prize. Hover: **Completed** / **Missed** / **Cancelled**, **Day {n}**, **Difficulty {n}**.
 - Empty: **There are no more contracts for today. New contracts will be available the next day.** on the left; **You currently don't have any contracts. …** on the right.
@@ -310,6 +342,8 @@ The digest carries `takenToday` and, for each running contract, its id, `dueDay`
 | `contracts.miss` | a miss pays the delivered units at the Market price and `penalty × max(PENALTY_FLOOR, 1 − delivered ÷ required)`; all lines full is a completion | `market.test.ts` |
 | `contracts.cancel` | the cancel fee is `CANCEL_MIN × clean` at acceptance and the miss penalty at the deadline | `market.test.ts` |
 | `contracts.consign` | drop-off fills running contracts in list order, then the Market; a full line passes units on | `market.test.ts` |
+| `contracts.conditions` | conditions are distinct and at most `CONDITIONS_MAX`; `short` exactly when the kind is `short`; `pair` exactly when there are two lines; line 2 has `ANY_NEED`; quality and freshness minimums lie in their ranges and are 0 without their condition; freshness only on fruit; a variety line names a `VARIETY_GOODS` entry and never Carrot, Vanilla, Chilli or Sugar cane | `market.test.ts` |
+| `contracts.need` | a stack below a line's minimum quality, freshness or variety does not fill it, fills the next running contract it meets, else goes to the Market | `market.test.ts` |
 | `contracts.infused` | completion reputation is `REP_DONE[stars] × (1 + 0.25 × infused ÷ required)`; miss and cancel do not use it | `market.test.ts` |
 | `contracts.prize` | `PRIZE_SLOTS` of the first `CONTRACT_OFFERS` positions pay a prize from `COMPANY_PRIZES[company][prizeBandOf(PRIZE_BAND_MIN, eff)]`; `broker` positions pay money | `market.test.ts`, `e2e/contracts-prize.spec.ts` |
 | `contracts.prize-pool` | the tree and annual groups are built from `VARIETIES`; vanilla is in no group | `market.test.ts` |
@@ -325,14 +359,18 @@ The digest carries `takenToday` and, for each running contract, its id, `dueDay`
 - New prize kind: `Prize`, `PrizeTemplate`, `prizeFor`, `payPrize`, `prizeName`, `prizeItem` or `PRIZE_ART`, and its save handling ([[systems/save]]).
 - More `broker` ranks or offers: `SLOT_BANDS` needs a row and `CONTRACT_SLOT_MAX` must cover every position, or ids of two days collide.
 - Generation constants change the difficulty of every day; check the `#debug-contracts` page, which shows the offers for each difficulty (`rollBoardAtD`) and for each day ([[systems/debug-pages]]).
-- `#debug-contracts-balance` edits a copy of `CONTRACT_TUNING`: the scalar settings in the sidebar; the goods table (grouped by `Purpose`: Fresh, Preserving, Alcohol), the deadline table and the position table in the left column. The right column runs `rollBoard` with that copy: six offer cards plus `broker` ones at the Day and Reputation sliders, re-rolled by seed; then, over `rollBoard` at seeds 1 to the sampled count (`sample`, `statsOf`), one pie per partition (goods per offer, reward kind, stars, deadline kind, deadline length, line kind, lines and Market value by `Purpose`, prize column and prize kind of prize offers), the spread of difficulty, reward, Market value, markup and penalty, and each good's share of offers grouped by `Purpose`. **CSV** downloads every setting beside its default. A setting that leaves a line with no good shows the error in place of the right column.
+- `#debug-contracts-balance` edits a copy of `CONTRACT_TUNING`: the scalar settings in the sidebar (Conditions: per difficulty point, spread, most, large order size); the goods table (grouped by `Purpose`: Fresh, Preserving, Alcohol), the condition weights, the condition strengths at difficulty 0 and at `DIFFICULTY_CEILING`, the deadline table and the position table in the left column. Its pies include conditions per offer and the variety asked of line 1, and a table gives each condition's share of offers. The right column runs `rollBoard` with that copy: six offer cards plus `broker` ones at the Day and Reputation sliders, re-rolled by seed; then, over `rollBoard` at seeds 1 to the sampled count (`sample`, `statsOf`), one pie per partition (goods per offer, reward kind, stars, deadline kind, deadline length, line kind, lines and Market value by `Purpose`, prize column and prize kind of prize offers), the spread of difficulty, reward, Market value, markup and penalty, and each good's share of offers grouped by `Purpose`. **CSV** downloads every setting beside its default. A setting that leaves a line with no good shows the error in place of the right column.
 - New generation number: a `ContractTuning` field, its constant, its place in `CONTRACT_TUNING`, a field or column on `#debug-contracts-balance`, and its row in `toCsv`.
 
 ## Decisions
 
 - The list of offers reads reputation and no other player state. A generator that reads what the player planted or owns can be steered by planting one seed; reputation is earned by delivering.
 - The deadline counts from acceptance.
-- Contracts state a good; any variety and quality fills it.
+- Contracts state a good; any variety and quality fills it unless the offer carries a freshness, quality or variety condition.
+- Difficulty is paid out as a count of conditions: about one more per `1 ÷ CONDITIONS_PER_LEVEL` difficulty points, with a random spread, so offers of one difficulty still differ. Conditions are drawn first and then narrow the goods line 1 may be.
+- Conditions apply to line 1 only.
+- A condition that would leave line 1 with no possible good is dropped and the next one drawn.
+- Conditions do not change the markup yet; a large order pays more only through its larger amount.
 - Which two positions pay a prize is random; which prize a company pays at a difficulty is fixed. Contracts pay items that money cannot buy.
 - The reward and penalty are fixed when the offer is generated.
 - No amount is limited by an estimate of what the farm can make. Work does not grow in proportion to units: more of one good shares seed packs, bucket fills and hand stacks, each further kind of good adds most of a crop's work again, and automation removes the limit. A fixed rate per good assumes a fixed farm size, which play contradicts.

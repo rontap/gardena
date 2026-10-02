@@ -3,6 +3,7 @@ import { CROP_NAME, HAPPY_MAX, HAPPY_START } from '../defs/crops.ts'
 import { Tree } from '../sim/building.ts'
 import { Plant, Weed } from '../sim/plant.ts'
 import { HARDNESS } from '../defs/rules.ts'
+import { ANY_NEED } from '../sim/feature-contracts/market.ts'
 import { makeTreeSoil, Soil, SOIL_WATER_MID, TREE_FERT_MAX, TREE_WATER_MAX, TREE_WATER_MID } from '../sim/soil.ts'
 
 const WEED_CHANCE = HARDNESS.normal.weedChance
@@ -199,7 +200,7 @@ describe('notices.once', () => {
       stars: 1,
       day: 1,
       rep: 1,
-      lines: [{ kind: 'plain', good: 'carrot', amount: 4 }],
+      lines: [{ kind: 'plain', good: 'carrot', amount: 4, need: ANY_NEED }],
       outcome: { kind: 'done', paid: 10, prize: { kind: 'cash' } },
     })
     const rows = doneRows(w, { activeIds: [7], running: undefined, fired: [] })
@@ -210,7 +211,7 @@ describe('notices.once', () => {
 
   test('a running contract row opens the Contracts window', () => {
     const w = new World()
-    const demand = { kind: 'plain' as const, good: 'carrot' as const, amount: 4 }
+    const demand = { kind: 'plain' as const, good: 'carrot' as const, amount: 4, need: ANY_NEED }
     w.contracts.active.push({
       offer: {
         id: 3,
@@ -220,6 +221,7 @@ describe('notices.once', () => {
         stars: 1,
         band: 'normal',
         days: 2,
+        conditions: [],
         lines: [demand],
         prize: { kind: 'cash' },
         clean: 12,
@@ -242,7 +244,7 @@ describe('notices.once', () => {
       stars: 1,
       day: 1,
       rep: -1,
-      lines: [{ kind: 'plain', good: 'carrot', amount: 4 }],
+      lines: [{ kind: 'plain', good: 'carrot', amount: 4, need: ANY_NEED }],
       outcome: { kind: 'missed', sold: 0, penalty: 5 },
     })
     expect(doneRows(w, { activeIds: [7], running: undefined, fired: [] })).toEqual([])

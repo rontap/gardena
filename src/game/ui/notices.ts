@@ -302,7 +302,7 @@ function demandSubjects(d: Demand): NoticeSubject[] {
   if (d.kind === 'group' && d.group === 'jam') {
     return JAM_CROPS.map(c => ({
       kind: 'demand' as const,
-      demand: { kind: 'plain' as const, good: `jam-${c}` as const, amount: d.amount },
+      demand: { kind: 'plain' as const, good: `jam-${c}` as const, amount: d.amount, need: d.need },
     }))
   }
   return [{ kind: 'demand', demand: d }]

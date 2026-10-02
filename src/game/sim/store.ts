@@ -14,7 +14,7 @@ import * as market from './feature-contracts/market.ts'
 import { binCount, isBakedStall, isCropStall, isInfusedStall, isSpiritStall, stallGoodName, stallX, STALL_IDS } from './stall.ts'
 import type { VarietyId } from '../defs/varieties.ts'
 import type { World } from './world.ts'
-import type { DemandChip, MarketQuote, Sale, SellAllQuote } from './feature-contracts/market.h.ts'
+import type { Delivered, DemandChip, MarketQuote, Sale, SellAllQuote } from './feature-contracts/market.h.ts'
 
 export function seedStoreAt(world: World, at: Coord): SeedStore {
   const c = world.cell(at)
@@ -235,45 +235,45 @@ function toStall(world: World, item: Item): Sale {
     const unit = freshMul(item.freshness, world.hard.freshFull) * qualityMul(item.quality) * purposeMul(item.variety, 'produce')
     const rest = splitConsign(world, item.crop, item.count, item.freshness === 0, n => {
       world.stall[item.crop].take(item.variety, n, unit)
-    }, false)
+    }, false, item)
     return { name: stallGoodName(item.crop, item.variety), n: rest }
   }
   if (item.kind === 'sugar') {
     const rest = splitConsign(world, 'sugar', item.liters, false, n => {
       world.stall.sugar.takeSugar(n, item.unitSale)
-    }, false)
+    }, false, item)
     return { name: stallGoodName('sugar', 'base'), n: rest }
   }
   if (item.kind === 'spirit') {
     const rest = splitConsign(world, item.spirit, item.count, false, n => {
       world.stall[item.spirit].takeSpirit(item.variety, n, item.unitSale, item.infused)
-    }, item.infused)
+    }, item.infused, item)
     return { name: stallGoodName(item.spirit, item.variety), n: rest }
   }
   if (item.kind === 'cask') {
     const rest = splitConsign(world, item.cask, item.count, false, n => {
       world.stall[item.cask].takeSpirit(item.variety, n, item.unitSale, item.infused)
-    }, item.infused)
+    }, item.infused, item)
     return { name: stallGoodName(item.cask, item.variety), n: rest }
   }
   if (item.kind === 'jam') {
     const good = `jam-${item.crop}` as StallGoodId
     const rest = splitConsign(world, good, item.count, false, n => {
       world.stall[good].takeSpirit(item.variety, n, item.unitSale, item.infused)
-    }, item.infused)
+    }, item.infused, item)
     return { name: stallGoodName(good, item.variety), n: rest }
   }
   if (item.kind === 'oil') {
     const rest = splitConsign(world, item.kind, item.count, false, n => {
       world.stall.oil.takeSpirit('base', n, item.unitSale, item.infused)
-    }, item.infused)
+    }, item.infused, item)
     return { name: stallGoodName('oil', 'base'), n: rest }
   }
   if (item.kind === 'flour' || item.kind === 'bread') {
     const good = item.kind
     const rest = splitConsign(world, good, item.count, false, n => {
       world.stall[good].takeBaked(n, item.unitSale)
-    }, false)
+    }, false, item)
     return { name: stallGoodName(good, 'base'), n: rest }
   }
   if (item.kind === 'rotten') {
@@ -290,19 +290,20 @@ export function splitConsign(
   skip: boolean,
   restToStall: (rest: number) => void,
   infused: boolean,
+  item: Delivered,
 ): number {
-  const bound = skip ? 0 : fillContracts(world, good, n, infused)
+  const bound = skip ? 0 : fillContracts(world, good, n, infused, item)
   const rest = n - bound
   if (rest > 0) restToStall(rest)
   return rest
 }
 
-export function fillContracts(world: World, good: StallGoodId, n: number, infused: boolean): number {
+export function fillContracts(world: World, good: StallGoodId, n: number, infused: boolean, item: Delivered): number {
   let left = n
   world.contracts.active.forEach(a => {
     a.bins.forEach(bin => {
       if (left <= 0) return
-      if (!Accepts(bin.demand, good)) return
+      if (!Accepts(bin.demand, good, item)) return
       const room = bin.demand.amount - bin.filled
       if (room <= 0) return
       const take = left < room ? left : room

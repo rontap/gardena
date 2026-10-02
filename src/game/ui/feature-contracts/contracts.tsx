@@ -1,24 +1,25 @@
 import { m } from '../../../paraglide/messages.js'
 import { useState, type ReactNode } from 'react'
 import { COMPANIES } from '../../defs/companies.ts'
-import { CROPS, cropVariety } from '../../defs/crops.ts'
-import { FERT_BAG_LITERS, SUGAR_MILL } from '../../defs/items.ts'
-import { JAM_CROPS, type JamCrop, type StallGoodId } from '../../sim/ids.ts'
+import { cropVariety } from '../../defs/crops.ts'
+import { FERT_BAG_LITERS } from '../../defs/items.ts'
+import type { VarietyId } from '../../defs/varieties.ts'
+import { JAM_CROPS } from '../../sim/ids.ts'
 import type { Item } from '../../sim/item.ts'
 import { DAY_SECONDS } from '../../sim/clock.ts'
 import {
   cancelFee,
   CONTRACT_TUNING,
-  demandGood,
   DIFFICULTY_CEILING,
   filledOf,
+  lineItem,
   needOf,
   prizeTool,
   REP_MAX,
   rollBoard,
 } from '../../sim/feature-contracts/market.ts'
-import type { Active, ContractOffer, Demand, HistoryEntry, Outcome, Prize, Stars } from '../../sim/feature-contracts/market.h.ts'
-import { isCropStall, stallGoodName } from '../../sim/stall.ts'
+import type { Active, ContractOffer, Demand, HistoryEntry, Need, Outcome, Prize, Stars } from '../../sim/feature-contracts/market.h.ts'
+import { stallGoodName } from '../../sim/stall.ts'
 import type { World } from '../../sim/world.ts'
 import { COMPANY, EXPAND_LAND, SKILL_POINT, skuInner, STAT_REPUTATION, symHref, UI_COIN } from '../../view/svgs.ts'
 import { CalloutHover } from '../callout-hover.tsx'
@@ -98,7 +99,7 @@ export function offerHover(offer: ContractOffer, atCap: boolean, cap: number, ca
   const company = COMPANIES[offer.company].name
   const days = offer.days === 1 ? m.market_one_day() : m.market_days({ n: offer.days })
   const deliver = offer.lines
-    .map(line => m.market_deliver_plain({ amount: line.amount, good: demandName(line) }))
+    .flatMap(line => [m.market_deliver_plain({ amount: line.amount, good: demandName(line) }), ...needText(line.need)])
     .join('\n')
   const cash = offer.prize.kind === 'cash'
   const why = atCap ? capFull(cap) : undefined
@@ -291,17 +292,32 @@ function HeaderRow({
 }
 
 function AmountRow({ demand, count }: { demand: Demand; count: number }) {
+  const needs = needText(demand.need)
   return (
-    <div className="flex w-full min-w-0 items-center gap-2 text-base font-semibold">
-      {demandFace(demand, count)}
-      <span className="truncate">{demandName(demand)}</span>
+    <div className="flex w-full min-w-0 flex-col gap-0.5">
+      <div className="flex w-full min-w-0 items-center gap-2 text-base font-semibold">
+        {demandFace(demand, count)}
+        <span className="truncate">{demandName(demand)}</span>
+      </div>
+      {needs.length > 0 ? <div className="text-xs text-ink/60">{needs.join(' ')}</div> : null}
     </div>
   )
 }
 
+function needVariety(need: Need): VarietyId {
+  return need.variety.kind === 'exact' ? need.variety.variety : 'base'
+}
+
+function needText(need: Need): readonly string[] {
+  return [
+    ...(need.quality > 0 ? [m.market_need_quality({ n: Math.round(need.quality * 100) })] : []),
+    ...(need.freshness > 0 ? [m.market_need_freshness({ n: Math.round(need.freshness * 100) })] : []),
+  ]
+}
+
 function demandName(demand: Demand): string {
   if (demand.kind === 'group') return demand.group === 'jam' ? m.market_any_jam() : m.market_any_spirit()
-  return stallGoodName(demandGood(demand), 'base')
+  return stallGoodName(demand.good, needVariety(demand.need))
 }
 
 function AnyJamFace({ count }: { count: number }) {
@@ -321,41 +337,13 @@ function demandFace(demand: Demand, count: number) {
 
 function anyJamAsJar(demand: Demand): Demand {
   if (demand.kind !== 'group' || demand.group !== 'jam') return demand
-  return { kind: 'plain', good: `jam-${JAM_CROPS[0]}` as StallGoodId, amount: demand.amount }
+  return { kind: 'plain', good: `jam-${JAM_CROPS[0]}`, amount: demand.amount, need: demand.need }
 }
 
 export function demandItem(demand: Demand, count: number): Item {
-  if (demand.kind === 'group' && demand.group === 'spirit') {
+  if (demand.kind === 'plain') return lineItem(demand.good, needVariety(demand.need), count)
+  if (demand.group === 'spirit') {
     return { kind: 'spirit', spirit: 'vodka', variety: 'base', quality: 0, count, unitSale: 1, infused: false }
-  }
-  if (demand.kind === 'plain') {
-    if (demand.good === 'sugar') return { kind: 'sugar', liters: count, capacityLiters: count, unitSale: SUGAR_MILL, quality: 0 }
-    if (demand.good === 'flour' || demand.good === 'bread') {
-      return { kind: demand.good, quality: 0, count, unitSale: 1 }
-    }
-    if (demand.good === 'oil') {
-      return { kind: 'oil', quality: 0, count, unitSale: 1, infused: false }
-    }
-    if (demand.good === 'wine' || demand.good === 'cider') {
-      return { kind: 'cask', cask: demand.good, variety: 'base', quality: 0, count, unitSale: 1, infused: false }
-    }
-    if (demand.good === 'vodka' || demand.good === 'beer' || demand.good === 'brandy' || demand.good === 'mixed') {
-      return { kind: 'spirit', spirit: demand.good, variety: 'base', quality: 0, count, unitSale: 1, infused: false }
-    }
-    if (demand.good.startsWith('jam-')) {
-      return { kind: 'jam', crop: demand.good.slice(4) as JamCrop, variety: 'base', quality: 0, count, unitSale: 1, infused: false }
-    }
-    if (!isCropStall(demand.good)) throw new Error('demandItem')
-    return {
-      kind: 'fruit',
-      crop: demand.good,
-      variety: 'base',
-      quality: 0,
-      cut: false,
-      count,
-      unitSale: CROPS[demand.good].sale,
-      freshness: 1,
-    }
   }
   throw new Error('demandItem')
 }

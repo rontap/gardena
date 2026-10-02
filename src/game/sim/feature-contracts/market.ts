@@ -1,4 +1,4 @@
-import { COMPANY_IDS, COMPANY_PRIZES, prizeBandOf } from '../../defs/companies.ts'
+import { COMPANY_IDS, COMPANY_PRIZES, PRIZE_BAND_MIN, prizeBandOf } from '../../defs/companies.ts'
 import { CROPS } from '../../defs/crops.ts'
 import { SKUS } from '../../defs/research.ts'
 import {
@@ -34,12 +34,14 @@ import type {
   Bins,
   CompanyBook,
   CompanyId,
-  ContractGoodId,
   ContractId,
   ContractOffer,
   Contracts,
+  ContractTuning,
   DeadlineBand,
+  DeadlineTuning,
   Demand,
+  GoodTuning,
   GroupId,
   HistoryEntry,
   Lines,
@@ -268,15 +270,15 @@ export const BUDGET_OVERDRAFT = 3
 
 export const AMOUNT_MIN = 2
 
-export const SCALE_START = 0.35
-
-export const SCALE_DAYS = 24
-
 export const PENALTY_FLOOR = 0.25
 
 export const PAIR_COST = 10
 
 export const GROUP_COST = -4
+
+export const GROUP_CHANCE = 0.5
+
+export const PRIZE_SLOTS = 2
 
 export const DEADLINE_DAYS: { readonly [K in DeadlineBand]: readonly [number, number] } = {
   tight: [1, 2],
@@ -423,29 +425,20 @@ function pick<T>(xs: readonly T[], u: number): T {
   return xs[Math.floor(u * xs.length)]
 }
 
-function starsOf(D: number): Stars {
-  if (D >= STAR_MIN[4]) return 4
-  if (D >= STAR_MIN[3]) return 3
-  if (D >= STAR_MIN[2]) return 2
+function starsOf(t: ContractTuning, D: number): Stars {
+  if (D >= t.starMin[4]) return 4
+  if (D >= t.starMin[3]) return 3
+  if (D >= t.starMin[2]) return 2
   return 1
 }
 
-function nice(x: number): number {
-  let n = NICE_AMOUNTS[0]
-  for (const a of NICE_AMOUNTS) {
-    if (a <= x) n = a
-  }
-  return n
+function nice(t: ContractTuning, x: number): number {
+  return t.niceAmounts.reduce((n, a) => (a <= x ? a : n), t.niceAmounts[0])
 }
 
-export function scale(day: number): number {
-  const s = SCALE_START + day / SCALE_DAYS
-  return s < 1 ? s : 1
-}
-
-export function load(D: number): number {
-  const t = (D + LOAD_D_OFFSET) / (DIFFICULTY_CEILING + LOAD_D_OFFSET)
-  return LOAD_MIN + (LOAD_MAX - LOAD_MIN) * t ** LOAD_CURVE
+export function load(t: ContractTuning, D: number): number {
+  const x = (D + t.loadDOffset) / (t.difficultyCeiling + t.loadDOffset)
+  return t.loadMin + (t.loadMax - t.loadMin) * x ** t.loadCurve
 }
 
 export function cleanUnit(d: Demand): number {
@@ -473,14 +466,68 @@ export function unitOf(good: StallGoodId): number {
   return CROPS[good].sale
 }
 
-export const CONTRACT_GOODS: readonly ContractGoodId[] = STALL_IDS.filter(
-  (g): g is ContractGoodId => g !== 'sugar',
-)
+function deadlineOf(band: DeadlineBand): DeadlineTuning {
+  const [lo, hi] = DEADLINE_DAYS[band]
+  return { weight: DEADLINE_WEIGHT[band], lo, hi, cost: DEADLINE_COST[band], markup: MARKUP_BAND[band] }
+}
 
-export const REFERENCE_GOLD_PER_DAY = (() => {
-  const xs = CONTRACT_GOODS.map(g => unitOf(g) * FEASIBLE_PER_DAY[g]).sort((a, b) => a - b)
+function goodOf(good: StallGoodId): GoodTuning {
+  return {
+    on: good !== 'sugar',
+    tier: GOOD_TIER[good],
+    cost: GOOD_COST[good],
+    feasible: FEASIBLE_PER_DAY[good],
+    price: unitOf(good),
+    starter: (STARTER_CROPS as readonly string[]).includes(good),
+  }
+}
+
+export const CONTRACT_TUNING: ContractTuning = {
+  difficultyStart: DIFFICULTY_START,
+  difficultyPerDay: DIFFICULTY_PER_DAY,
+  difficultyMax: DIFFICULTY_MAX,
+  difficultyCeiling: DIFFICULTY_CEILING,
+  slotBands: SLOT_BANDS,
+  starMin: STAR_MIN,
+  dStarter: D_STARTER,
+  deadlineStep: DEADLINE_STEP,
+  deadlines: { tight: deadlineOf('tight'), normal: deadlineOf('normal'), long: deadlineOf('long') },
+  mixFloor: MIX_FLOOR,
+  mixShare: MIX_SHARE,
+  budgetOverdraft: BUDGET_OVERDRAFT,
+  pairCost: PAIR_COST,
+  groupCost: GROUP_COST,
+  groupChance: GROUP_CHANCE,
+  groupTier: GROUP_TIER,
+  loadMin: LOAD_MIN,
+  loadMax: LOAD_MAX,
+  loadCurve: LOAD_CURVE,
+  loadDOffset: LOAD_D_OFFSET,
+  amountMin: AMOUNT_MIN,
+  niceAmounts: NICE_AMOUNTS,
+  markupBase: MARKUP_BASE,
+  markupPerDifficulty: MARKUP_PER_DIFFICULTY,
+  prizeSlots: PRIZE_SLOTS,
+  prizeBandMin: PRIZE_BAND_MIN,
+  goods: Object.fromEntries(STALL_IDS.map(g => [g, goodOf(g)])) as { readonly [K in StallGoodId]: GoodTuning },
+}
+
+export function contractGoods(t: ContractTuning): readonly StallGoodId[] {
+  return STALL_IDS.filter(g => t.goods[g].on)
+}
+
+export function referenceGoldPerDay(t: ContractTuning): number {
+  const xs = contractGoods(t)
+    .map(g => t.goods[g].price * t.goods[g].feasible)
+    .sort((a, b) => a - b)
   return xs[Math.floor(xs.length / 2)]
-})()
+}
+
+export function priceOf(t: ContractTuning, d: Demand): number {
+  if (d.kind === 'plain') return t.goods[d.good].price
+  if (d.group === 'jam') return Math.min(...JAM_IDS.map(id => t.goods[id].price))
+  return t.goods.vodka.price
+}
 
 function demandOf(shape: Shape, amount: number): Demand {
   if (shape.kind === 'plain') return { kind: 'plain', good: shape.good, amount }
@@ -492,21 +539,18 @@ function shapeGood(shape: Shape): StallGoodId {
   return demandGood(demandOf(shape, AMOUNT_MIN))
 }
 
-function lineAmount(shape: Shape, days: number, day: number, target: number): number {
-  const good = shapeGood(shape)
-  const wanted = target / cleanUnit(demandOf(shape, AMOUNT_MIN))
-  const cap = FEASIBLE_PER_DAY[good] * days * scale(day)
-  return nice(wanted < cap ? wanted : cap)
+function lineAmount(t: ContractTuning, shape: Shape, target: number): number {
+  return nice(t, target / priceOf(t, demandOf(shape, t.amountMin)))
 }
 
-function weighted(bands: readonly DeadlineBand[], u: number): DeadlineBand {
-  const total = bands.reduce((n, b) => n + DEADLINE_WEIGHT[b], 0)
+function weighted(t: ContractTuning, u: number): DeadlineBand {
+  const total = DEADLINE_BANDS.reduce((n, b) => n + t.deadlines[b].weight, 0)
   let acc = u * total
-  for (const b of bands) {
-    acc -= DEADLINE_WEIGHT[b]
+  for (const b of DEADLINE_BANDS) {
+    acc -= t.deadlines[b].weight
     if (acc < 0) return b
   }
-  return bands[bands.length - 1]
+  return DEADLINE_BANDS[DEADLINE_BANDS.length - 1]
 }
 
 function sameFamily(a: StallGoodId, b: StallGoodId): boolean {
@@ -516,47 +560,48 @@ function sameFamily(a: StallGoodId, b: StallGoodId): boolean {
 }
 
 function candidates(
+  t: ContractTuning,
   budget: number,
   taken: StallGoodId | undefined,
   target: number,
   tier: Stars,
-): readonly ContractGoodId[] {
-  return CONTRACT_GOODS.filter(
+): readonly StallGoodId[] {
+  return contractGoods(t).filter(
     g =>
       (taken === undefined || !sameFamily(taken, g)) &&
-      GOOD_TIER[g] <= tier &&
-      GOOD_COST[g] <= budget + BUDGET_OVERDRAFT &&
-      unitOf(g) * AMOUNT_MIN <= target,
+      t.goods[g].tier <= tier &&
+      t.goods[g].cost <= budget + t.budgetOverdraft &&
+      t.goods[g].price * t.amountMin <= target,
   )
 }
 
-function shapeD(shape: Shape): number {
-  const good = shapeGood(shape)
-  return (STARTER_CROPS as readonly string[]).includes(good) ? D_STARTER : 0
+function shapeD(t: ContractTuning, shape: Shape): number {
+  return t.goods[shapeGood(shape)].starter ? t.dStarter : 0
 }
 
 function spendLine(
+  t: ContractTuning,
   stream: Spatial,
   day: number,
   slot: number,
   kGood: number,
   budget: number,
-  pool: readonly ContractGoodId[],
+  pool: readonly StallGoodId[],
   tier: Stars,
 ): { shape: Shape; budget: number } {
   const good = pick(pool, stream.at(day, slot, kGood))
-  budget -= GOOD_COST[good]
-  const grouped = Math.floor(stream.at(day, slot, kGood + 1) * 2) === 0
+  const left = budget - t.goods[good].cost
+  const grouped = stream.at(day, slot, kGood + 1) < t.groupChance
   if (isJamClass(good)) {
-    if (grouped && GROUP_TIER.jam <= tier) {
-      return { shape: { kind: 'group', group: 'jam' }, budget: budget - GROUP_COST }
+    if (grouped && t.groupTier.jam <= tier) {
+      return { shape: { kind: 'group', group: 'jam' }, budget: left - t.groupCost }
     }
-    return { shape: { kind: 'plain', good }, budget }
+    return { shape: { kind: 'plain', good }, budget: left }
   }
-  if (isSpiritClass(good) && grouped && GROUP_TIER.spirit <= tier) {
-    return { shape: { kind: 'group', group: 'spirit' }, budget: budget - GROUP_COST }
+  if (isSpiritClass(good) && grouped && t.groupTier.spirit <= tier) {
+    return { shape: { kind: 'group', group: 'spirit' }, budget: left - t.groupCost }
   }
-  return { shape: { kind: 'plain', good }, budget }
+  return { shape: { kind: 'plain', good }, budget: left }
 }
 
 function shuffled(stream: Spatial, day: number, n: number): readonly CompanyId[] {
@@ -571,48 +616,45 @@ function shuffled(stream: Spatial, day: number, n: number): readonly CompanyId[]
 }
 
 function offerAt(
+  t: ContractTuning,
   stream: Spatial,
   day: number,
   slot: number,
   D: number,
   company: CompanyId,
-  scaleDay: number,
   penaltyRate: number,
 ): ContractOffer {
-  const tier = starsOf(D)
-  const band = weighted(DEADLINE_BANDS, stream.at(day, slot, 5))
-  const [dLo, dHi] = DEADLINE_DAYS[band]
-  const steps = Math.round((dHi - dLo) / DEADLINE_STEP) + 1
-  const days = dLo + DEADLINE_STEP * Math.floor(stream.at(day, slot, 6) * steps)
-  const floor = -BUDGET_OVERDRAFT
-  const opened = MIX_FLOOR + D * MIX_SHARE - DEADLINE_COST[band]
-  const solo = REFERENCE_GOLD_PER_DAY * days * load(D)
+  const tier = starsOf(t, D)
+  const band = weighted(t, stream.at(day, slot, 5))
+  const deadline = t.deadlines[band]
+  const steps = Math.round((deadline.hi - deadline.lo) / t.deadlineStep) + 1
+  const days = deadline.lo + t.deadlineStep * Math.floor(stream.at(day, slot, 6) * steps)
+  const floor = -t.budgetOverdraft
+  const opened = t.mixFloor + D * t.mixShare - deadline.cost
+  const solo = referenceGoldPerDay(t) * days * load(t, D)
   let budget = opened < floor ? floor : opened
-  const wantsPair = budget >= PAIR_COST
-  if (wantsPair) budget = (budget - PAIR_COST) / 2
+  const wantsPair = budget >= t.pairCost
+  if (wantsPair) budget = (budget - t.pairCost) / 2
   const share = wantsPair ? solo / 2 : solo
-  const line1 = spendLine(stream, day, slot, 2, budget, candidates(budget, undefined, share, tier), tier)
+  const line1 = spendLine(t, stream, day, slot, 2, budget, candidates(t, budget, undefined, share, tier), tier)
   const spare = line1.budget < floor ? floor : line1.budget
-  const pool2 = wantsPair ? candidates(budget + spare, shapeGood(line1.shape), share, tier) : []
-  const line2 = pool2.length === 0 ? undefined : spendLine(stream, day, slot, 7, budget + spare, pool2, tier)
-  const bump = shapeD(line1.shape) + (line2 === undefined ? 0 : shapeD(line2.shape))
+  const pool2 = wantsPair ? candidates(t, budget + spare, shapeGood(line1.shape), share, tier) : []
+  const line2 = pool2.length === 0 ? undefined : spendLine(t, stream, day, slot, 7, budget + spare, pool2, tier)
+  const bump = shapeD(t, line1.shape) + (line2 === undefined ? 0 : shapeD(t, line2.shape))
   const raw = D + bump
-  const eff = raw < 0 ? 0 : raw > DIFFICULTY_CEILING ? DIFFICULTY_CEILING : raw
+  const eff = raw < 0 ? 0 : raw > t.difficultyCeiling ? t.difficultyCeiling : raw
   const target = line2 === undefined ? solo : solo / 2
   const lines: Lines = line2 === undefined
-    ? [demandOf(line1.shape, lineAmount(line1.shape, days, scaleDay, target))]
-    : [
-        demandOf(line1.shape, lineAmount(line1.shape, days, scaleDay, target)),
-        demandOf(line2.shape, lineAmount(line2.shape, days, scaleDay, target)),
-      ]
-  const clean = Math.round(lines.reduce((n, d) => n + d.amount * cleanUnit(d), 0))
-  const markup = Math.round((MARKUP_BASE + MARKUP_PER_DIFFICULTY * eff + MARKUP_BAND[band]) * 100) / 100
+    ? [demandOf(line1.shape, lineAmount(t, line1.shape, target))]
+    : [demandOf(line1.shape, lineAmount(t, line1.shape, target)), demandOf(line2.shape, lineAmount(t, line2.shape, target))]
+  const clean = Math.round(lines.reduce((n, d) => n + d.amount * priceOf(t, d), 0))
+  const markup = Math.round((t.markupBase + t.markupPerDifficulty * eff + deadline.markup) * 100) / 100
   return {
     id: day * CONTRACT_SLOT_MAX + slot,
     slot,
     company,
     difficulty: eff,
-    stars: starsOf(eff),
+    stars: starsOf(t, eff),
     band,
     days,
     lines,
@@ -624,18 +666,19 @@ function offerAt(
   }
 }
 
-function slotD(stream: Spatial, day: number, slot: number, rep: number): number {
-  const capped = DIFFICULTY_START + DIFFICULTY_PER_DAY * day
-  const cap = capped < DIFFICULTY_MAX ? capped : DIFFICULTY_MAX
-  const f = cap / DIFFICULTY_MAX
-  const [lo, hi] = SLOT_BANDS[slot]
-  const l = Math.round(lo * f)
-  const h = Math.round(hi * f)
-  const rolled = l + Math.floor(stream.at(day, slot, 0) * (h - l + 1)) + rep
-  return rolled > DIFFICULTY_CEILING ? DIFFICULTY_CEILING : rolled
+export function slotRange(t: ContractTuning, day: number, slot: number): readonly [number, number] {
+  const capped = t.difficultyStart + t.difficultyPerDay * day
+  const cap = capped < t.difficultyMax ? capped : t.difficultyMax
+  const f = cap / t.difficultyMax
+  const [lo, hi] = t.slotBands[slot]
+  return [Math.round(lo * f), Math.round(hi * f)]
 }
 
-export const PRIZE_SLOTS = 2
+function slotD(t: ContractTuning, stream: Spatial, day: number, slot: number, rep: number): number {
+  const [l, h] = slotRange(t, day, slot)
+  const rolled = l + Math.floor(stream.at(day, slot, 0) * (h - l + 1)) + rep
+  return rolled > t.difficultyCeiling ? t.difficultyCeiling : rolled
+}
 
 export const PLAIN_TREE_POOL = TREE_IDS.map(tree => ({ tree, variety: 'base' as const }))
 
@@ -696,10 +739,16 @@ function takePool(pool: PrizePool, u: number, count: number | 'cash', reward: nu
   return takeAt(pool, Math.floor(u * xs.length), count, reward)
 }
 
-function prizeSlots(stream: Spatial, day: number): readonly number[] {
-  const a = Math.floor(stream.at(day, 0, 30) * CONTRACT_OFFERS)
-  const b = Math.floor(stream.at(day, 0, 31) * (CONTRACT_OFFERS - 1))
-  return [a, b >= a ? b + 1 : b]
+const PRIZE_K: readonly number[] = [30, 31, 33, 34, 35, 36]
+
+function prizeSlots(t: ContractTuning, stream: Spatial, day: number): readonly number[] {
+  return PRIZE_K.slice(0, t.prizeSlots).reduce<{ left: readonly number[]; picked: readonly number[] }>(
+    ({ left, picked }, k) => {
+      const i = Math.floor(stream.at(day, 0, k) * left.length)
+      return { left: left.filter((_, j) => j !== i), picked: [...picked, left[i]] }
+    },
+    { left: Array.from({ length: CONTRACT_OFFERS }, (_, i) => i), picked: [] },
+  ).picked
 }
 
 const PRIZE_TOOLS: readonly PrizeTool[] = ['rotary-shovel', 'diamond-pickaxe', 'electric-chainsaw']
@@ -710,8 +759,8 @@ export function prizeTool(tool: PrizeTool): Item {
   return makeAxe(tool)
 }
 
-function prizeFor(stream: Spatial, day: number, o: ContractOffer): Prize {
-  const cell = COMPANY_PRIZES[o.company][prizeBandOf(o.difficulty)]
+function prizeFor(t: ContractTuning, stream: Spatial, day: number, o: ContractOffer): Prize {
+  const cell = COMPANY_PRIZES[o.company][prizeBandOf(t.prizeBandMin, o.difficulty)]
   const u = stream.at(day, o.slot, 32)
   if (cell.kind === 'tool') return { kind: 'tool', tool: PRIZE_TOOLS[Math.floor(u * PRIZE_TOOLS.length)] }
   if (cell.kind === 'pool') return takePool(cell.pool, u, cell.count, o.reward)
@@ -728,27 +777,32 @@ function prizeFor(stream: Spatial, day: number, o: ContractOffer): Prize {
   return cell
 }
 
-function withPrizes(stream: Spatial, day: number, offers: readonly ContractOffer[]): readonly ContractOffer[] {
-  const picked = prizeSlots(stream, day)
-  return offers.map((o, i) => (picked.includes(i) ? { ...o, prize: prizeFor(stream, day, o) } : o))
+function withPrizes(t: ContractTuning, stream: Spatial, day: number, offers: readonly ContractOffer[]): readonly ContractOffer[] {
+  const picked = prizeSlots(t, stream, day)
+  return offers.map((o, i) => (picked.includes(i) ? { ...o, prize: prizeFor(t, stream, day, o) } : o))
 }
 
-export function rollBoard(rng: Rng, day: number, slots: number, rep: number, penaltyRate: number): readonly ContractOffer[] {
+export function rollBoard(
+  rng: Rng,
+  day: number,
+  slots: number,
+  rep: number,
+  penaltyRate: number,
+  t: ContractTuning,
+): readonly ContractOffer[] {
   const stream = rng.stream('contract')
   const firms = shuffled(stream, day, slots)
   const base = Array.from({ length: slots }, (_, slot) =>
-    offerAt(stream, day, slot, slotD(stream, day, slot, rep), firms[slot], day, penaltyRate),
+    offerAt(t, stream, day, slot, slotD(t, stream, day, slot, rep), firms[slot], penaltyRate),
   )
-  return withPrizes(stream, day, base)
+  return withPrizes(t, stream, day, base)
 }
 
-export const LADDER_DAY = 24
-
-export function rollBoardAtD(rng: Rng, D: number, slots: number, penaltyRate: number): readonly ContractOffer[] {
+export function rollBoardAtD(rng: Rng, D: number, slots: number, penaltyRate: number, t: ContractTuning): readonly ContractOffer[] {
   const stream = rng.stream('contract')
   const firms = shuffled(stream, D, slots)
-  const base = Array.from({ length: slots }, (_, slot) => offerAt(stream, D, slot, D, firms[slot], LADDER_DAY, penaltyRate))
-  return withPrizes(stream, D, base)
+  const base = Array.from({ length: slots }, (_, slot) => offerAt(t, stream, D, slot, D, firms[slot], penaltyRate))
+  return withPrizes(t, stream, D, base)
 }
 
 export function Accepts(d: Demand, good: StallGoodId): boolean {
@@ -952,7 +1006,9 @@ export function acceptContractBody(w: World, c: ContractId): void {
   if (!w.done.has('unlock-contracts')) return
   if (w.contracts.active.length >= w.contractCap()) return
   if (w.contracts.takenToday.includes(c)) return
-  const offer = rollBoard(w.rng, w.clock.day, w.contractSlots(), w.contracts.repDay, w.hard.penaltyRate).find(o => o.id === c)
+  const offer = rollBoard(w.rng, w.clock.day, w.contractSlots(), w.contracts.repDay, w.hard.penaltyRate, CONTRACT_TUNING).find(
+    o => o.id === c,
+  )
   if (offer === undefined) return
   const bins: Bins =
     offer.lines.length === 1

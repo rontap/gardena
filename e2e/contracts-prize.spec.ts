@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { HARDNESS } from '../src/game/defs/rules.ts'
-import { CONTRACT_OFFERS, rollBoard } from '../src/game/sim/feature-contracts/market.ts'
+import { CONTRACT_OFFERS, CONTRACT_TUNING, rollBoard } from '../src/game/sim/feature-contracts/market.ts'
 import type { Prize } from '../src/game/sim/feature-contracts/market.h.ts'
 import { Rng } from '../src/game/sim/rng.ts'
 import { DT_MAX } from '../src/game/sim/world.ts'
@@ -30,7 +30,7 @@ test('Contracts prize: accept, complete, goods paid', async ({ page }) => {
     if (w === undefined) throw new Error('no __world')
     return { seed: w.rng.seed, day: w.clock.day, repDay: w.contracts.repDay }
   })
-  const offers = rollBoard(new Rng(seed), day, CONTRACT_OFFERS, repDay, HARDNESS.normal.penaltyRate)
+  const offers = rollBoard(new Rng(seed), day, CONTRACT_OFFERS, repDay, HARDNESS.normal.penaltyRate, CONTRACT_TUNING)
   const index = offers.findIndex(o => o.prize.kind !== 'cash')
   if (index < 0) throw new Error('no prize')
   const prize = offers[index].prize

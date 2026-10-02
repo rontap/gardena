@@ -6,6 +6,7 @@ import { WorkerSink } from './game/sim/log.ts'
 import { DebugBalance } from './game/ui/debug-balance.tsx'
 import { ErrorBoundary } from './game/ui/error-boundary.tsx'
 import { DebugContracts } from './game/ui/debug-contracts.tsx'
+import { DebugContractsBalance } from './game/ui/debug-contracts-balance.tsx'
 import { DebugIconset } from './game/ui/debug-iconset.tsx'
 import { DebugWeather } from './game/ui/debug-weather.tsx'
 
@@ -32,6 +33,13 @@ if (location.hash === '#debug-techtree') {
   createRoot(root).render(
     <StrictMode>
       <DebugContracts />
+    </StrictMode>,
+  )
+} else if (location.hash === '#debug-contracts-balance') {
+  openScroll()
+  createRoot(root).render(
+    <StrictMode>
+      <DebugContractsBalance />
     </StrictMode>,
   )
 } else if (location.hash === '#debug-weather') {

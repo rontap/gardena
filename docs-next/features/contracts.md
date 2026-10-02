@@ -1,17 +1,26 @@
 # Contracts
 
-Code: `feature-contracts/market.ts` (generation, delivery, outcomes), `feature-contracts/market.h.ts` (types), `defs/companies.ts` (companies and prizes), `store.ts` (`fillContracts`), `ui/feature-contracts/contracts.tsx`; see [[code-map]].
+Code: `feature-contracts/market.ts` (generation, delivery, outcomes), `feature-contracts/market.h.ts` (types), `defs/companies.ts` (companies and prizes), `store.ts` (`fillContracts`), `ui/feature-contracts/contracts.tsx`, `ui/debug-contracts-balance.tsx` (`#debug-contracts-balance`); see [[code-map]].
 Unlocked: research `unlock-contracts` ([[features/research]]). The skills `broker` and `industrial` need it too ([[features/family]]).
 
 ## Purpose
 
 A contract is an order from a company: a set amount of one or two goods, delivered within a number of days. It pays more than the Market would for the same goods and leaves Market prices as they are, and two of each day's offers pay an item instead of money. Some of those items cannot be bought: Named and Heirloom tree seeds, vanilla seeds, the Large freezer, the Rotary shovel and Diamond pickaxe, and expansion permits. Contracts give the player a reason to plan what to plant and make, and to deliver on time: a missed or cancelled contract costs money and reputation, and reputation makes later contracts larger.
 
+Goals. Generation is judged against these four:
+
+1. **Varied work.** Contracts ask the player to grow and make more kinds of goods than the Market rewards, and pay for it in money and in items that money cannot buy.
+2. **Planning and adapting.** An offer is filled by planning ahead or by a faster route: Extract on a growing plant, goods kept in a Freezer, a surplus made into jam, spirits or casks. The farm that does well is one that can switch to what is asked.
+3. **Real decisions.** Offers differ a lot in size and in goods, over a very large number of combinations, so choosing one is a decision.
+4. **Progression.** Finishing contracts makes later ones harder and their rewards better, and the difficulty corrects itself: a player who misses gets easier offers.
+
 ## Rules
 
 ### Today's contracts
 
-Each day has a fixed list of offers. `rollBoard(rng, day, slots, repDay)` builds it from the world seed, the day number, the number of positions and the reputation at the start of the day, and from these alone. The Contracts panel, the accept command and the play API each call it and get the same list.
+Each day has a fixed list of offers. `rollBoard(rng, day, slots, repDay, penaltyRate, t)` builds it from the world seed, the day number, the number of positions and the reputation at the start of the day, and from these alone; `penaltyRate` sets only the penalty. The Contracts panel, the accept command and the play API each call it and get the same list.
+
+- **Settings.** Every number generation reads comes from `t: ContractTuning`, never from a constant. The game passes `CONTRACT_TUNING`, built from the constants this page names: `goods[good]` from `GOOD_TIER`, `GOOD_COST`, `FEASIBLE_PER_DAY`, `unitOf` and `STARTER_CROPS`, with `on` for every Market good except `sugar`; `deadlines[kind]` from `DEADLINE_WEIGHT`, `DEADLINE_DAYS`, `DEADLINE_COST` and `MARKUP_BAND`; the rest one field per constant. `#debug-contracts-balance` passes an edited copy.
 
 - **Positions.** `contractSlots()` = `CONTRACT_OFFERS` + the `broker` rank. Offer ids are `day × CONTRACT_SLOT_MAX + slot`. A `broker` rank taken during the day adds positions at the end; positions `0` to `CONTRACT_OFFERS` − 1 stay the same.
 - **Lifetime.** An offer that is not accepted is gone at the end of the day, when the day number changes. An accepted offer's id goes into `takenToday`, and the list hides it for the rest of the day, also after the contract is cancelled.
@@ -25,13 +34,13 @@ Every random value comes from the `contract` stream, `stream.at(day, slot, k)` (
 |---|---|---|
 | 0 | `(day, slot)` | the position's difficulty |
 | 2 | `(day, slot)` | the good of line 1 |
-| 3 | `(day, slot)` | whether a jam or spirit line 1 becomes Any jam / Any spirit |
+| 3 | `(day, slot)` | whether a jam or spirit line 1 becomes Any jam / Any spirit: below `GROUP_CHANCE` |
 | 5 | `(day, slot)` | the deadline kind |
 | 6 | `(day, slot)` | the deadline length |
 | 7 | `(day, slot)` | the good of line 2 |
-| 8 | `(day, slot)` | whether a jam or spirit line 2 becomes Any jam / Any spirit |
+| 8 | `(day, slot)` | whether a jam or spirit line 2 becomes Any jam / Any spirit: below `GROUP_CHANCE` |
 | 20 + *i* | `(day, 0)` | the company order |
-| 30, 31 | `(day, 0)` | the two positions that pay a prize |
+| 30, 31, 33–36 | `(day, 0)` | the `PRIZE_SLOTS` positions that pay a prize, one value each in that order (`PRIZE_K`) |
 | 32 | `(day, slot)` | which prize, where the company's prize entry has a choice |
 
 The order of work:
@@ -44,13 +53,13 @@ rollBoard(day, slots, repDay)
     offerAt
       deadline      kind, then days
       budget        how much variety the goods may have; one line or two
-      money target  solo = REFERENCE_GOLD_PER_DAY × days × load(D)
+      money target  solo = referenceGoldPerDay(t) × days × load(t, D)
       spendLine     line 1 good, maybe grouped
       spendLine     line 2 good, maybe grouped (pairs only)
       difficulty    D plus the goods' adjustment -> final difficulty, stars
       lineAmount    amount of each line
       payment       clean value, markup, reward, penalty
-  withPrizes        two positions get a prize from their company
+  withPrizes        PRIZE_SLOTS positions get a prize from their company
 ```
 
 #### Company
@@ -98,21 +107,21 @@ A tight deadline takes budget away and a long one adds it, so a long offer asks 
 
 ```
 load(D) = LOAD_MIN + (LOAD_MAX − LOAD_MIN) × ((D + LOAD_D_OFFSET) ÷ (DIFFICULTY_CEILING + LOAD_D_OFFSET)) ^ LOAD_CURVE
-solo    = REFERENCE_GOLD_PER_DAY × days × load(D)
+solo    = referenceGoldPerDay(t) × days × load(D)
 share   = solo ÷ 2 when a pair is wanted, else solo
 ```
 
-`REFERENCE_GOLD_PER_DAY` is the median, over `CONTRACT_GOODS`, of `unitOf(good) × FEASIBLE_PER_DAY[good]`: the money one good earns in a day at the expected output rate of a developed farm. `load(D)` is the share of that day's money the contract asks for; it grows with `D` to the power `LOAD_CURVE`.
+`referenceGoldPerDay(t)` is the median, over `contractGoods(t)`, of `price × feasible` from `t.goods`; at `CONTRACT_TUNING` that is `unitOf(good) × FEASIBLE_PER_DAY[good]`. `FEASIBLE_PER_DAY` is read nowhere else. `load(D)` is the share of that day's money the contract asks for; it grows with `D` to the power `LOAD_CURVE`.
 
 #### Goods
 
-`CONTRACT_GOODS` is every Market good except `sugar`. `spendLine` picks line 1 uniformly from the candidates:
+`contractGoods(t)` is every Market good whose `t.goods[good].on` is set; at `CONTRACT_TUNING`, every Market good except `sugar`. `spendLine` picks line 1 uniformly from the candidates:
 
 - `GOOD_TIER[good]` is at most `starsOf(D)`;
 - `GOOD_COST[good]` is at most the line's budget + `BUDGET_OVERDRAFT`;
 - two units of it are worth no more than `share`: `unitOf(good) × AMOUNT_MIN ≤ share`.
 
-The line's budget then drops by `GOOD_COST[good]`. If the good is a jam or a spirit (`SPIRIT_KINDS`: vodka, beer, brandy, mixed), a second random value decides, one in two, whether the line becomes **Any jam** or **Any spirit**, which is allowed only when `GROUP_TIER` of that group is at most `starsOf(D)`. A grouped line gets `GROUP_COST` back (it is negative, so the budget rises).
+The line's budget then drops by `GOOD_COST[good]`. If the good is a jam or a spirit (`SPIRIT_KINDS`: vodka, beer, brandy, mixed), a second random value below `GROUP_CHANCE` (one in two) makes the line **Any jam** or **Any spirit**, which is allowed only when `GROUP_TIER` of that group is at most `starsOf(D)`. A grouped line gets `GROUP_COST` back (it is negative, so the budget rises).
 
 When a pair is wanted, line 2 is picked the same way, with the budget `line budget + max(what line 1 left, −BUDGET_OVERDRAFT)`, and it may not be the same family as line 1 (`sameFamily`): not a second jam after a jam or Any jam, not a second spirit after a spirit or Any spirit, not the same good. Wine and cider are casks, not spirits, so they may appear beside a spirit or each other. When no good qualifies for line 2, the offer has one line.
 
@@ -129,20 +138,20 @@ stars = starsOf(eff)
 
 ```
 target  = solo, or solo ÷ 2 for each line when there are two lines
-wanted  = target ÷ cleanUnit(line)
-limit   = FEASIBLE_PER_DAY[good] × days × scale(day)
-scale   = min(1, SCALE_START + day ÷ SCALE_DAYS)
-amount  = the largest value in NICE_AMOUNTS that is at most min(wanted, limit); at least NICE_AMOUNTS[0]
+wanted  = target ÷ priceOf(t, line)
+amount  = the largest value in NICE_AMOUNTS that is at most wanted; at least NICE_AMOUNTS[0]
 ```
 
-`limit` keeps an order within what the farm can make in the time: `FEASIBLE_PER_DAY` is a good's expected daily output, and `scale` makes it smaller on early days. For Any jam the good used for `FEASIBLE_PER_DAY` is `jam-cherry`; for Any spirit it is `vodka`. Every published amount is at least `AMOUNT_MIN`.
+The amount does not depend on how fast a farm can make the good, or on the day number. Every published amount is at least `AMOUNT_MIN`.
 
 `cleanUnit` is a line's base price per unit, with no quality, freshness, variety or skill: `unitOf(good)`, which is `CROPS[crop].sale` for fruit, `JAM_SALE[crop]` for jam, `CASK_SALE` for wine and cider, `bakeSpiritSale(kind, 'base', 0)` for spirits, and `SUGAR_MILL`, `OIL`, `FLOUR`, `BREAD` for the others. Any jam uses the lowest `JAM_SALE`; Any spirit uses the vodka price.
+
+Generation prices a line with `priceOf(t, line)`: `t.goods[good].price`, the lowest jam price for Any jam, the vodka price for Any spirit. At `CONTRACT_TUNING` it equals `cleanUnit`; a miss or cancel sells the delivered units at `cleanUnit`.
 
 #### Payment
 
 ```
-clean   = round(Σ amount × cleanUnit(line))
+clean   = round(Σ amount × priceOf(t, line))
 markup  = round(MARKUP_BASE + MARKUP_PER_DIFFICULTY × eff + MARKUP_BAND[kind], to hundredths)
 reward  = round(clean × (1 + markup))
 penalty = round(PENALTY_RATE × clean)
@@ -152,9 +161,9 @@ All four are fixed when the offer is generated.
 
 #### Prizes
 
-`withPrizes` picks two different positions from `0` to `CONTRACT_OFFERS` − 1 (values `k` 30 and 31), so every day has `PRIZE_SLOTS` prize offers and `broker` positions always pay money. A prize offer pays its item and no money.
+`withPrizes` picks `t.prizeSlots` different positions from `0` to `CONTRACT_OFFERS` − 1, one value `k` each from `PRIZE_K` (30, 31, 33–36). At `CONTRACT_TUNING` that is `PRIZE_SLOTS` (2) prize offers a day, from values 30 and 31. `broker` positions always pay money. A prize offer pays its item and no money.
 
-The item is `COMPANY_PRIZES[company][prizeBandOf(eff)]`. `prizeBandOf` picks the entry from `PRIZE_BAND_MIN`:
+The item is `COMPANY_PRIZES[company][prizeBandOf(t.prizeBandMin, eff)]`. `prizeBandOf` picks the entry from the four minimums, `PRIZE_BAND_MIN` at `CONTRACT_TUNING`:
 
 | company | from `PRIZE_BAND_MIN[0]` | from `PRIZE_BAND_MIN[1]` | from `PRIZE_BAND_MIN[2]` | from `PRIZE_BAND_MIN[3]` |
 |---|---|---|---|---|
@@ -290,7 +299,7 @@ The digest carries `takenToday` and, for each running contract, its id, `dueDay`
 | `contracts.id` | `ContractId = day × CONTRACT_SLOT_MAX + slot`; `broker` positions do not change positions below `CONTRACT_OFFERS` | `market.test.ts` |
 | `contracts.not-cmd` | generating the list is not a command | `market.test.ts` |
 | `contracts.sat` | delivered units skip the Market's stock and price drop; a miss or cancel pays them at the Market price, and units that are not infused raise the price drop | `market.test.ts` |
-| `contracts.amount` | every amount is at least `AMOUNT_MIN` and at most `FEASIBLE_PER_DAY[good] × days × scale(day)` | `market.test.ts` |
+| `contracts.amount` | every amount is at least `AMOUNT_MIN` and is a value of `NICE_AMOUNTS` | `market.test.ts` |
 | `contracts.reward` | `reward = clean × (1 + markup)` is fixed at generation | `market.test.ts` |
 | — | amount, clean, reward and penalty are whole numbers; markup is whole percent | `market.test.ts` |
 | — | a pair never has two lines of one family | `market.test.ts` |
@@ -302,7 +311,7 @@ The digest carries `takenToday` and, for each running contract, its id, `dueDay`
 | `contracts.cancel` | the cancel fee is `CANCEL_MIN × clean` at acceptance and the miss penalty at the deadline | `market.test.ts` |
 | `contracts.consign` | drop-off fills running contracts in list order, then the Market; a full line passes units on | `market.test.ts` |
 | `contracts.infused` | completion reputation is `REP_DONE[stars] × (1 + 0.25 × infused ÷ required)`; miss and cancel do not use it | `market.test.ts` |
-| `contracts.prize` | two of the first `CONTRACT_OFFERS` positions pay a prize from `COMPANY_PRIZES[company][prizeBandOf(eff)]`; `broker` positions pay money | `market.test.ts`, `e2e/contracts-prize.spec.ts` |
+| `contracts.prize` | `PRIZE_SLOTS` of the first `CONTRACT_OFFERS` positions pay a prize from `COMPANY_PRIZES[company][prizeBandOf(PRIZE_BAND_MIN, eff)]`; `broker` positions pay money | `market.test.ts`, `e2e/contracts-prize.spec.ts` |
 | `contracts.prize-pool` | the tree and annual groups are built from `VARIETIES`; vanilla is in no group | `market.test.ts` |
 | `contracts.prize-vanilla` | Vanilla seeds appear only in the last entries of Whole Cart and Intercrop, as one extra choice | `market.test.ts` |
 | `contracts.prize-item` | a paid tree seed carries its variety at quality 0; paid seeds carry crop, variety and count; count from the reward is `ceil(reward ÷ CROPS[crop].seed)` | `market.test.ts` |
@@ -316,6 +325,8 @@ The digest carries `takenToday` and, for each running contract, its id, `dueDay`
 - New prize kind: `Prize`, `PrizeTemplate`, `prizeFor`, `payPrize`, `prizeName`, `prizeItem` or `PRIZE_ART`, and its save handling ([[systems/save]]).
 - More `broker` ranks or offers: `SLOT_BANDS` needs a row and `CONTRACT_SLOT_MAX` must cover every position, or ids of two days collide.
 - Generation constants change the difficulty of every day; check the `#debug-contracts` page, which shows the offers for each difficulty (`rollBoardAtD`) and for each day ([[systems/debug-pages]]).
+- `#debug-contracts-balance` edits a copy of `CONTRACT_TUNING`: the scalar settings in the sidebar; the goods table (grouped by `Purpose`: Fresh, Preserving, Alcohol), the deadline table and the position table in the left column. The right column runs `rollBoard` with that copy: six offer cards plus `broker` ones at the Day and Reputation sliders, re-rolled by seed; then, over `rollBoard` at seeds 1 to the sampled count (`sample`, `statsOf`), one pie per partition (goods per offer, reward kind, stars, deadline kind, deadline length, line kind, lines and Market value by `Purpose`, prize column and prize kind of prize offers), the spread of difficulty, reward, Market value, markup and penalty, and each good's share of offers grouped by `Purpose`. **CSV** downloads every setting beside its default. A setting that leaves a line with no good shows the error in place of the right column.
+- New generation number: a `ContractTuning` field, its constant, its place in `CONTRACT_TUNING`, a field or column on `#debug-contracts-balance`, and its row in `toCsv`.
 
 ## Decisions
 
@@ -324,4 +335,5 @@ The digest carries `takenToday` and, for each running contract, its id, `dueDay`
 - Contracts state a good; any variety and quality fills it.
 - Which two positions pay a prize is random; which prize a company pays at a difficulty is fixed. Contracts pay items that money cannot buy.
 - The reward and penalty are fixed when the offer is generated.
+- No amount is limited by an estimate of what the farm can make. Work does not grow in proportion to units: more of one good shares seed packs, bucket fills and hand stacks, each further kind of good adds most of a crop's work again, and automation removes the limit. A fixed rate per good assumes a fixed farm size, which play contradicts.
 - The player sets the order in which running contracts take a delivery, because only the player knows which contract they are saving goods for.

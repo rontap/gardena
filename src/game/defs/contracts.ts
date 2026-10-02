@@ -1,6 +1,6 @@
 import { CASK_OF, SPIRIT_OF, type GrownCrop, type JamCrop } from '../sim/ids.ts'
 import type { Item } from '../sim/item.ts'
-import type { Distill, DistillCrop, Flour as FlourT, Fruit, FruitCtor, Get, GoodGroup, Infer, Oil as OilT, VOf } from './contracts.h.ts'
+import type { Bread as BreadT, Distill, DistillCrop, Flour as FlourT, Fruit, FruitCtor, Get, GoodGroup, Infer, Oil as OilT, VOf } from './contracts.h.ts'
 
 export const Base = 'base' as const
 export const Mixed = 'mixed' as const
@@ -16,6 +16,8 @@ export const BlackRaspberry = 'black-raspberry' as const
 export const SanMarzano = 'san-marzano' as const
 export const Concord = 'concord' as const
 export const Arbequina = 'arbequina' as const
+export const Bintje = 'bintje' as const
+export const RedFife = 'red-fife' as const
 
 function crop<C extends GrownCrop>(id: C): FruitCtor<C> {
   const fn = <V extends VOf<C>>(variety: V): Fruit<C, V> => ({ kind: 'fruit', crop: id, variety })
@@ -62,6 +64,7 @@ export const Jam = Object.assign(jamOf, { pattern: 'jam' as const, kind: 'jam' a
 
 export const Oil: OilT = { kind: 'oil' }
 export const Flour: FlourT = { kind: 'flour' }
+export const Bread: BreadT = { kind: 'bread' }
 
 export const Fruits = {
   carrot: Carrot,
@@ -83,7 +86,18 @@ export const BaseProduce = [Carrot, Potato, Wheat] as const
 export const MidProduce = [Tomato, Apple, Apricot] as const
 export const AdvProduce = [Cherry, Olive, Grape, Raspberry] as const
 export const NamedProduce = [Tomato(GreenZebra), Apple(PinkLady), Apricot(Blenheim), Cherry(Bing)] as const
-export const Produce = [...BaseProduce, ...MidProduce, ...AdvProduce] as const
+export const OfftypeNamedProduce = [
+  Potato(Bintje),
+  Wheat(RedFife),
+  Tomato(SanMarzano),
+  Raspberry(BlackRaspberry),
+  Grape(Concord),
+  Grape(Keknyelu),
+  Apple(KingstonBlack),
+  Apricot(Klosterneuburger),
+  Olive(Arbequina),
+] as const
+export const Produce = [...BaseProduce, ...MidProduce, ...AdvProduce, ...OfftypeNamedProduce] as const
 export const Alcohols = [Alcohol(Potato), Alcohol(Apricot), Alcohol(Grape), Alcohol(Apple), Alcohol(Mixed)] as const
 export const SpecialtyAlcohol = [
   Alcohol(Apple(KingstonBlack)),
@@ -98,6 +112,7 @@ export const Processed = [
   Jam(Grape(Base)),
   Flour,
   Oil,
+  Bread,
 ] as const
 export const SpecialtyProcessed = [
   Jam(Raspberry(BlackRaspberry)),
@@ -109,7 +124,7 @@ export const Utility = [Vanilla, SugarCane, Chilli] as const
 function pin(pattern: object): object {
   if (
     'variety' in pattern ||
-    ('kind' in pattern && (pattern.kind === 'flour' || pattern.kind === 'oil'))
+    ('kind' in pattern && (pattern.kind === 'flour' || pattern.kind === 'oil' || pattern.kind === 'bread'))
   ) {
     return pattern
   }

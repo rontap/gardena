@@ -30,6 +30,10 @@ export declare const Concord: 'concord'
 export type Concord = typeof Concord
 export declare const Arbequina: 'arbequina'
 export type Arbequina = typeof Arbequina
+export declare const Bintje: 'bintje'
+export type Bintje = typeof Bintje
+export declare const RedFife: 'red-fife'
+export type RedFife = typeof RedFife
 
 export type VOf<C extends GrownCrop> = (typeof VARIETIES)[C][number]
 
@@ -96,6 +100,7 @@ export type Jam<C> = C extends Fruit<infer Crop extends JamCrop, infer V>
 
 export type Oil = { readonly kind: 'oil' }
 export type Flour = { readonly kind: 'flour' }
+export type Bread = { readonly kind: 'bread' }
 
 export declare const Alcohol: ((
   of: { crop: DistillCrop; variety?: VOf<DistillCrop> } | Mixed,
@@ -113,6 +118,7 @@ export declare const Jam: ((
 export declare const Oil: Oil
 
 export declare const Flour: Flour
+export declare const Bread: Bread
 
 export declare const BaseProduce: readonly [typeof Carrot, typeof Potato, typeof Wheat]
 export declare const MidProduce: readonly [typeof Tomato, typeof Apple, typeof Apricot]
@@ -123,10 +129,22 @@ export declare const NamedProduce: readonly [
   Fruit<'apricot', Blenheim>,
   Fruit<'cherry', Bing>,
 ]
+export declare const OfftypeNamedProduce: readonly [
+  Fruit<'potato', Bintje>,
+  Fruit<'wheat', RedFife>,
+  Fruit<'tomato', SanMarzano>,
+  Fruit<'raspberry', BlackRaspberry>,
+  Fruit<'grape', Concord>,
+  Fruit<'grape', Keknyelu>,
+  Fruit<'apple', KingstonBlack>,
+  Fruit<'apricot', Klosterneuburger>,
+  Fruit<'olive', Arbequina>,
+]
 export declare const Produce: readonly [
   ...typeof BaseProduce,
   ...typeof MidProduce,
   ...typeof AdvProduce,
+  ...typeof OfftypeNamedProduce,
 ]
 export declare const Alcohols: readonly [
   Distill['potato'],
@@ -148,6 +166,7 @@ export declare const Processed: readonly [
   Jam<Grape>,
   Flour,
   Oil,
+  Bread,
 ]
 export declare const SpecialtyProcessed: readonly [
   Jam<Raspberry<BlackRaspberry>>,
@@ -156,7 +175,7 @@ export declare const SpecialtyProcessed: readonly [
 ]
 export declare const Utility: readonly [typeof Vanilla, typeof SugarCane, typeof Chilli]
 
-type Pin<P> = P extends { readonly variety: unknown } | { readonly kind: 'flour' } | { readonly kind: 'oil' }
+type Pin<P> = P extends { readonly variety: unknown } | { readonly kind: 'flour' } | { readonly kind: 'oil' } | { readonly kind: 'bread' }
   ? P
   : P & { readonly variety: Base }
 
@@ -187,6 +206,7 @@ export type BaseProduce = Get<(typeof BaseProduce)[number]>
 export type MidProduce = Get<(typeof MidProduce)[number]>
 export type AdvProduce = Get<(typeof AdvProduce)[number]>
 export type NamedProduce = (typeof NamedProduce)[number]
+export type OfftypeNamedProduce = (typeof OfftypeNamedProduce)[number]
 export type Produce = Get<(typeof Produce)[number]>
 export type Alcohols = Pin<(typeof Alcohols)[number]>
 export type SpecialtyAlcohol = (typeof SpecialtyAlcohol)[number]

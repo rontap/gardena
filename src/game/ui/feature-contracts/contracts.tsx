@@ -6,7 +6,17 @@ import { FERT_BAG_LITERS, SUGAR_MILL } from '../../defs/items.ts'
 import { JAM_CROPS, type JamCrop, type StallGoodId } from '../../sim/ids.ts'
 import type { Item } from '../../sim/item.ts'
 import { DAY_SECONDS } from '../../sim/clock.ts'
-import { cancelFee, demandGood, DIFFICULTY_CEILING, filledOf, needOf, prizeTool, REP_MAX, rollBoard } from '../../sim/feature-contracts/market.ts'
+import {
+  cancelFee,
+  CONTRACT_TUNING,
+  demandGood,
+  DIFFICULTY_CEILING,
+  filledOf,
+  needOf,
+  prizeTool,
+  REP_MAX,
+  rollBoard,
+} from '../../sim/feature-contracts/market.ts'
 import type { Active, ContractOffer, Demand, HistoryEntry, Outcome, Prize, Stars } from '../../sim/feature-contracts/market.h.ts'
 import { isCropStall, stallGoodName } from '../../sim/stall.ts'
 import type { World } from '../../sim/world.ts'
@@ -22,7 +32,9 @@ export function Contracts({ world, onClose }: { world: World; onClose: () => voi
   const [tip, setTip] = useState<Tip>(undefined)
   const slots = world.contractSlots()
   const cap = world.contractCap()
-  const board = rollBoard(world.rng, world.clock.day, slots, world.contracts.repDay, world.hard.penaltyRate).filter(o => !world.contracts.takenToday.includes(o.id))
+  const board = rollBoard(world.rng, world.clock.day, slots, world.contracts.repDay, world.hard.penaltyRate, CONTRACT_TUNING).filter(
+    o => !world.contracts.takenToday.includes(o.id),
+  )
   const nowDay = world.clock.day - 1 + world.clock.t / DAY_SECONDS
   const atCap = world.contracts.active.length >= cap
   return (

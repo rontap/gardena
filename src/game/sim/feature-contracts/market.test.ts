@@ -2,7 +2,7 @@
 import { describe, expect, test } from 'vitest'
 import { CROPS } from '../../defs/crops.ts'
 import { FAMILIARITY_RECOVER, VARIETIES, familiarityMax, tierOf } from '../../defs/varieties.ts'
-import { COMPANY_PRIZES, prizeBandOf } from '../../defs/companies.ts'
+import { COMPANY_PRIZES, PRIZE_BAND_MIN, prizeBandOf } from '../../defs/companies.ts'
 import { ANNUAL_IDS, TREE_IDS, isAnnualId, type GrownCrop } from '../ids.ts'
 import { PAD, WAREHOUSE_BASE } from '../building.ts'
 import { Act } from '../log.ts'
@@ -21,7 +21,7 @@ import {
   CONTRACT_OFFERS,
   CONTRACT_SLOT_MAX,
   SLOT_BANDS,
-  FEASIBLE_PER_DAY,
+  NICE_AMOUNTS,
   SAT_MAX_CUT,
   SAT_IMPACT_CRAFT,
   SAT_IMPACT_FRUIT,
@@ -32,7 +32,8 @@ import {
   clampSat,
   rollDayDemand,
   BUDGET_OVERDRAFT,
-  CONTRACT_GOODS,
+  CONTRACT_TUNING,
+  contractGoods,
   DIFFICULTY_CEILING,
   DIFFICULTY_MAX,
   GOOD_COST,
@@ -63,7 +64,6 @@ import {
   saleUnits,
   rollBoard as rollBoardAtRate,
   rollBoardAtD as rollBoardAtDRate,
-  scale,
 } from './market.ts'
 import { Rng } from '../rng.ts'
 import { STALL_IDS } from '../stall.ts'
@@ -73,11 +73,15 @@ const AT = { col: 10, row: 12 }
 const RATE = HARDNESS.normal.penaltyRate
 
 function rollBoard(rng: Rng, day: number, slots: number, rep: number) {
-  return rollBoardAtRate(rng, day, slots, rep, RATE)
+  return rollBoardAtRate(rng, day, slots, rep, RATE, CONTRACT_TUNING)
 }
 
 function rollBoardAtD(rng: Rng, D: number, slots: number) {
-  return rollBoardAtDRate(rng, D, slots, RATE)
+  return rollBoardAtDRate(rng, D, slots, RATE, CONTRACT_TUNING)
+}
+
+function bandOf(difficulty: number) {
+  return prizeBandOf(PRIZE_BAND_MIN, difficulty)
 }
 
 describe('contracts', () => {
@@ -247,15 +251,14 @@ describe('contracts', () => {
     expect(lines).toHaveLength(1)
   })
 
-  test('`amount >= AMOUNT_MIN` on every published offer, and `amount <= FEASIBLE_PER_DAY[good] * days * scale(day)`.', () => {
+  test('`amount >= AMOUNT_MIN` on every published offer, and every amount is a step of `NICE_AMOUNTS`.', () => {
     for (const seed of [1, 7, 99, 12345]) {
       const rng = new Rng(seed)
       for (const day of [1, 2, 8, 24, 40]) {
         rollBoard(rng, day, 7, 0).forEach(offer => {
           offer.lines.forEach(d => {
-            const cap = FEASIBLE_PER_DAY[demandGood(d)] * offer.days * scale(day)
             expect(d.amount).toBeGreaterThanOrEqual(AMOUNT_MIN)
-            expect(d.amount).toBeLessThanOrEqual(cap)
+            expect(NICE_AMOUNTS).toContain(d.amount)
           })
         })
       }
@@ -392,8 +395,8 @@ describe('contracts', () => {
   })
 
   test('Sugar is a stall good but is never demanded by a contract. Extract is neither a stall good nor a contract good.', () => {
-    expect(CONTRACT_GOODS).not.toContain('sugar')
-    expect(CONTRACT_GOODS).not.toContain('extract')
+    expect(contractGoods(CONTRACT_TUNING)).not.toContain('sugar')
+    expect(contractGoods(CONTRACT_TUNING)).not.toContain('extract')
     expect(STALL_IDS).toContain('sugar')
     expect(STALL_IDS).not.toContain('extract')
     for (const seed of [1, 7, 99, 12345]) {
@@ -840,7 +843,7 @@ describe('prizes', () => {
         expect(eight.slice(0, CONTRACT_OFFERS)).toEqual(six)
         expect(eight.slice(CONTRACT_OFFERS).every(o => o.prize.kind === 'cash')).toBe(true)
         prized.forEach(o => {
-          const cell = COMPANY_PRIZES[o.company][prizeBandOf(o.difficulty)]
+          const cell = COMPANY_PRIZES[o.company][bandOf(o.difficulty)]
           if (cell.kind === 'tool') {
             expect(o.prize.kind).toBe('tool')
             if (o.prize.kind === 'tool') tools.add(o.prize.tool)
@@ -918,7 +921,7 @@ describe('prizes', () => {
         rollBoardAtD(new Rng(seed), D, CONTRACT_OFFERS).forEach(o => {
           if (o.prize.kind !== 'seeds' || o.prize.crop !== 'vanilla') return
           expect(o.prize.variety).toBe('base')
-          expect(prizeBandOf(o.difficulty)).toBe(3)
+          expect(bandOf(o.difficulty)).toBe(3)
           if (o.company === 'whole-cart') expect(o.prize.count).toBe(1)
           else {
             expect(o.company).toBe('intercrop')
@@ -930,7 +933,7 @@ describe('prizes', () => {
       for (const day of [0, 4, 12, 24]) {
         rollBoard(new Rng(seed), day, CONTRACT_OFFERS, 0).forEach(o => {
           if (o.prize.kind !== 'seeds' || o.prize.crop !== 'vanilla') return
-          expect(prizeBandOf(o.difficulty)).toBe(3)
+          expect(bandOf(o.difficulty)).toBe(3)
           expect(o.company === 'whole-cart' || o.company === 'intercrop').toBe(true)
         })
       }
@@ -992,7 +995,7 @@ describe('prizes', () => {
     let points = 0
     for (let seed = 1; seed <= 80; seed++) {
       rollBoardAtD(new Rng(seed), 12, CONTRACT_OFFERS).forEach(o => {
-        if (o.prize.kind === 'cash' || prizeBandOf(o.difficulty) !== 1) return
+        if (o.prize.kind === 'cash' || bandOf(o.difficulty) !== 1) return
         if (o.company === 'little-lid' && o.prize.kind === 'tree-seed') trees.add(o.prize.tree)
         if (o.company === 'trade-jo') {
           expect(o.prize).toEqual({ kind: 'skill-points', n: 1 })
@@ -1005,10 +1008,10 @@ describe('prizes', () => {
   })
 
   test('Bands split on final difficulty at 8 / 20 / 30.', () => {
-    expect([0, 7.9].map(prizeBandOf)).toEqual([0, 0])
-    expect([8, 19].map(prizeBandOf)).toEqual([1, 1])
-    expect([20, 29].map(prizeBandOf)).toEqual([2, 2])
-    expect([30, DIFFICULTY_CEILING].map(prizeBandOf)).toEqual([3, 3])
+    expect([0, 7.9].map(bandOf)).toEqual([0, 0])
+    expect([8, 19].map(bandOf)).toEqual([1, 1])
+    expect([20, 29].map(bandOf)).toEqual([2, 2])
+    expect([30, DIFFICULTY_CEILING].map(bandOf)).toEqual([3, 3])
   })
 
   test('Deadlines run 1-2 / 2-3 / 3-4 days on a half-day grid.', () => {
@@ -1028,7 +1031,7 @@ describe('prizes', () => {
   })
 
   test('The money pool climbs faster over the top half of the ladder than the bottom.', () => {
-    expect(load(40) / load(20)).toBeGreaterThan(load(20) / load(8))
+    expect(load(CONTRACT_TUNING, 40) / load(CONTRACT_TUNING, 20)).toBeGreaterThan(load(CONTRACT_TUNING, 20) / load(CONTRACT_TUNING, 8))
   })
 })
 
@@ -1038,7 +1041,7 @@ describe('rules.penalty', () => {
   test('rules.penalty', () => {
     for (const difficulty of LEVELS) {
       const rate = HARDNESS[difficulty].penaltyRate
-      const offer = rollBoardAtRate(new Rng(1), 4, 1, 0, rate)[0]
+      const offer = rollBoardAtRate(new Rng(1), 4, 1, 0, rate, CONTRACT_TUNING)[0]
       expect(offer.penalty).toBe(Math.round(rate * offer.clean))
     }
   })

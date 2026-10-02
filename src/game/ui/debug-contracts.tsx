@@ -1,7 +1,7 @@
 import { m } from '../../paraglide/messages.js'
 import { useState, type ReactNode } from 'react'
 import { HARDNESS } from '../defs/rules.ts'
-import { CONTRACT_OFFERS, REP_MAX, rollBoard, rollBoardAtD } from '../sim/feature-contracts/market.ts'
+import { CONTRACT_OFFERS, CONTRACT_TUNING, REP_MAX, rollBoard, rollBoardAtD } from '../sim/feature-contracts/market.ts'
 import { Rng } from '../sim/rng.ts'
 import { CalloutHover } from './callout-hover.tsx'
 import { Btn, Chrome } from './frame.tsx'
@@ -32,7 +32,12 @@ export function DebugContracts() {
           <div className="flex flex-col gap-2">
             <div className="font-display text-sm">{m.hud_debug_forced()}</div>
             {DS.map(D => (
-              <Row key={D} label={m.hud_debug_d({ n: D })} offers={rollBoardAtD(new Rng(seed), D, CONTRACT_OFFERS, HARDNESS.normal.penaltyRate)} onTip={setTip} />
+              <Row
+                key={D}
+                label={m.hud_debug_d({ n: D })}
+                offers={rollBoardAtD(new Rng(seed), D, CONTRACT_OFFERS, HARDNESS.normal.penaltyRate, CONTRACT_TUNING)}
+                onTip={setTip}
+              />
             ))}
           </div>
 
@@ -42,7 +47,7 @@ export function DebugContracts() {
               <Row
                 key={day}
                 label={m.hud_debug_day({ n: day })}
-                offers={rollBoard(new Rng(seed), day, CONTRACT_OFFERS, rep, HARDNESS.normal.penaltyRate)}
+                offers={rollBoard(new Rng(seed), day, CONTRACT_OFFERS, rep, HARDNESS.normal.penaltyRate, CONTRACT_TUNING)}
                 onTip={setTip}
               />
             ))}

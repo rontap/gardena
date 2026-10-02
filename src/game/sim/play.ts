@@ -20,7 +20,7 @@ import type {
 import { cropName, heldText, skuLabel } from './item.ts'
 import { Act, type XY } from './log.ts'
 import type { ContractId } from './feature-contracts/market.h.ts'
-import { demandGood, filledOf, needOf, rollBoard } from './feature-contracts/market.ts'
+import { CONTRACT_TUNING, demandGood, filledOf, needOf, rollBoard } from './feature-contracts/market.ts'
 import type { Edge, Sprinkler, Vertex } from './pipe.ts'
 import { isTilled, type Cell, type Tilled } from './plot.ts'
 import { fertBand, waterBand } from './soil.ts'
@@ -241,7 +241,7 @@ function contractRows(world: World): ContractRow[] {
 }
 
 function boardRows(world: World): BoardRow[] {
-  return rollBoard(world.rng, world.clock.day, world.contractSlots(), world.contracts.repDay, world.hard.penaltyRate)
+  return rollBoard(world.rng, world.clock.day, world.contractSlots(), world.contracts.repDay, world.hard.penaltyRate, CONTRACT_TUNING)
     .filter(o => !world.contracts.takenToday.includes(o.id))
     .map(o => ({
       id: o.id,

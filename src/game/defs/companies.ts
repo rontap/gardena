@@ -1,5 +1,5 @@
 import { m } from '../../paraglide/messages.js'
-import type { CompanyId, PrizeBand, PrizeTemplate } from '../sim/feature-contracts/market.h.ts'
+import type { CompanyId, PrizeBand, PrizeBandMin, PrizeTemplate } from '../sim/feature-contracts/market.h.ts'
 
 export type Company = {
   id: CompanyId
@@ -26,12 +26,12 @@ export const COMPANIES: { readonly [K in CompanyId]: Company } = {
   intercrop: { id: 'intercrop', name: m.names_company_intercrop(), riff: 'Interspar HU', region: 'HU' },
 }
 
-export const PRIZE_BAND_MIN: readonly [number, number, number, number] = [0, 8, 20, 30]
+export const PRIZE_BAND_MIN: PrizeBandMin = [0, 8, 20, 30]
 
-export function prizeBandOf(difficulty: number): PrizeBand {
-  if (difficulty >= PRIZE_BAND_MIN[3]) return 3
-  if (difficulty >= PRIZE_BAND_MIN[2]) return 2
-  if (difficulty >= PRIZE_BAND_MIN[1]) return 1
+export function prizeBandOf(min: PrizeBandMin, difficulty: number): PrizeBand {
+  if (difficulty >= min[3]) return 3
+  if (difficulty >= min[2]) return 2
+  if (difficulty >= min[1]) return 1
   return 0
 }
 

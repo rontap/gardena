@@ -6,6 +6,7 @@ import { PAD, DOOR, occupiedCells, type Base, type Coord, type ChunkId, type Pum
 import { SOURCE, TAP_RATE } from './water.ts'
 import { flipLever, pressButton } from './sensor.ts'
 import { type Edge } from './pipe.ts'
+import { Fruits, is } from '../defs/contracts.ts'
 import { countable, mergeInto, mushroomItem, stackable, type Item } from './item.ts'
 import { topIndex } from './drop.ts'
 import { isPlot } from './plot.ts'
@@ -678,7 +679,7 @@ function sayHarvestRefused(world: World, at: Coord): void {
   const c = world.cell(at)
   if (c.kind !== 'ripe' || world.act.hand.kind !== 'hold') return
   const it = world.act.hand.item
-  if (it.kind === 'fruit' && it.crop === c.plant.crop && it.variety === c.plant.variety) {
+  if (is(it)(Fruits[c.plant.crop](c.plant.variety))) {
     world.say(HAND_FULL)
     return
   }

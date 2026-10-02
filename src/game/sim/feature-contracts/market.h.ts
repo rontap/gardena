@@ -64,8 +64,6 @@ export type CompanyBook = { [K in CompanyId]: CompanyRecord }
 
 export type GroupId = 'jam' | 'spirit'
 
-export type ContractGoodId = Exclude<StallGoodId, 'sugar'>
-
 export type PlainGoodId = StallGoodId
 
 export type Demand =
@@ -115,7 +113,56 @@ export type PrizeTemplate =
 
 export type PrizeBand = 0 | 1 | 2 | 3
 
+export type PrizeBandMin = readonly [number, number, number, number]
+
 export type DeadlineBand = 'tight' | 'normal' | 'long'
+
+export type GoodTuning = {
+  on: boolean
+  tier: Stars
+  cost: number
+  feasible: number
+  price: number
+  starter: boolean
+}
+
+export type DeadlineTuning = {
+  weight: number
+  lo: number
+  hi: number
+  cost: number
+  markup: number
+}
+
+export type ContractTuning = {
+  difficultyStart: number
+  difficultyPerDay: number
+  difficultyMax: number
+  difficultyCeiling: number
+  slotBands: readonly (readonly [number, number])[]
+  starMin: { readonly [K in Stars]: number }
+  dStarter: number
+  deadlineStep: number
+  deadlines: { readonly [K in DeadlineBand]: DeadlineTuning }
+  mixFloor: number
+  mixShare: number
+  budgetOverdraft: number
+  pairCost: number
+  groupCost: number
+  groupChance: number
+  groupTier: { readonly [K in GroupId]: Stars }
+  loadMin: number
+  loadMax: number
+  loadCurve: number
+  loadDOffset: number
+  amountMin: number
+  niceAmounts: readonly number[]
+  markupBase: number
+  markupPerDifficulty: number
+  prizeSlots: number
+  prizeBandMin: PrizeBandMin
+  goods: { readonly [K in StallGoodId]: GoodTuning }
+}
 
 export type ContractId = number
 
@@ -205,10 +252,6 @@ export declare const NICE_AMOUNTS: readonly number[]
 
 export declare const FEASIBLE_PER_DAY: { readonly [K in StallGoodId]: number }
 
-export declare const SCALE_START: number
-
-export declare const SCALE_DAYS: number
-
 export declare const MARKUP_BASE: number
 
 export declare const MARKUP_PER_DIFFICULTY: number
@@ -216,8 +259,6 @@ export declare const MARKUP_PER_DIFFICULTY: number
 export declare const PENALTY_FLOOR: number
 
 export type CleanUnit = (d: Demand) => number
-
-export type Feasible = (good: StallGoodId, days: number, worldDay: number) => number
 
 export type RollBoard = (day: number, slots: number) => readonly ContractOffer[]
 

@@ -64,6 +64,7 @@ import type {
   StillBatch,
   StillLoad,
 } from '../building.ts'
+import { Alcohol, is, Oil, SugarCane } from '../../defs/contracts.ts'
 import { furnaceValue, makeExtract, type Item } from '../item.ts'
 
 export type IoCell = Mill | JamMachine | PotStill | CompostBox | Grinder | Furnace | ResearchStation | Infuser | Necronomicon | Refuel
@@ -406,9 +407,9 @@ export function mergeSugar(
 
 export function fuelUnit(item: Item): number {
   if (item.kind === 'wood') return FUEL_WORTH.wood
-  if (item.kind === 'oil') return FUEL_WORTH.oil
-  if (item.kind === 'fruit' && item.crop === 'sugar-cane') return FUEL_WORTH.cane
-  if (item.kind === 'spirit' || item.kind === 'cask') return FUEL_WORTH.alcohol
+  if (is(item)(Oil)) return FUEL_WORTH.oil
+  if (is(item)(SugarCane)) return FUEL_WORTH.cane
+  if (is(item)(Alcohol)) return FUEL_WORTH.alcohol
   return 0
 }
 

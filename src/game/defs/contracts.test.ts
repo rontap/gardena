@@ -6,6 +6,7 @@ import {
   Apricot,
   Arbequina,
   Base,
+  Bread,
   Cherry,
   Fruits,
   get,
@@ -15,10 +16,13 @@ import {
   Klosterneuburger,
   matching,
   MidProduce,
+  NamedProduce,
+  OfftypeNamedProduce,
   Oil,
   Olive,
   PinkLady,
   Processed,
+  Produce,
 } from './contracts.ts'
 
 const olive = { kind: 'fruit', crop: 'olive', variety: Base } as const
@@ -46,6 +50,8 @@ describe('contracts.is', () => {
   test('Oil is kind-only', () => {
     expect(is(oil)(Oil)).toBe(true)
     expect(is(oil)(Processed)).toBe(true)
+    expect(is({ kind: 'bread' })(Bread)).toBe(true)
+    expect(is({ kind: 'bread' })(Processed)).toBe(true)
     expect(is(olive)(Oil)).toBe(false)
     expect(is(olive)(Olive(Arbequina))).toBe(false)
     expect(is(olive)(Fruits.olive)).toBe(true)
@@ -75,6 +81,17 @@ describe('contracts.is', () => {
   test('matching is is flipped for filter', () => {
     expect([olive, pinkLady].filter(matching(Olive))).toEqual([olive])
   })
+
+  test('OfftypeNamedProduce is Produce; NamedProduce is produce-purpose', () => {
+    const bintje = { kind: 'fruit', crop: 'potato', variety: 'bintje' } as const
+    const arbequina = { kind: 'fruit', crop: 'olive', variety: Arbequina } as const
+    expect(is(bintje)(OfftypeNamedProduce)).toBe(true)
+    expect(is(bintje)(Produce)).toBe(true)
+    expect(is(bintje)(NamedProduce)).toBe(false)
+    expect(is(arbequina)(OfftypeNamedProduce)).toBe(true)
+    expect(is(pinkLady)(NamedProduce)).toBe(true)
+    expect(is(pinkLady)(OfftypeNamedProduce)).toBe(false)
+  })
 })
 
 describe('contracts.get', () => {
@@ -92,5 +109,6 @@ describe('contracts.get', () => {
       { kind: 'fruit', crop: 'apricot', variety: Base },
     ])
     expect(get(Oil)).toEqual({ kind: 'oil' })
+    expect(get(Bread)).toEqual({ kind: 'bread' })
   })
 })

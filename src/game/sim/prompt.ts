@@ -1,5 +1,6 @@
 import { m } from '../../paraglide/messages.js'
 import { CROP_NAME, cropVariety } from '../defs/crops.ts'
+import { Fruits, is } from '../defs/contracts.ts'
 import { tierOf, type VarietyId } from '../defs/varieties.ts'
 import { inWorld, sortVariety, sorterBase, sorterCells, type Barrel, type Coord, type Facing, type Furnace, type Grinder, type Infuser, type JamMachine, type Mill, type PotStill, type Refuel, type ResearchStation, type Sorter, type Tree } from './building.ts'
 import { onCell, topIndex } from './drop.ts'
@@ -950,13 +951,16 @@ export function tallSiteOk(w: World, at: Coord): boolean {
 function canHarvestHand(w: World, crop: CropId, variety: VarietyId): boolean {
   if (w.act.hand.kind === 'empty') return true
   const it = w.act.hand.item
-  return it.kind === 'fruit' && it.crop === crop && it.variety === variety && it.count < w.stackMax(it)
+  if (crop === 'grass') return false
+  if (!is(it)(Fruits[crop](variety))) return false
+  return 'count' in it && it.count < w.stackMax(it)
 }
 
 function sameFruitInHand(w: World, crop: CropId, variety: VarietyId): boolean {
   if (w.act.hand.kind !== 'hold') return false
   const it = w.act.hand.item
-  return it.kind === 'fruit' && it.crop === crop && it.variety === variety
+  if (crop === 'grass') return false
+  return is(it)(Fruits[crop](variety))
 }
 
 function handFullFor(w: World, item: Item): boolean {

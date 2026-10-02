@@ -28,9 +28,9 @@ const numClass =
   'w-[4.75rem] select-text border-2 border-ink/30 bg-parch px-1 py-0.5 font-mono text-xs tabular-nums text-ink outline-none focus:border-ink'
 const numWide =
   'w-full select-text border-2 border-ink/30 bg-parch px-1 py-0.5 font-mono text-xs tabular-nums text-ink outline-none focus:border-ink'
-const th = 'px-1.5 py-1 text-left font-semibold text-ink/60 whitespace-nowrap'
-const td = 'px-1.5 py-0.5 whitespace-nowrap align-middle'
-const sticky = 'sticky left-0 z-10 bg-house'
+export const th = 'px-1.5 py-1 text-left font-semibold text-ink/60 whitespace-nowrap'
+export const td = 'px-1.5 py-0.5 whitespace-nowrap align-middle'
+export const sticky = 'sticky left-0 z-10 bg-house'
 
 function fmt(n: number | null, d = 3): string {
   if (n === null) return '—'
@@ -38,7 +38,7 @@ function fmt(n: number | null, d = 3): string {
   return Object.is(x, -0) ? '0' : String(x)
 }
 
-function Num({
+export function Num({
   value,
   onChange,
   dirty,
@@ -68,7 +68,7 @@ function Num({
   )
 }
 
-function Pct({
+export function Pct({
   value,
   onChange,
   dirty,
@@ -119,7 +119,7 @@ function Vs({ n, vs, d = 3, ok = true }: { n: number | null; vs: number | null; 
   )
 }
 
-function Field({ k, children }: { k: string; children: ReactNode }) {
+export function Field({ k, children }: { k: string; children: ReactNode }) {
   return (
     <label className="flex flex-col gap-0.5 text-xs">
       <span className="leading-tight text-ink/60">{k}</span>
@@ -128,7 +128,7 @@ function Field({ k, children }: { k: string; children: ReactNode }) {
   )
 }
 
-function Cat({ title, children }: { title: string; children: ReactNode }) {
+export function Cat({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div className="flex flex-col gap-2 border-t border-ink/10 pt-3">
       <div className="font-display text-[11px] text-ink/70">{title}</div>
@@ -137,7 +137,7 @@ function Cat({ title, children }: { title: string; children: ReactNode }) {
   )
 }
 
-function Pair({ children }: { children: ReactNode }) {
+export function Pair({ children }: { children: ReactNode }) {
   return <div className="grid grid-cols-2 gap-2">{children}</div>
 }
 
@@ -1024,7 +1024,7 @@ function CropName({ row }: { row: Row }) {
   )
 }
 
-function Table({ title, children }: { title: string; children: ReactNode }) {
+export function Table({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="flex flex-col gap-2">
       <div className="font-display text-sm">{title}</div>

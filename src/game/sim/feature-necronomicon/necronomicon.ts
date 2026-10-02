@@ -8,12 +8,12 @@ import {
   NECRO_PAGE_POINT,
   PAGES,
   PAGE_IDS,
-  SUPPER_VARIETY,
   pageWant,
 } from '../../defs/necronomicon.ts'
 import type { Coord, Necronomicon } from '../building.ts'
 import { takeCount } from '../feature-machines/machine.ts'
 import { GRANDMA_IDS, type Grandma, type PageId, type SupperId } from '../ids.ts'
+import { Alcohol, Apricot, Bread, Grape, is, Keknyelu, Klosterneuburger } from '../../defs/contracts.ts'
 import type { Item } from '../item.ts'
 import type { World } from '../world.ts'
 import type { PageClaim, PageState } from './necronomicon.h.ts'
@@ -60,9 +60,9 @@ export function ritualReady(w: World, book: Necronomicon): boolean {
 }
 
 export function supperOf(item: Item): SupperId | undefined {
-  if (item.kind === 'bread') return 'bread'
-  if (item.kind === 'spirit' && item.spirit === 'brandy' && item.variety === SUPPER_VARIETY.palinka) return 'palinka'
-  if (item.kind === 'cask' && item.cask === 'wine' && item.variety === SUPPER_VARIETY.wine) return 'wine'
+  if (is(item)(Bread)) return 'bread'
+  if (is(item)(Alcohol(Apricot(Klosterneuburger)))) return 'palinka'
+  if (is(item)(Alcohol(Grape(Keknyelu)))) return 'wine'
   return undefined
 }
 
@@ -84,9 +84,9 @@ export function pageClaim(book: Necronomicon, item: Item): PageClaim | undefined
   ) {
     return book.done.includes('tool') || book.tool ? undefined : { page: 'tool', n: 1 }
   }
-  if (item.kind === 'bread' || item.kind === 'spirit' || item.kind === 'cask') {
+  if (is(item)(Bread) || is(item)(Alcohol)) {
     const good = supperOf(item)
-    if (good === undefined || item.count <= 0) return undefined
+    if (good === undefined || !('count' in item) || item.count <= 0) return undefined
     if (book.done.includes('supper') || book.supper.includes(good)) return undefined
     return { page: 'supper', n: 1, good }
   }

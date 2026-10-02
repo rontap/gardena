@@ -25,6 +25,7 @@ import {
 } from '../../defs/varieties.ts'
 import { chunkRect, occupiedCells, Tree, type Coord } from '../building.ts'
 import type { CropId } from '../ids.ts'
+import { Fruits, is } from '../../defs/contracts.ts'
 import { fruitStack, mergeInto, type Countable, type Item } from '../item.ts'
 import { statsOf, type Modifier, type Stats } from '../modifiers.ts'
 import { extractBurrow } from '../feature-burrow/burrow.ts'
@@ -519,8 +520,8 @@ export function canHarvest(w: World, at: Coord): boolean {
   if (c.kind !== 'ripe') return false
   if (w.act.hand.kind === 'empty') return true
   const it = w.act.hand.item
-  if (it.kind !== 'fruit') return false
-  return it.crop === c.plant.crop && it.variety === c.plant.variety && it.count < w.stackMax(it)
+  if (!is(it)(Fruits[c.plant.crop](c.plant.variety))) return false
+  return 'count' in it && it.count < w.stackMax(it)
 }
 
 export function doHarvest(w: World, at: Coord): void {
